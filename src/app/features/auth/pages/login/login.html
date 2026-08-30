@@ -1,0 +1,90 @@
+<div class="app-page auth-page min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
+  <button type="button" class="theme-toggle" (click)="themeService.toggleTheme()" [attr.aria-label]="themeService.theme() === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'">{{ themeService.theme() === 'light' ? 'Oscuro' : 'Claro' }}</button>
+  <div class="app-card w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
+
+    <div class="mb-8">
+      <p class="text-sm font-medium text-sky-400">
+        English Reading Platform
+      </p>
+
+      <h1 class="mt-2 text-3xl font-bold">
+        Iniciar sesión
+      </h1>
+
+      <p class="mt-2 text-sm text-slate-400">
+        Continúa con tus lecturas y tu vocabulario.
+      </p>
+    </div>
+
+    <form class="space-y-5" (submit)="onSubmit($event)">
+
+      <div>
+        <label
+          for="email"
+          class="mb-2 block text-sm font-medium text-slate-300"
+        >
+          Email
+        </label>
+
+        <input
+          id="email"
+          type="email"
+          placeholder="tu@email.com"
+          (input)="onEmailChange($event)"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+        />
+      </div>
+
+      <div>
+        <label
+          for="password"
+          class="mb-2 block text-sm font-medium text-slate-300"
+        >
+          Contraseña
+        </label>
+
+        <input
+          id="password"
+          type="password"
+          placeholder="Tu contraseña"
+          (input)="onPasswordChange($event)"
+          class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+        />
+      </div>
+
+      @if (error()) {
+        <div class="rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+          {{ error() }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        [disabled]="!isFormValid() || loading()"
+        class="w-full rounded-lg bg-sky-500 px-4 py-3 font-semibold text-white transition
+               hover:bg-sky-400
+               disabled:cursor-not-allowed
+               disabled:bg-slate-700
+               disabled:text-slate-400"
+      >
+        @if (loading()) {
+          Iniciando sesión...
+        } @else {
+          Iniciar sesión
+        }
+      </button>
+
+    </form>
+
+    <p class="mt-6 text-center text-sm text-slate-400">
+      ¿No tienes cuenta?
+      <a
+        href="/register"
+        class="font-medium text-sky-400 hover:text-sky-300"
+      >
+        Crear cuenta
+      </a>
+    </p>
+
+  </div>
+</div>

@@ -1,0 +1,115 @@
+<div class="app-page min-h-screen bg-[#14181c] px-5 py-8 text-[#e9e2d3] md:px-8 md:py-10">
+  <main class="mx-auto max-w-[1180px]">
+    <header class="py-12 md:py-16">
+      <p class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#7cc0f5]">English Reading Platform</p>
+      <h1 class="mt-4 max-w-3xl font-serif text-[46px] font-normal tracking-tight md:text-[58px]">
+        Encuentra tu próxima lectura
+      </h1>
+      <p class="mt-5 max-w-[58ch] text-[18px] leading-8 text-[#8d9299]">
+        Textos recomendados según el vocabulario que conocemos de ti.
+      </p>
+    </header>
+
+    @if (continueReadingCards().length > 0) {
+      <section class="mb-16" aria-labelledby="continue-reading-heading">
+        <h2 id="continue-reading-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#6f747a]">Continuar leyendo</h2>
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (card of continueReadingCards(); track card.readingId) {
+            <a [routerLink]="['/reading', card.readingId]" class="app-card rounded-2xl p-5 transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
+              <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-[#7cc0f5]">{{ card.context }}</p>
+              <h3 class="mt-4 font-serif text-[23px]">{{ card.title }}</h3>
+              <p class="mt-5 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p>
+              <p class="mt-3 text-[14px] font-semibold">Continuar →</p>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    <section aria-labelledby="recommendations-heading">
+      <h2 id="recommendations-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#6f747a]">
+        Recomendadas para ti
+      </h2>
+
+      <div class="mt-6" aria-live="polite">
+        @if (recommendationsLoading()) {
+          <p class="text-[#8d9299]">Cargando recomendaciones...</p>
+        } @else if (recommendationsError()) {
+          <div>
+            <p class="text-red-300">{{ recommendationsError() }}</p>
+            <button type="button" (click)="loadRecommendations()" class="mt-4 font-semibold hover:text-[#7cc0f5]">Reintentar</button>
+          </div>
+        } @else if (recommendationCards().length === 0) {
+          <p class="py-8 text-[#8d9299]">No hay recomendaciones disponibles en este momento.</p>
+        } @else {
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            @for (card of recommendationCards(); track card.reading.readingId) {
+              @let reading = card.reading;
+              <a [routerLink]="['/reading', reading.readingId]" class="app-card flex min-h-64 flex-col rounded-2xl bg-[#1b2025] p-5 transition hover:-translate-y-0.5 hover:bg-[#20262c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
+                <div class="flex items-center justify-between gap-3 text-[12px] font-bold uppercase tracking-[0.12em]">
+                  <span class="text-[#7cc0f5]">{{ reading.editorialLevel }}</span>
+                  <span class="truncate text-[#747a80]">{{ reading.category }}</span>
+                </div>
+                <h3 class="mt-6 font-serif text-[24px] font-normal leading-tight">{{ reading.title }}</h3>
+                @if (reading.progressStatus === 'COMPLETED') { <p class="mt-4 text-[13px] font-semibold text-[#6fce9a]">✓ Leída</p> }
+                @else if (reading.progressStatus === 'IN_PROGRESS') { <p class="mt-4 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p> }
+                <div class="mt-auto pt-8">
+                  <p class="text-[20px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                  <div class="mt-4 space-y-1 text-[13px] leading-5 text-[#747a80]">
+                    <p>{{ card.knownLabel }}</p>
+                    <p>{{ card.learningLabel }}</p>
+                    <p>{{ card.wordsToLearnLabel }}</p>
+                  </div>
+                  <p class="mt-5 text-[13px] font-semibold text-[#8d9299]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                </div>
+              </a>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="mt-16 border-t border-[#2a2f34] pt-12" aria-labelledby="my-readings-heading">
+      <div class="flex flex-wrap items-baseline justify-between gap-4">
+        <h2 id="my-readings-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#6f747a]">Mis lecturas</h2>
+        <a routerLink="/library" class="text-[15px] font-semibold transition hover:text-[#7cc0f5]">Ver mi biblioteca →</a>
+      </div>
+
+      <div class="mt-6" aria-live="polite">
+        @if (userReadingsLoading()) {
+          <p class="text-[#8d9299]">Cargando tus lecturas...</p>
+        } @else if (userReadingsError()) {
+          <div>
+            <p class="text-red-300">{{ userReadingsError() }}</p>
+            <button type="button" (click)="loadUserReadings()" class="mt-4 font-semibold hover:text-[#7cc0f5]">Reintentar</button>
+          </div>
+        } @else if (userReadings().length === 0) {
+          <div class="py-8">
+            <p class="text-[#8d9299]">Aún no has añadido lecturas.</p>
+            <a routerLink="/library/new" class="mt-4 inline-flex font-semibold text-[#7cc0f5]">Añadir mi primera lectura →</a>
+          </div>
+        } @else {
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @for (card of userReadingCards(); track card.reading.readingId) {
+              @let reading = card.reading;
+              <a [routerLink]="['/reading', reading.readingId]" class="app-card flex min-h-64 flex-col rounded-2xl bg-[#1b2025] p-5 transition hover:-translate-y-0.5 hover:bg-[#20262c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
+                <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-[#7cc0f5]">{{ reading.language }}</p>
+                <h3 class="mt-4 font-serif text-[24px] leading-tight">{{ reading.title }}</h3>
+                @if (reading.progressStatus === 'COMPLETED') { <p class="mt-4 text-[13px] font-semibold text-[#6fce9a]">✓ Leída</p> }
+                @else if (reading.progressStatus === 'IN_PROGRESS') { <p class="mt-4 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p> }
+                <div class="mt-auto pt-7">
+                  <p class="text-[20px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                  <div class="mt-4 space-y-1 text-[13px] leading-5 text-[#747a80]">
+                    <p>{{ card.knownLabel }}</p><p>{{ card.learningLabel }}</p><p>{{ card.wordsToLearnLabel }}</p>
+                  </div>
+                  @if (reading.createdAt) { <p class="mt-5 text-[13px] text-[#747a80]">Añadida {{ reading.createdAt | date:'mediumDate' }}</p> }
+                  <p class="mt-4 text-[13px] font-semibold text-[#8d9299]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                </div>
+              </a>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </main>
+</div>

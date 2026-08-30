@@ -1,59 +1,42 @@
-# EnglishReadingWeb
+# English Reading Platform — Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.3.
+Frontend Angular de una plataforma de lectura en inglés que adapta la experiencia al vocabulario del usuario.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- Angular con arquitectura standalone
+- Angular Signals
+- Tailwind CSS
+- Integración con backend SOAP
+- Vitest
 
-```bash
-ng serve
-```
+## Funcionalidades actuales
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- Registro, autenticación y onboarding inicial de vocabulario
+- Home con recomendaciones y lecturas en progreso
+- Biblioteca de lecturas del usuario y registro de nuevas lecturas
+- Reader interactivo para textos USER y PLATFORM
+- Clasificación de palabras como `KNOWN`, `LEARNING`, `NEW` o `IGNORED`
+- Diccionario, traducción y pronunciación
+- Progreso y finalización de lecturas
+- Temas light y dark persistentes
 
-## Code scaffolding
+## Ejecución local
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Requisitos: Node.js y npm compatibles con las versiones declaradas en `package.json`.
 
 ```bash
-ng build
+npm install
+ng serve --proxy-config proxy.conf.json
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+La aplicación estará disponible en [http://localhost:4200](http://localhost:4200).
 
-## Running unit tests
+Las operaciones SOAP requieren que el backend de English Reading Platform esté ejecutándose y sea accesible mediante `proxy.conf.json`.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Validación
 
 ```bash
-ng test
+npm test -- --watch=false
+npm run build
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

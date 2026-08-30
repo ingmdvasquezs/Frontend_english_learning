@@ -1,3 +1,50 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+
+:root { color-scheme:light; --app-bg:#f5f1e8; --app-sidebar:#ece6da; --app-surface:#fffdf8; --app-surface-elevated:#ffffff; --app-text:#202830; --app-text-secondary:#596670; --app-muted:#626d75; --app-border:#d8d1c5; --app-active:#e7dfd2; --app-accent:#216ca8; --app-accent-soft:#dbeaf5; --app-success:#247a50; --app-learning:#9a630d; --app-danger:#b9473f; --word-new-bg:#dbeaf5; --word-new-text:#174f78; --word-learning-bg:#f9e9bd; --word-learning-text:#684405; --word-ignored-bg:transparent; --word-ignored-text:#626d75; }
+:root[data-theme='dark'] { color-scheme:dark; --app-bg:#121820; --app-sidebar:#18212b; --app-surface:#202b36; --app-surface-elevated:#263440; --app-text:#f3f0e8; --app-text-secondary:#c0c8ce; --app-muted:#98a5ae; --app-border:#394956; --app-active:#263440; --app-accent:#62aeea; --app-accent-soft:#8bc5ee; --app-success:#67c98b; --app-learning:#e8b85c; --app-danger:#e27d75; --word-new-bg:#29475d; --word-new-text:#f3f0e8; --word-learning-bg:#514321; --word-learning-text:#f7d98e; --word-ignored-bg:transparent; --word-ignored-text:#98a5ae; }
+:root { --sidebar-bg:var(--app-sidebar); --surface:var(--app-surface); --surface-elevated:var(--app-surface-elevated); --text-primary:var(--app-text); --text-secondary:var(--app-text-secondary); --text-muted:var(--app-muted); --border:var(--app-border); --accent:var(--app-accent); --accent-soft:var(--app-accent-soft); --success:var(--app-success); --learning:var(--app-learning); --danger:var(--app-danger); }
+html,body { margin:0; min-height:100%; background:var(--app-bg); color:var(--app-text); }
+.app-page { background:var(--app-bg) !important; color:var(--app-text) !important; }
+.app-card { background:var(--app-surface) !important; border:1px solid var(--app-border); box-shadow:none !important; }
+.reader-popover { background:color-mix(in srgb,var(--app-surface-elevated) 96%,transparent) !important; color:var(--app-text); border:1px solid var(--app-border); }
+.theme-toggle { position:fixed; z-index:60; top:1rem; right:1rem; padding:.55rem .8rem; border:1px solid var(--app-border); border-radius:999px; background:var(--app-surface); color:var(--app-text-secondary); font:600 .8rem/1 system-ui,sans-serif; cursor:pointer; }
+.theme-toggle:hover { color:var(--app-accent); border-color:var(--app-accent); }
+:root[data-theme='light'] [class*="text-[#e9e2d3]"],:root[data-theme='light'] [class*="hover:text-white"] { color:var(--app-text) !important; }
+:root[data-theme='light'] [class*="text-[#8d9299]"],:root[data-theme='light'] [class*="text-[#747a80]"],:root[data-theme='light'] [class*="text-[#6f747a]"] { color:var(--app-muted) !important; }
+:root[data-theme='light'] [class*="text-[#7cc0f5]"] { color:var(--app-accent) !important; }
+:root[data-theme='light'] [class*="text-[#6fce9a]"] { color:var(--app-success) !important; }
+:root[data-theme='light'] [class*="text-[#e8ab5c]"] { color:var(--app-learning) !important; }
+:root[data-theme='light'] [class*="border-[#2a2f34]"],:root[data-theme='light'] [class*="border-[#343a40]"] { border-color:var(--app-border) !important; }
+:root[data-theme='light'] [class*="bg-[#1b2025]"],:root[data-theme='light'] [class*="bg-[#1e2328]"] { background-color:var(--app-surface) !important; }
+:root[data-theme='light'] [class*="bg-[#29445a]"] { background-color:var(--word-new-bg) !important; color:var(--word-new-text) !important; }
+:root[data-theme='light'] [class*="bg-[#4a3a22]"] { background-color:var(--word-learning-bg) !important; color:var(--word-learning-text) !important; }
+:root[data-theme='light'] .reader-page [class*="text-[#70757b]"] { color:#727981 !important; }
+:root[data-theme='light'] input,:root[data-theme='light'] textarea { background:#fffdf8 !important; color:var(--app-text) !important; border-color:var(--app-border) !important; }
+
+/* Compatibilidad semántica mientras las vistas editoriales conservan utilities históricas. */
+:root[data-theme='dark'] [class*="bg-[#14181c]"],:root[data-theme='dark'] .bg-slate-950 { background-color:var(--app-bg) !important; }
+:root[data-theme='dark'] [class*="bg-[#1b2025]"],:root[data-theme='dark'] [class*="bg-[#1e2328]"],:root[data-theme='dark'] .bg-slate-900 { background-color:var(--app-surface) !important; }
+:root[data-theme='dark'] [class*="bg-[rgba(30,35,40"],:root[data-theme='dark'] [class*="bg-[rgba(30,35,40"] { background:var(--app-surface-elevated) !important; }
+:root[data-theme='dark'] [class*="text-[#e9e2d3]"],:root[data-theme='dark'] .text-white,:root[data-theme='dark'] .text-slate-300 { color:var(--app-text) !important; }
+:root[data-theme='dark'] [class*="text-[#8d9299]"],:root[data-theme='dark'] [class*="text-[#a0a5aa]"],:root[data-theme='dark'] [class*="text-[#a2a7ad]"],:root[data-theme='dark'] .text-slate-400 { color:var(--app-text-secondary) !important; }
+:root[data-theme='dark'] [class*="text-[#6f747a]"],:root[data-theme='dark'] [class*="text-[#74797f]"],:root[data-theme='dark'] [class*="text-[#747a80]"] { color:var(--app-muted) !important; }
+:root[data-theme='dark'] [class*="text-[#7cc0f5]"],:root[data-theme='dark'] .text-sky-400 { color:var(--app-accent) !important; }
+:root[data-theme='dark'] [class*="text-[#6fce9a]"] { color:var(--app-success) !important; }
+:root[data-theme='dark'] [class*="text-[#e8ab5c]"] { color:var(--app-learning) !important; }
+:root[data-theme='dark'] [class*="border-[#2a2f34]"],:root[data-theme='dark'] [class*="border-[#343a40]"],:root[data-theme='dark'] .border-slate-800,:root[data-theme='dark'] .border-slate-700 { border-color:var(--app-border) !important; }
+:root[data-theme='dark'] [class*="bg-[#29445a]"] { background-color:var(--word-new-bg) !important; color:var(--word-new-text) !important; }
+:root[data-theme='dark'] [class*="bg-[#4a3a22]"] { background-color:var(--word-learning-bg) !important; color:var(--word-learning-text) !important; }
+:root[data-theme='dark'] [class*="text-[#70757b]"] { color:var(--word-ignored-text) !important; }
+:root[data-theme='dark'] input,:root[data-theme='dark'] textarea { background:var(--app-bg) !important; color:var(--app-text) !important; border-color:var(--app-border) !important; }
+:root[data-theme='dark'] input::placeholder,:root[data-theme='dark'] textarea::placeholder { color:var(--app-muted); opacity:1; }
+:root[data-theme='dark'] [class*="hover:bg-[#20262c]"]:hover { background-color:var(--app-surface-elevated) !important; }
+:root[data-theme='dark'] [class*="bg-[#1a1f24]"] { background-color:var(--app-surface) !important; }
+
+:root[data-theme='light'] .auth-page .text-white,:root[data-theme='light'] .auth-page .text-slate-300 { color:var(--app-text) !important; }
+:root[data-theme='light'] .auth-page .text-slate-400 { color:var(--app-muted) !important; }
+:root[data-theme='light'] .auth-page .text-sky-400 { color:var(--app-accent) !important; }
+:root[data-theme='light'] .auth-page .border-slate-800,:root[data-theme='light'] .auth-page .border-slate-700 { border-color:var(--app-border) !important; }
+:root[data-theme='light'] .onboarding-page [class*="text-[#e9e2d3]"] { color:var(--app-text) !important; }
+:root[data-theme='light'] .onboarding-page [class*="text-[#8d9299]"],:root[data-theme='light'] .onboarding-page [class*="text-[#6f747a]"],:root[data-theme='light'] .onboarding-page [class*="text-[#a2a7ad]"] { color:var(--app-muted) !important; }

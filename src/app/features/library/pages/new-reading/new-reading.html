@@ -1,0 +1,33 @@
+<div class="app-page min-h-screen bg-[#14181c] px-5 py-12 text-[#e9e2d3] md:px-8 md:py-16">
+  <main class="mx-auto max-w-[760px]">
+    <header class="mt-9 mb-10">
+      <p class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#7cc0f5]">Nueva lectura</p>
+      <h1 class="mt-4 font-serif text-[44px] font-normal tracking-tight md:text-[52px]">Añade un texto</h1>
+      <p class="mt-4 text-[17px] leading-8 text-[#8d9299]">Pega un texto en inglés para guardarlo en tu biblioteca.</p>
+    </header>
+
+    <div class="space-y-7 border-t border-[#2a2f34] pt-9">
+      <div>
+        <label for="title" class="mb-3 block text-[14px] font-semibold text-[#a2a7ad]">Título</label>
+        <input id="title" type="text" [attr.maxlength]="maxTitleLength" (input)="onTitleChange($event)" placeholder="Nombre de la lectura"
+          class="w-full border-b border-[#3a4046] bg-transparent px-0 py-3 text-[18px] outline-none transition placeholder:text-[#5c6167] focus:border-[#7cc0f5]" />
+      </div>
+
+      <div>
+        <label for="content" class="mb-3 block text-[14px] font-semibold text-[#a2a7ad]">Texto en inglés</label>
+        <textarea id="content" rows="14" [attr.maxlength]="maxContentLength" (input)="onContentChange($event)" placeholder="Paste your English text here..."
+          class="w-full resize-y rounded-xl border border-[#343a40] bg-[#1a1f24] px-4 py-4 font-serif text-[18px] leading-8 outline-none transition placeholder:text-[#5c6167] focus:border-[#7cc0f5]"></textarea>
+        <p class="mt-2 text-right text-[13px] text-[#6f747a]">{{ content().length }} caracteres</p>
+      </div>
+
+      @if (error()) {
+        <p class="text-[15px] text-red-300">{{ error() }}</p>
+      }
+
+      <button type="button" (click)="createReading()" [disabled]="!canSubmit()"
+        class="inline-flex items-center gap-3 text-[17px] font-semibold transition hover:text-[#7cc0f5] disabled:cursor-not-allowed disabled:text-[#5c6167]">
+        @if (loading()) { Guardando... } @else { Guardar lectura <span aria-hidden="true">→</span> }
+      </button>
+    </div>
+  </main>
+</div>
