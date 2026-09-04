@@ -255,6 +255,11 @@ describe('Reader page', () => {
 
     expect(fixture.nativeElement.textContent).toContain('/ˈlɜː.nɪŋ/');
     expect(fixture.nativeElement.textContent).toContain('aprendizaje');
+    const translation = (Array.from(
+      fixture.nativeElement.querySelectorAll('.reader-popover p') as NodeListOf<HTMLParagraphElement>
+    )).find((paragraph) => paragraph.textContent?.trim() === 'aprendizaje');
+    expect(translation).toBeTruthy();
+    expect(translation!.classList.contains('text-white')).toBe(false);
     expect(
       fixture.nativeElement.querySelector(
         'button[aria-label="Escuchar pronunciación"]'

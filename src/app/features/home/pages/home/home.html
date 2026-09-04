@@ -1,35 +1,90 @@
-<div class="app-page min-h-screen bg-[#14181c] px-5 py-8 text-[#e9e2d3] md:px-8 md:py-10">
-  <main class="mx-auto max-w-[1180px]">
-    <header class="py-12 md:py-16">
-      <p class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#7cc0f5]">English Reading Platform</p>
-      <h1 class="mt-4 max-w-3xl font-serif text-[46px] font-normal tracking-tight md:text-[58px]">
-        Encuentra tu próxima lectura
+<div class="app-page min-h-screen overflow-x-hidden bg-[var(--app-bg)] px-5 py-6 text-[var(--app-text)] md:px-9">
+  <main class="mx-auto w-full max-w-[1560px]">
+    <header class="py-7 md:py-10">
+      <p class="text-[17px] font-semibold text-[var(--app-accent)]">{{ greeting() }}</p>
+      <h1 class="mt-3 max-w-3xl font-serif text-[36px] font-normal tracking-tight md:text-[52px]">
+        ¿Qué te gustaría leer hoy?
       </h1>
-      <p class="mt-5 max-w-[58ch] text-[18px] leading-8 text-[#8d9299]">
-        Textos recomendados según el vocabulario que conocemos de ti.
+      <p class="mt-3 max-w-[58ch] text-[17px] leading-7 text-[#8d9299]">
+        Descubre lecturas recomendadas según el vocabulario que ya conoces y el que estás aprendiendo.
       </p>
     </header>
 
-    @if (continueReadingCards().length > 0) {
-      <section class="mb-16" aria-labelledby="continue-reading-heading">
-        <h2 id="continue-reading-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#6f747a]">Continuar leyendo</h2>
-        <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          @for (card of continueReadingCards(); track card.readingId) {
-            <a [routerLink]="['/reading', card.readingId]" class="app-card rounded-2xl p-5 transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
-              <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-[#7cc0f5]">{{ card.context }}</p>
-              <h3 class="mt-4 font-serif text-[23px]">{{ card.title }}</h3>
-              <p class="mt-5 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p>
-              <p class="mt-3 text-[14px] font-semibold">Continuar →</p>
-            </a>
+    @if (!recommendationsLoading() && !recommendationsError() && featuredRecommendationCard(); as featured) {
+      @let reading = featured.reading;
+      <section class="mb-8" aria-labelledby="featured-recommendation-heading">
+        <a [routerLink]="['/reading', reading.readingId]" class="featured-recommendation app-card grid overflow-hidden rounded-xl bg-[var(--app-surface)] transition hover:bg-[var(--app-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]">
+          <div class="featured-content flex min-h-0 flex-col justify-center overflow-hidden">
+            <p id="featured-recommendation-heading" class="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--app-accent)]">Recomendada para ti</p>
+            <h2 class="featured-title mt-2 max-w-3xl font-serif text-[30px] font-normal leading-tight md:text-[34px]">{{ reading.title }}</h2>
+            <p class="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">{{ reading.editorialLevel }} · {{ reading.category }}</p>
+            <p class="featured-summary mt-4 text-[19px] font-semibold text-[var(--app-success)]">{{ featured.knownPercentage }}% de vocabulario conocido</p>
+            <div class="recommendation-metrics-reveal featured-metrics-reveal">
+              <p class="text-[19px] font-semibold text-[var(--app-success)]">{{ featured.knownPercentage }}% de vocabulario conocido</p>
+              <div class="mt-3 space-y-1 text-[14px] leading-5">
+                <p>{{ featured.knownLabel }}</p>
+                <p>{{ featured.learningLabel }}</p>
+                <p>{{ featured.wordsToLearnLabel }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="featured-cover reading-cover min-h-0 w-full overflow-hidden">
+            @if (coverUrl(reading.coverKey); as url) {
+              @if (!failedCoverIds().has(reading.readingId)) {
+                <img [src]="url" [alt]="'Portada de ' + reading.title" width="1672" height="941" loading="lazy" class="h-full w-full object-cover" (error)="markCoverFailed(reading.readingId)" />
+              } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
+            } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
+          </div>
+          <p class="featured-cta text-[14px] font-semibold">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+        </a>
+      </section>
+    }
+
+    @if (continueReadingLoading() || continueReadingError() || continueReadingCards().length > 0) {
+      <section class="mb-8" aria-labelledby="continue-reading-heading">
+      <h2 id="continue-reading-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">Continuar leyendo</h2>
+        @if (continueReadingLoading()) {
+          <p class="mt-5 text-[14px] text-[#8d9299]">Cargando lecturas en progreso...</p>
+        } @else if (continueReadingError()) {
+          <p class="mt-5 text-[14px] text-red-300">{{ continueReadingError() }}</p>
+        } @else {
+        <div class="rail-shell mt-5">
+          @if (continueReadingHasOverflow() && !continueReadingAtStart()) {
+            <button type="button" aria-label="Ver lecturas en progreso anteriores" (click)="scrollContinueReading('previous')" class="rail-arrow rail-arrow-previous">‹</button>
+          }
+          <div #continueReadingCarousel class="continue-reading-carousel" role="region" aria-label="Lecturas en progreso" tabindex="0" (scroll)="onContinueReadingScroll($event)" (focus)="syncContinueReadingPosition()">
+            @for (card of continueReadingCards(); track card.readingId) {
+              <a [routerLink]="['/reading', card.readingId]" class="continue-reading-card app-card flex flex-col overflow-hidden rounded-xl transition hover:border-[var(--app-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
+                <div class="continue-reading-cover reading-cover aspect-video w-full overflow-hidden">
+                  @if (card.origin === 'PLATFORM') {
+                    @if (coverUrl(card.coverKey); as url) {
+                      @if (!failedCoverIds().has(card.readingId)) {
+                        <img [src]="url" [alt]="'Portada de ' + card.title" width="1672" height="941" loading="lazy" class="h-full w-full object-cover" (error)="markCoverFailed(card.readingId)" />
+                      } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
+                    } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
+                  } @else {
+                    <div class="continue-user-visual" aria-hidden="true"><span>Texto</span><strong>Aa</strong></div>
+                  }
+                </div>
+                <div class="continue-reading-body flex flex-1 flex-col p-4">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#7cc0f5]">{{ card.context }}</p>
+                  <h3 class="continue-reading-title mt-3 font-serif text-[21px] leading-tight">{{ card.title }}</h3>
+                  <p class="mt-auto pt-4 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p>
+                  <p class="mt-2 text-[14px] font-semibold">Continuar →</p>
+                </div>
+              </a>
+            }
+          </div>
+          @if (continueReadingHasOverflow() && !continueReadingAtEnd()) {
+            <button type="button" aria-label="Ver lecturas en progreso siguientes" (click)="scrollContinueReading('next')" class="rail-arrow rail-arrow-next">›</button>
           }
         </div>
+        }
       </section>
     }
 
     <section aria-labelledby="recommendations-heading">
-      <h2 id="recommendations-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#6f747a]">
-        Recomendadas para ti
-      </h2>
+      <h2 id="recommendations-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">Más recomendaciones para ti</h2>
 
       <div class="mt-6" aria-live="polite">
         @if (recommendationsLoading()) {
@@ -39,77 +94,132 @@
             <p class="text-red-300">{{ recommendationsError() }}</p>
             <button type="button" (click)="loadRecommendations()" class="mt-4 font-semibold hover:text-[#7cc0f5]">Reintentar</button>
           </div>
-        } @else if (recommendationCards().length === 0) {
+        } @else if (recommendations().length === 0) {
           <p class="py-8 text-[#8d9299]">No hay recomendaciones disponibles en este momento.</p>
+        } @else if (recommendationCards().length === 0) {
+          <p class="py-4 text-[#8d9299]">No hay más recomendaciones disponibles en este momento.</p>
         } @else {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rail-shell">
+            @if (recommendationsHasOverflow() && !recommendationsAtStart()) {
+              <button type="button" aria-label="Ver recomendaciones anteriores" (click)="scrollRecommendations('previous')" class="rail-arrow rail-arrow-previous">‹</button>
+            }
+          <div #recommendationsCarousel class="recommendations-carousel" role="region" aria-label="Recomendaciones para ti" tabindex="0" (scroll)="onRecommendationsScroll($event)">
             @for (card of recommendationCards(); track card.reading.readingId) {
               @let reading = card.reading;
-              <a [routerLink]="['/reading', reading.readingId]" class="app-card flex min-h-64 flex-col rounded-2xl bg-[#1b2025] p-5 transition hover:-translate-y-0.5 hover:bg-[#20262c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
-                <div class="flex items-center justify-between gap-3 text-[12px] font-bold uppercase tracking-[0.12em]">
+              <a [routerLink]="['/reading', reading.readingId]" class="recommendation-card app-card flex flex-col overflow-hidden rounded-xl bg-[var(--app-surface)] transition hover:bg-[var(--app-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]">
+                <div class="reading-cover aspect-video w-full overflow-hidden">
+                  @if (coverUrl(reading.coverKey); as url) {
+                    @if (!failedCoverIds().has(reading.readingId)) {
+                      <img [src]="url" [alt]="'Portada de ' + reading.title" width="1672" height="941" loading="lazy" class="h-full w-full object-cover" (error)="markCoverFailed(reading.readingId)" />
+                    } @else {
+                      <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+                    }
+                  } @else {
+                    <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+                  }
+                </div>
+                <div class="recommendation-card-body flex flex-1 flex-col p-4">
+                <div class="flex items-center justify-between gap-3 text-[12px] font-semibold uppercase tracking-[0.08em]">
                   <span class="text-[#7cc0f5]">{{ reading.editorialLevel }}</span>
                   <span class="truncate text-[#747a80]">{{ reading.category }}</span>
                 </div>
-                <h3 class="mt-6 font-serif text-[24px] font-normal leading-tight">{{ reading.title }}</h3>
-                @if (reading.progressStatus === 'COMPLETED') { <p class="mt-4 text-[13px] font-semibold text-[#6fce9a]">✓ Leída</p> }
-                @else if (reading.progressStatus === 'IN_PROGRESS') { <p class="mt-4 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p> }
-                <div class="mt-auto pt-8">
-                  <p class="text-[20px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
-                  <div class="mt-4 space-y-1 text-[13px] leading-5 text-[#747a80]">
+                <h3 class="mt-4 font-serif text-[22px] font-normal leading-tight">{{ reading.title }}</h3>
+                @if (reading.progressStatus === 'COMPLETED') { <p class="mt-2 text-[13px] font-semibold text-[#6fce9a]">✓ Leída</p> }
+                @else if (reading.progressStatus === 'IN_PROGRESS') { <p class="mt-2 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p> }
+                <div class="mt-auto pt-4">
+                  <p class="text-[18px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                  <p class="mt-3 text-[13px] font-semibold text-[#8d9299]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                </div>
+                <div class="recommendation-metrics-reveal">
+                  <p class="text-[18px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                  <div class="mt-3 space-y-1 text-[13px] leading-5">
                     <p>{{ card.knownLabel }}</p>
                     <p>{{ card.learningLabel }}</p>
                     <p>{{ card.wordsToLearnLabel }}</p>
                   </div>
-                  <p class="mt-5 text-[13px] font-semibold text-[#8d9299]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                  <p class="mt-4 text-[13px] font-semibold">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                </div>
                 </div>
               </a>
+            }
+            @if (recommendationsLoadMoreLoading()) {
+              <div class="carousel-status" aria-live="polite">Cargando más lecturas...</div>
+            } @else if (recommendationsLoadMoreError()) {
+              <div class="carousel-status" aria-live="polite">
+                <p class="text-[14px] text-red-300">{{ recommendationsLoadMoreError() }}</p>
+                <button type="button" (click)="loadMoreRecommendations()" class="mt-4 min-h-11 rounded-xl border border-[#343a40] px-5 py-2 font-semibold transition hover:border-[#7cc0f5] hover:text-[#7cc0f5]">Reintentar</button>
+              </div>
+            } @else if (!recommendationsHasMore()) {
+              <div class="carousel-end" aria-label="Fin de las recomendaciones">Fin</div>
+            }
+          </div>
+            @if (recommendationsHasOverflow() && (!recommendationsAtEnd() || recommendationsHasMore())) {
+              <button type="button" aria-label="Ver recomendaciones siguientes" (click)="scrollRecommendations('next')" class="rail-arrow rail-arrow-next">›</button>
             }
           </div>
         }
       </div>
     </section>
 
-    <section class="mt-16 border-t border-[#2a2f34] pt-12" aria-labelledby="my-readings-heading">
-      <div class="flex flex-wrap items-baseline justify-between gap-4">
-        <h2 id="my-readings-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[#6f747a]">Mis lecturas</h2>
-        <a routerLink="/library" class="text-[15px] font-semibold transition hover:text-[#7cc0f5]">Ver mi biblioteca →</a>
-      </div>
-
-      <div class="mt-6" aria-live="polite">
-        @if (userReadingsLoading()) {
-          <p class="text-[#8d9299]">Cargando tus lecturas...</p>
-        } @else if (userReadingsError()) {
-          <div>
-            <p class="text-red-300">{{ userReadingsError() }}</p>
-            <button type="button" (click)="loadUserReadings()" class="mt-4 font-semibold hover:text-[#7cc0f5]">Reintentar</button>
-          </div>
-        } @else if (userReadings().length === 0) {
-          <div class="py-8">
-            <p class="text-[#8d9299]">Aún no has añadido lecturas.</p>
-            <a routerLink="/library/new" class="mt-4 inline-flex font-semibold text-[#7cc0f5]">Añadir mi primera lectura →</a>
-          </div>
-        } @else {
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @for (card of userReadingCards(); track card.reading.readingId) {
+    @if (collectionsLoading()) {
+      <p class="mt-10 border-t border-[#2a2f34] pt-8 text-[14px] text-[#8d9299]">Cargando colecciones...</p>
+    }
+    @for (collection of collections(); track collection.key) {
+      <section class="collection-section mt-10 border-t border-[var(--app-border)] pt-8" [attr.aria-label]="'Colección ' + collection.displayName">
+        <h2 class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">{{ collection.displayName }}</h2>
+        <p class="mt-2 max-w-[70ch] text-[14px] leading-6 text-[var(--app-muted)]">{{ collection.description }}</p>
+        <div class="rail-shell mt-5">
+          @if (collectionState(collection.key).hasOverflow && !collectionState(collection.key).atStart) {
+            <button type="button" [attr.aria-label]="'Ver anteriores lecturas de ' + collection.displayName" (click)="scrollCollection(collection.key, collectionRail, 'previous')" class="rail-arrow rail-arrow-previous">‹</button>
+          }
+          <div #collectionRail class="collection-carousel" role="region" [attr.data-category]="collection.key" [attr.aria-label]="'Lecturas de ' + collection.displayName" tabindex="0" (scroll)="onCollectionScroll(collection.key, $event)" (focus)="onCollectionScroll(collection.key, $event)">
+            @for (card of collectionCards(collection.key); track card.reading.readingId) {
               @let reading = card.reading;
-              <a [routerLink]="['/reading', reading.readingId]" class="app-card flex min-h-64 flex-col rounded-2xl bg-[#1b2025] p-5 transition hover:-translate-y-0.5 hover:bg-[#20262c] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7cc0f5]">
-                <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-[#7cc0f5]">{{ reading.language }}</p>
-                <h3 class="mt-4 font-serif text-[24px] leading-tight">{{ reading.title }}</h3>
-                @if (reading.progressStatus === 'COMPLETED') { <p class="mt-4 text-[13px] font-semibold text-[#6fce9a]">✓ Leída</p> }
-                @else if (reading.progressStatus === 'IN_PROGRESS') { <p class="mt-4 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p> }
-                <div class="mt-auto pt-7">
-                  <p class="text-[20px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
-                  <div class="mt-4 space-y-1 text-[13px] leading-5 text-[#747a80]">
-                    <p>{{ card.knownLabel }}</p><p>{{ card.learningLabel }}</p><p>{{ card.wordsToLearnLabel }}</p>
+              <a [routerLink]="['/reading', reading.readingId]" class="recommendation-card collection-card app-card flex flex-col overflow-hidden rounded-xl bg-[var(--app-surface)] transition hover:bg-[var(--app-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]">
+                <div class="reading-cover aspect-video w-full overflow-hidden">
+                  @if (coverUrl(reading.coverKey); as url) {
+                    @if (!failedCoverIds().has(reading.readingId)) {
+                      <img [src]="url" [alt]="'Portada de ' + reading.title" width="1672" height="941" loading="lazy" class="h-full w-full object-cover" (error)="markCoverFailed(reading.readingId)" />
+                    } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
+                  } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
+                </div>
+                <div class="recommendation-card-body flex flex-1 flex-col p-4">
+                  <div class="flex items-center justify-between gap-3 text-[12px] font-semibold uppercase tracking-[0.08em]">
+                    <span class="text-[#7cc0f5]">{{ reading.editorialLevel }}</span>
+                    <span class="truncate text-[#747a80]">{{ reading.category }}</span>
                   </div>
-                  @if (reading.createdAt) { <p class="mt-5 text-[13px] text-[#747a80]">Añadida {{ reading.createdAt | date:'mediumDate' }}</p> }
-                  <p class="mt-4 text-[13px] font-semibold text-[#8d9299]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                  <h3 class="reading-card-title mt-4 font-serif text-[22px] font-normal leading-tight">{{ reading.title }}</h3>
+                  @if (reading.progressStatus === 'COMPLETED') { <p class="mt-2 text-[13px] font-semibold text-[#6fce9a]">✓ Leída</p> }
+                  @else if (reading.progressStatus === 'IN_PROGRESS') { <p class="mt-2 text-[13px] font-semibold text-[#7cc0f5]">En progreso</p> }
+                  <div class="collection-card-summary mt-auto pt-4">
+                    <p class="text-[18px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                    <p class="mt-3 text-[13px] font-semibold text-[#8d9299]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                  </div>
+                  <div class="recommendation-metrics-reveal collection-details-reveal">
+                    <p class="text-[18px] font-semibold text-[#6fce9a]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                    <div class="mt-3 space-y-1 text-[13px] leading-5">
+                      <p>{{ card.knownLabel }}</p>
+                      <p>{{ card.learningLabel }}</p>
+                      <p>{{ card.wordsToLearnLabel }}</p>
+                    </div>
+                    <p class="mt-4 text-[13px] font-semibold">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                  </div>
                 </div>
               </a>
             }
+            @if (collectionContent(collection.key).loading) {
+              <div class="carousel-status" aria-live="polite">Cargando lecturas...</div>
+            } @else if (collectionContent(collection.key).error) {
+              <div class="carousel-status" aria-live="polite"><p class="text-red-300">{{ collectionContent(collection.key).error }}</p><button type="button" (click)="retryCollection(collection.key)" class="mt-4 font-semibold">Reintentar</button></div>
+            } @else if (collectionContent(collection.key).readings.length === 0) {
+              <p class="py-6 text-[14px] text-[#8d9299]">Esta colección todavía no tiene lecturas.</p>
+            }
           </div>
-        }
-      </div>
-    </section>
+          @if ((collectionState(collection.key).hasOverflow && !collectionState(collection.key).atEnd) || collectionContent(collection.key).hasMore) {
+            <button type="button" [attr.aria-label]="'Ver siguientes lecturas de ' + collection.displayName" (click)="scrollCollection(collection.key, collectionRail, 'next')" class="rail-arrow rail-arrow-next">›</button>
+          }
+        </div>
+      </section>
+    }
   </main>
 </div>

@@ -38,6 +38,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/reader/pages/reader/reader').then((m) => m.Reader),
       },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./features/profile/pages/profile/profile').then((m) => m.Profile),
+      },
     ],
   },
   {

@@ -1,0 +1,3 @@
+.profile-input { min-height: 3rem; width: 100%; border: 1px solid var(--app-border); border-radius: .75rem; background: var(--app-bg); padding: .7rem .9rem; color: var(--app-text); outline: none; }
+.profile-input:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 18%, transparent); }
+.profile-readonly { color: var(--app-text-secondary); cursor: default; }

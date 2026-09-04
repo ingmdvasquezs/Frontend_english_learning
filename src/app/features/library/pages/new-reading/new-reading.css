@@ -1,1 +1,15 @@
-
+:host { display: block; }
+.reading-form-card { border: 1px solid var(--app-border); background: var(--app-surface); }
+.content-type-label { display: inline-flex; border: 1px solid color-mix(in srgb, var(--app-accent) 30%, var(--app-border)); border-radius: 999px; padding: .32rem .6rem; color: var(--app-accent); background: color-mix(in srgb, var(--app-accent-soft) 48%, transparent); font-size: .7rem; font-weight: 750; letter-spacing: .15em; }
+.reading-field { border: 1px solid var(--app-border); background: var(--app-bg); color: var(--app-text); }
+.reading-field::placeholder { color: var(--app-muted); opacity: .82; }
+.reading-field:hover { border-color: color-mix(in srgb, var(--app-accent) 42%, var(--app-border)); }
+.reading-field:focus { border-color: var(--app-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent) 18%, transparent); }
+.reading-textarea { min-height: 17rem; max-width: 100%; }
+.form-actions { border-color: var(--app-border); }
+.primary-action { border: 1px solid var(--app-accent); background: var(--app-accent); color: var(--app-surface-elevated); }
+.primary-action:hover:not(:disabled) { filter: brightness(1.08); }
+.primary-action:focus-visible, .secondary-action:focus-visible { outline-color: var(--app-accent); }
+.secondary-action { border: 1px solid var(--app-border); color: var(--app-text-secondary); }
+.secondary-action:hover { border-color: var(--app-accent); color: var(--app-accent); }
+@media (max-width: 639px) { .reading-textarea { min-height: 14rem; } .primary-action, .secondary-action { width: 100%; } }

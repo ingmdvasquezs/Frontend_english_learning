@@ -1,10 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { LibraryService } from '../../services/library';
 
 @Component({
   selector: 'app-new-reading',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './new-reading.html',
   styleUrl: './new-reading.css',
 })

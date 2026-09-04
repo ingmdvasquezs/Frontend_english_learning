@@ -10,6 +10,7 @@ describe('application routes', () => {
     expect(shell?.children?.some((route) => route.path === 'home')).toBe(true);
     expect(library?.children?.some((route) => route.path === 'new')).toBe(true);
     expect(shell?.children?.some((route) => route.path === 'reading/:readingId')).toBe(true);
+    expect(shell?.children?.some((route) => route.path === 'profile')).toBe(true);
     expect(['login', 'register', 'onboarding'].every((path) => routes.some((route) => route.path === path))).toBe(true);
   });
 });

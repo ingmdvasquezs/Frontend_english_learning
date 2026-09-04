@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { LibraryService } from '../../services/library';
 import { NewReading } from './new-reading';
 
@@ -50,6 +50,38 @@ describe('NewReading', () => {
       'en'
     );
     expect(router.navigateByUrl).toHaveBeenCalledWith('/library');
+  });
+
+  it('renders the title, textarea, character counter and cancel navigation', () => {
+    fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).toContain('Añadir a mi biblioteca');
+    expect(root.querySelector('input#title')).toBeTruthy();
+    expect(root.querySelector('textarea#content')).toBeTruthy();
+    expect(root.textContent).toContain('0 caracteres');
+    expect(root.querySelector('a[href="/library"]')?.textContent).toContain('Cancelar');
+
+    component.content.set('English');
+    fixture.detectChanges();
+    expect(root.textContent).toContain('7 caracteres');
+  });
+
+  it('disables invalid submissions and prevents a second submit while saving', () => {
+    const pending = new Subject<string>();
+    service.registerReading.mockReturnValue(pending.asObservable());
+    fixture.detectChanges();
+    const button = fixture.nativeElement.querySelector('.primary-action') as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+
+    component.title.set('My reading');
+    component.content.set('English content');
+    fixture.detectChanges();
+    button.click();
+    fixture.detectChanges();
+    expect(button.textContent).toContain('Guardando');
+    expect(button.disabled).toBe(true);
+    component.createReading();
+    expect(service.registerReading).toHaveBeenCalledOnce();
   });
 
   it('keeps the form visible when registration fails', () => {

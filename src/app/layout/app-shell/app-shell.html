@@ -25,9 +25,6 @@
       <a routerLink="/library" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeDrawer()">
         <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v16H4zM14 4h6v16h-6z"/></svg><span>Mi biblioteca</span>
       </a>
-      <a routerLink="/library/new" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeDrawer()">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Nueva lectura</span>
-      </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -39,10 +36,13 @@
         }
       </button>
       <button type="button" class="sidebar-action" aria-label="Abrir menú de usuario" [attr.aria-expanded]="userMenuOpen()" (click)="userMenuOpen.set(!userMenuOpen())">
-        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Usuario</span>
+        <span class="profile-avatar" aria-hidden="true">{{ profileInitials() }}</span><span class="profile-copy"><strong>{{ profileLabel() }}</strong><small>Aprendiendo inglés</small></span>
       </button>
       @if (userMenuOpen()) {
-        <div class="user-menu"><button type="button" (click)="logout()">Cerrar sesión</button></div>
+        <div class="user-menu">
+          <a routerLink="/profile" (click)="userMenuOpen.set(false); closeDrawer()">Mi perfil</a>
+          <button type="button" (click)="logout()">Cerrar sesión</button>
+        </div>
       }
     </div>
   </aside>
