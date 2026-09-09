@@ -24,21 +24,7 @@
       <div class="h-px bg-[#2a2f34]"></div>
 
       <article class="py-11 font-serif text-[22px] leading-[1.85] whitespace-pre-wrap md:text-[24px]" aria-label="Contenido de la lectura">
-        @for (token of data.tokens; track $index) {
-          @if (token.type === 'WORD') {
-            <button
-              type="button"
-              (click)="selectWord(token, $event)"
-              class="rounded-[4px] px-0.5 py-0 font-inherit text-inherit transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
-              [class.bg-[#29445a]]="token.status === null || token.status === 'NEW'"
-              [class.bg-[#4a3a22]]="token.status === 'LEARNING'"
-              [class.text-[#70757b]]="token.status === 'IGNORED'"
-              [attr.aria-label]="'Cambiar estado de ' + token.value"
-            >{{ token.value }}</button>
-          } @else {
-            <span>{{ token.value }}</span>
-          }
-        }
+        <app-reader-token-stream [tokens]="data.tokens" (wordSelected)="selectWordFromStream($event)" />
       </article>
 
       <div class="h-px bg-[var(--app-border)]"></div>
@@ -65,102 +51,15 @@
 
       @if (selectedToken(); as token) {
         @if (popoverPosition(); as position) {
-          <aside
-            class="reader-popover fixed z-50 max-h-[calc(100dvh-2rem)] w-[340px] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl bg-[var(--app-surface-elevated)] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.48)] backdrop-blur-xl"
-            [style.left.px]="position.x"
-            [style.top.px]="position.y"
-            [style.transform]="position.openAbove ? 'translate(-50%, -100%)' : 'translateX(-50%)'"
-            (click)="$event.stopPropagation()"
-            aria-label="Información y estado de palabra"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <h2 class="font-serif text-[27px] leading-tight">{{ dictionaryWord()?.word || token.value }}</h2>
-                @if (dictionaryWord()?.phonetic; as phonetic) {
-                  <p class="mt-1 text-[13px] text-[#747a80]">{{ phonetic }}</p>
-                }
-              </div>
-              <div class="flex shrink-0 items-center gap-1">
-                @if (dictionaryWord()?.audioUrl; as audioUrl) {
-                  <button type="button" (click)="playAudio(audioUrl); $event.stopPropagation()" aria-label="Escuchar pronunciación" class="h-8 w-8 rounded-full text-[#8d9299] hover:bg-white/5 hover:text-[#7cc0f5]">🔊</button>
-                }
-                <button type="button" (click)="closeSelector()" [disabled]="savingStatus()" aria-label="Cerrar popover" class="h-8 w-8 rounded-full text-xl text-[#8d9299] hover:bg-white/5">×</button>
-              </div>
-            </div>
-
-            @if (audioError()) {
-              <p class="mt-2 text-[13px] text-[var(--app-learning)]">{{ audioError() }}</p>
-            }
-
-            @if (dictionaryWord()?.translation; as translation) {
-              <p class="mt-4 font-serif text-[21px]">{{ translation }}</p>
-            }
-
-            <div class="mt-5 border-t border-white/[0.07] pt-4">
-              <p class="mb-2 text-[12px] font-bold uppercase tracking-[0.12em] text-[#747a80]">Estado</p>
-              <div class="grid grid-cols-2 gap-2">
-                @for (status of vocabularyStatuses; track status) {
-                  <button
-                    type="button"
-                    (click)="saveStatus(status)"
-                    [disabled]="savingStatus()"
-                    [attr.aria-pressed]="selectedExplicitStatus() === status"
-                    class="rounded-lg px-3 py-2 text-left text-[14px] transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
-                    [class.bg-white/10]="selectedExplicitStatus() === status"
-                    [class.text-[#7cc0f5]]="status === 'NEW'"
-                    [class.text-[#e8ab5c]]="status === 'LEARNING'"
-                    [class.text-[#6fce9a]]="status === 'KNOWN'"
-                    [class.text-[#8d9299]]="status === 'IGNORED'"
-                  >{{ status }}</button>
-                }
-              </div>
-            </div>
-
-            @if (savingStatus()) {
-              <p class="mt-3 text-[13px] text-[#8d9299]">Guardando...</p>
-            }
-            @if (statusError()) {
-              <p class="mt-3 text-[13px] text-red-300">{{ statusError() }}</p>
-            }
-
-            @if (lookupLoading()) {
-              <p class="mt-4 text-[13px] text-[#8d9299]">Buscando definición...</p>
-            } @else if (lookupUnavailable()) {
-              <p class="mt-4 text-[13px] text-[#8d9299]">Definición no disponible.</p>
-            } @else if (dictionaryWord(); as word) {
-              @if (word.meanings.length > 0) {
-                <button
-                  type="button"
-                  (click)="toggleDefinitions($event)"
-                  [attr.aria-expanded]="definitionsOpen()"
-                  class="mt-4 flex w-full items-center justify-between border-t border-white/[0.07] pt-4 text-left text-[14px] text-[#8d9299] hover:text-[#e9e2d3]"
-                >
-                  {{ definitionsOpen() ? 'Ocultar definiciones' : 'Ver definiciones' }}
-                  <span aria-hidden="true">{{ definitionsOpen() ? '↑' : '↓' }}</span>
-                </button>
-
-                @if (definitionsOpen()) {
-                  <div class="mt-4 max-h-60 space-y-5 overflow-y-auto pr-1">
-                    @for (meaning of word.meanings; track $index) {
-                      <section>
-                        <p class="text-[12px] font-bold uppercase tracking-[0.12em] text-[var(--app-learning)]">{{ meaning.partOfSpeech }}</p>
-                        <div class="mt-2 space-y-3">
-                          @for (definition of meaning.definitions; track $index) {
-                            <div>
-                              <p class="text-[14px] leading-6 text-[#a0a5aa]">{{ definition.definition }}</p>
-                              @if (definition.example) {
-                                <p class="mt-1 font-serif text-[14px] italic leading-6 text-[#74797f]">“{{ definition.example }}”</p>
-                              }
-                            </div>
-                          }
-                        </div>
-                      </section>
-                    }
-                  </div>
-                }
-              }
-            }
-          </aside>
+          <app-reader-word-popover
+            [token]="token" [position]="position" [word]="dictionaryWord()"
+            [lookupLoading]="lookupLoading()" [lookupUnavailable]="lookupUnavailable()"
+            [savingStatus]="savingStatus()" [statusError]="statusError()"
+            [audioError]="audioError()" [definitionsOpen]="definitionsOpen()"
+            [selectedStatus]="selectedExplicitStatus()" [statuses]="vocabularyStatuses"
+            (closed)="closeSelector()" (audioPlayed)="playAudio($event)"
+            (definitionsToggled)="toggleDefinitions($event)" (statusSelected)="saveStatus($event)"
+          />
         }
       }
     }

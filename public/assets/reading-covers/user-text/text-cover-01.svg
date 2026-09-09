@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
+  <title id="title">Cubierta editorial con un libro abierto</title>
+  <rect width="1200" height="675" fill="#e8e1d5"/>
+  <path d="M118 104h964M118 571h964" stroke="#b7ab9a" stroke-width="2"/>
+  <path d="M322 213c115-32 211-11 278 48v249c-73-53-166-71-278-43V213Zm556 0c-115-32-211-11-278 48v249c73-53 166-71 278-43V213Z" fill="#f6f1e8" stroke="#536b7c" stroke-width="7"/>
+  <path d="M600 261v249M369 286c70-12 129 0 177 33M369 339c70-12 129 0 177 33M831 286c-70-12-129 0-177 33M831 339c-70-12-129 0-177 33" fill="none" stroke="#9a8c78" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="986" cy="154" r="29" fill="#718a75" opacity=".75"/>
+</svg>

@@ -1,8 +1,10 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { catchError, map, throwError } from 'rxjs';
 import { Auth } from '../../auth/services/auth';
 import {
   RegisteredReading,
+  DeleteReadingResponse,
   UserReading,
   UserReadingsPage,
 } from '../models/library.models';
@@ -61,6 +63,36 @@ export class LibraryService {
     });
   }
 
+  deleteReading(readingId: string) {
+    const token = this.requireToken();
+    const body = `
+      <soapenv:Envelope
+          xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+          xmlns:read="${this.namespace}">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <read:deleteReadingRequest>
+            <read:readingId>${this.escapeXml(readingId)}</read:readingId>
+          </read:deleteReadingRequest>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
+
+    return this.http.post(this.soapUrl, body, {
+      headers: this.authenticatedHeaders(token),
+      responseType: 'text',
+    }).pipe(
+      map((response) => this.parseDeleteReadingResponse(response)),
+      catchError((error: unknown) => {
+        if (error instanceof ReadingNotFoundSoapError) return throwError(() => error);
+        if (error instanceof HttpErrorResponse && typeof error.error === 'string' && this.isReadingNotFoundFault(error.error)) {
+          return throwError(() => new ReadingNotFoundSoapError());
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+
   parseUserReadings(responseXml: string): UserReadingsPage {
     const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
     const readingElements = Array.from(
@@ -101,6 +133,16 @@ export class LibraryService {
     };
   }
 
+  parseDeleteReadingResponse(responseXml: string): DeleteReadingResponse {
+    if (this.isReadingNotFoundFault(responseXml)) throw new ReadingNotFoundSoapError();
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    const success = this.getRequiredValue(xml, 'success').trim();
+    if (success !== 'true' && success !== 'false') {
+      throw new Error('Invalid SOAP response: invalid success');
+    }
+    return { success: success === 'true' };
+  }
+
   private getRequiredValue(parent: Element | Document, name: string): string {
     const value = this.getOptionalValue(parent, name);
     if (value === null) {
@@ -125,6 +167,15 @@ export class LibraryService {
     return Number.isFinite(count) && count >= 0 ? count : 0;
   }
 
+  private isReadingNotFoundFault(responseXml: string): boolean {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    const fault = xml.getElementsByTagNameNS('http://schemas.xmlsoap.org/soap/envelope/', 'Fault')[0];
+    if (!fault) return false;
+    const faultString = Array.from(fault.getElementsByTagName('*'))
+      .find((element) => element.localName === 'faultstring')?.textContent?.trim();
+    return faultString === 'Reading not found';
+  }
+
   private requireToken(): string {
     const token = this.auth.accessToken();
     if (!token) {
@@ -147,5 +198,14 @@ export class LibraryService {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&apos;');
+  }
+}
+
+export class ReadingNotFoundSoapError extends Error {
+  readonly code = 'READING_NOT_FOUND';
+
+  constructor() {
+    super('Reading not found');
+    this.name = 'ReadingNotFoundSoapError';
   }
 }

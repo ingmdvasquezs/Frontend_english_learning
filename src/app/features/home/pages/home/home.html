@@ -63,7 +63,11 @@
                       } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
                     } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
                   } @else {
-                    <div class="continue-user-visual" aria-hidden="true"><span>Texto</span><strong>Aa</strong></div>
+                    @if (!failedCoverIds().has(card.readingId)) {
+                      <img [src]="userTextCoverUrl(card.readingId)" [alt]="'Portada predeterminada de ' + card.title" width="1200" height="675" loading="lazy" class="h-full w-full object-cover" (error)="markCoverFailed(card.readingId)" />
+                    } @else {
+                      <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+                    }
                   }
                 </div>
                 <div class="continue-reading-body flex flex-1 flex-col p-4">

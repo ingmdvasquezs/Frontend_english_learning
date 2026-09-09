@@ -21,6 +21,10 @@ export interface UserReadingsPage {
   readings: UserReading[];
 }
 
+export interface DeleteReadingResponse {
+  success: boolean;
+}
+
 export interface RegisteredReading {
   readingId: string;
   title: string;

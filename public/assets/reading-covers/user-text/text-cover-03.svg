@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
+  <title id="title">Cubierta editorial con una mesa de lectura y una planta</title>
+  <rect width="1200" height="675" fill="#e7ddd0"/>
+  <path d="M112 520h976" stroke="#6d7880" stroke-width="7"/>
+  <path d="M290 447h438v73H290zM337 385h438v62H337z" fill="#f7f0e5" stroke="#596f7e" stroke-width="6"/>
+  <path d="M349 480h320M398 416h316" stroke="#987e67" stroke-width="5" stroke-linecap="round"/>
+  <path d="M872 518c-7-111 15-210 72-295M906 334c-81-3-128-38-143-105 81 5 128 40 143 105ZM923 288c1-75 37-128 109-158 1 78-35 130-109 158Z" fill="none" stroke="#6f8a72" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M825 455h137l-17 65H842z" fill="#c99572" stroke="#596f7e" stroke-width="6"/>
+</svg>

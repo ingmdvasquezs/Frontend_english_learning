@@ -1,1 +1,8 @@
-
+:host { display:block; }
+.reader-page { padding-top:clamp(2rem,6vw,5rem) !important; }
+.reader-page main { max-width:46rem !important; }
+.reader-page header { padding-top:0 !important; padding-bottom:2.5rem !important; border-bottom:1px solid var(--app-border); }
+.reader-page article { padding-block:3.5rem !important; font-size:clamp(1.25rem,1.5vw,1.45rem) !important; line-height:1.9 !important; letter-spacing:.003em; }
+.reader-page article button { text-decoration-skip-ink:auto; }
+.reader-page main>section { border-top:1px solid var(--app-border); }
+@media (max-width:639px) { .reader-page { padding-top:1.5rem !important; } .reader-page header { padding-bottom:1.75rem !important; } .reader-page article { padding-block:2.5rem !important; font-size:1.2rem !important; line-height:1.82 !important; } }

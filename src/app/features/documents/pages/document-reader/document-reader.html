@@ -1,0 +1,39 @@
+<div #readerTop class="document-reader-top app-page reader-page min-h-screen px-5 py-8 text-[var(--app-text)] md:px-8 md:py-12" (click)="closeSelector()">
+  <main class="mx-auto max-w-[880px]">
+    @if (loading()) { <p class="py-20 text-[16px] text-[var(--app-muted)]">Cargando libro...</p> }
+    @else if (error()) { <section class="py-20"><h1 class="font-serif text-[32px]">{{ error() }}</h1><a routerLink="/library" class="mt-6 inline-block font-semibold text-[var(--app-accent)]">Volver a Mi biblioteca</a></section> }
+    @else if (unit(); as current) {
+      <header class="pt-12 pb-9">
+        <p class="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--app-accent)]">{{ document()?.language }} · Reading</p>
+        <h1 class="mt-4 font-serif text-[36px] font-normal leading-tight md:text-[52px]">{{ document()?.title }}</h1>
+        @if (progress()?.status === 'IN_PROGRESS') { <p class="mt-4 text-[13px] font-semibold text-[var(--app-accent)]">En progreso</p> }
+        @else if (progress()?.status === 'COMPLETED') { <p class="mt-4 text-[13px] font-semibold text-[var(--app-success)]">✓ Lectura terminada</p> }
+      </header>
+      @if (current.sectionTitle) { <h2 class="document-section-title font-serif">{{ current.sectionTitle }}</h2> }
+      <article class="py-11 font-serif text-[22px] leading-[1.85] whitespace-pre-wrap md:text-[24px]" aria-label="Contenido del libro">
+        <app-reader-token-stream [tokens]="current.tokens" (wordSelected)="selectWordFromStream($event)" />
+      </article>
+      <nav class="document-navigation" aria-label="Navegación del libro">
+        <button type="button" (click)="navigateTo(current.previousUnitId)" [disabled]="!current.previousUnitId || loadingUnit()">← Anterior</button>
+        <span aria-live="polite">{{ current.globalOrdinal }} de {{ current.totalUnits }}</span>
+        @if (current.nextUnitId) { <button type="button" (click)="navigateTo(current.nextUnitId)" [disabled]="loadingUnit()">Siguiente →</button> }
+        @else { <button type="button" class="finish-action" (click)="finish()" [disabled]="savingProgress() || progress()?.status === 'COMPLETED'">{{ progress()?.status === 'COMPLETED' ? 'Lectura finalizada' : 'Finalizar lectura' }}</button> }
+      </nav>
+      @if (loadingUnit()) { <p class="mt-3 text-center text-[13px] text-[var(--app-muted)]">Cargando unidad…</p> }
+      @if (progressError()) { <p class="mt-3 text-center text-[13px] text-[var(--app-danger)]">{{ progressError() }}</p> }
+      @if (selectedToken(); as token) {
+        @if (popoverPosition(); as position) {
+          <app-reader-word-popover
+            [token]="token" [position]="position" [word]="dictionaryWord()"
+            [lookupLoading]="lookupLoading()" [lookupUnavailable]="lookupUnavailable()"
+            [savingStatus]="savingStatus()" [statusError]="statusError()"
+            [audioError]="audioError()" [definitionsOpen]="definitionsOpen()"
+            [selectedStatus]="selectedExplicitStatus()" [statuses]="vocabularyStatuses"
+            (closed)="closeSelector()" (audioPlayed)="playAudio($event)"
+            (definitionsToggled)="toggleDefinitions($event)" (statusSelected)="saveStatus($event)"
+          />
+        }
+      }
+    }
+  </main>
+</div>

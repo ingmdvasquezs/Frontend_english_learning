@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/utils/reading-metrics';
 import { coverUrl } from '../../utils/cover-url';
 import { ProfileService } from '../../../profile/services/profile';
+import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
 
 export { calculateKnownPercentage, calculateWordsToLearn, wordCountLabel };
 
@@ -76,6 +77,7 @@ export class Home implements OnInit {
   readonly continueReadingAtEnd = signal(false);
   readonly continueReadingHasOverflow = signal(false);
   readonly failedCoverIds = signal<ReadonlySet<string>>(new Set());
+  readonly userTextCoverUrl = userTextCoverUrl;
   readonly featuredRecommendationCard = computed(() => {
     const reading = this.recommendations()[0];
     return reading ? toVocabularyCard(reading) : null;

@@ -39,6 +39,11 @@ export const routes: Routes = [
           import('./features/reader/pages/reader/reader').then((m) => m.Reader),
       },
       {
+        path: 'documents/:documentId/read',
+        loadComponent: () =>
+          import('./features/documents/pages/document-reader/document-reader').then((m) => m.DocumentReader),
+      },
+      {
         path: 'profile',
         loadComponent: () =>
           import('./features/profile/pages/profile/profile').then((m) => m.Profile),

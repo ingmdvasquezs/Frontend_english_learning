@@ -1,50 +1,128 @@
 <div class="app-page min-h-screen px-5 py-8 md:px-9 md:py-10">
   <main class="mx-auto w-full max-w-[1280px]">
-    <header class="library-header flex flex-col gap-6 pb-8 sm:flex-row sm:items-end sm:justify-between">
+    <header class="library-header flex flex-col gap-6 pb-7 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 class="font-serif text-[42px] font-normal tracking-tight md:text-[50px]">Mi biblioteca</h1>
         <p class="mt-3 max-w-[58ch] text-[17px] leading-7 text-[var(--app-text-secondary)]">Tus textos y libros, en un solo lugar. Continúa leyendo cuando quieras.</p>
       </div>
-      <a routerLink="/library/new" class="library-primary-action inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl px-5 py-3 text-[15px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2">Añadir lectura</a>
+      <a routerLink="/library/new" class="library-primary-action inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl px-5 py-3 text-[15px] font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2">Añadir lectura <span aria-hidden="true">→</span></a>
     </header>
 
-    <section class="py-8" aria-live="polite">
-      @if (loading()) {
+    <section class="library-content" aria-live="polite">
+      @if (loading() || documentsLoading()) {
         <p class="text-[16px] text-[var(--app-text-secondary)]">Cargando tus lecturas...</p>
       } @else if (error()) {
         <div><p class="text-[15px] text-[var(--app-danger)]">{{ error() }}</p><button type="button" (click)="loadReadings()" class="mt-5 font-semibold text-[var(--app-text)] hover:text-[var(--app-accent)]">Reintentar</button></div>
-      } @else if (readings().length === 0) {
+      } @else if (readings().length === 0 && documents().length === 0) {
         <div class="library-empty-state rounded-2xl px-6 py-10 sm:px-9">
           <h2 class="font-serif text-[28px] font-normal">Tu biblioteca está vacía</h2>
           <p class="mt-3 max-w-xl text-[16px] leading-7 text-[var(--app-text-secondary)]">Añade un texto en inglés y empieza a convertir cada lectura en una oportunidad para ampliar tu vocabulario.</p>
           <a routerLink="/library/new" class="library-primary-action mt-7 inline-flex min-h-11 items-center rounded-xl px-5 py-3 text-[15px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">Añadir primera lectura</a>
         </div>
       } @else {
+        <div class="library-toolbar">
+          <nav class="library-filters" aria-label="Filtrar biblioteca">
+            <button type="button" [class.is-active]="activeFilter() === 'all'" [attr.aria-pressed]="activeFilter() === 'all'" (click)="setFilter('all')">Todas <span>({{ allCount() }})</span></button>
+            <button type="button" [class.is-active]="activeFilter() === 'personal'" [attr.aria-pressed]="activeFilter() === 'personal'" (click)="setFilter('personal')">Mis lecturas <span>({{ readingCount() }})</span></button>
+            <button type="button" [class.is-active]="activeFilter() === 'ebooks'" [attr.aria-pressed]="activeFilter() === 'ebooks'" (click)="setFilter('ebooks')">Libros / eBooks <span>({{ ebookCount() }})</span></button>
+            <button type="button" [class.is-active]="activeFilter() === 'pdfs'" [attr.aria-pressed]="activeFilter() === 'pdfs'" (click)="setFilter('pdfs')">PDFs <span>({{ pdfCount() }})</span></button>
+          </nav>
+          <p class="library-order">Más recientes <span aria-hidden="true">↓</span></p>
+        </div>
+
+        @if (documentsError()) { <p class="mb-5 text-[13px] text-[var(--app-danger)]">{{ documentsError() }}</p> }
+        @if (deleteError() && !deletionTarget()) { <p class="mb-5 text-[13px] text-[var(--app-danger)]" role="alert">{{ deleteError() }}</p> }
+        @if (visibleReadingCards().length > 0 || visibleDocuments().length > 0) {
         <div class="library-grid">
-          @for (card of readingCards(); track card.reading.readingId || $index) {
+          @for (card of visibleReadingCards(); track card.reading.readingId || $index) {
             @let reading = card.reading;
+            <article class="library-card-shell">
             <a [routerLink]="['/reading', reading.readingId]" class="library-card app-card flex min-w-0 flex-col overflow-hidden rounded-2xl transition focus-visible:outline-2 focus-visible:outline-offset-2">
-              <div class="library-card-visual" aria-hidden="true"><span class="library-content-type">TEXTO</span><span class="library-text-mark">Aa</span><span class="library-text-lines"></span></div>
+              <div class="library-card-visual">
+                @if (!failedCoverIds().has(reading.readingId)) {
+                  <img [src]="textCoverUrl(reading.readingId)" [alt]="'Portada predeterminada de ' + reading.title" width="1200" height="675" loading="lazy" (error)="markCoverFailed(reading.readingId)" />
+                } @else {
+                  <div class="library-cover-fallback" aria-hidden="true"><span>TEXT</span><strong>Lectura personal</strong></div>
+                }
+              </div>
               <div class="flex min-h-0 flex-1 flex-col p-5">
-                <h2 class="library-card-title font-serif text-[24px] font-normal leading-tight">{{ reading.title }}</h2>
-                <div class="library-detail-stage mt-5">
+                <p class="library-content-type">LECTURA</p>
+                <h2 class="library-card-title mt-2 font-serif text-[24px] font-normal leading-tight">{{ reading.title }}</h2>
+                <div class="library-detail-stage">
                   <div class="library-card-summary flex h-full flex-col">
                     <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.knownPercentage }}% de vocabulario conocido</p>
-                    <p class="mt-3 text-[13px] font-semibold" [class.library-status-complete]="reading.progressStatus === 'COMPLETED'" [class.library-status-active]="reading.progressStatus === 'IN_PROGRESS'">{{ reading.progressStatus === 'COMPLETED' ? 'Leída' : reading.progressStatus === 'IN_PROGRESS' ? 'En progreso' : 'Sin empezar' }}</p>
-                    @if (reading.createdAt) { <p class="mt-2 text-[13px] text-[var(--app-muted)]">Añadida {{ reading.createdAt | date:'d MMM y' }}</p> }
-                    <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                    <p class="library-progress-line mt-3 text-[13px] text-[var(--app-muted)]"><span class="font-semibold" [class.library-status-complete]="reading.progressStatus === 'COMPLETED'" [class.library-status-active]="reading.progressStatus === 'IN_PROGRESS'">{{ reading.progressStatus === 'COMPLETED' ? 'Leída' : reading.progressStatus === 'IN_PROGRESS' ? 'En progreso' : 'Sin empezar' }}</span>@if (reading.createdAt) { <span aria-hidden="true"> · </span><span>Añadida {{ reading.createdAt | date:'d MMM y' }}</span> }</p>
+                    <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →' }}</p>
                   </div>
                   <div class="library-card-metrics flex h-full flex-col" aria-hidden="true">
                     <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.knownPercentage }}% de vocabulario conocido</p>
                     <div class="mt-3 space-y-1 text-[13px] leading-5 text-[var(--app-text-secondary)]"><p>{{ reading.knownWords }} conocidas</p><p>{{ reading.learningWords }} aprendiendo</p><p>{{ card.wordsToLearn }} por aprender</p></div>
-                    <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
+                    <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →' }}</p>
                   </div>
                 </div>
               </div>
             </a>
+            <button type="button" class="document-actions-trigger" [attr.aria-label]="'Acciones para ' + reading.title" [attr.aria-expanded]="openActionMenuKey() === readingActionKey(reading.readingId)" [disabled]="deletingTargetKeys().has(readingActionKey(reading.readingId))" (click)="toggleActionMenu(readingActionKey(reading.readingId))">⋯</button>
+            @if (openActionMenuKey() === readingActionKey(reading.readingId)) {
+              <div class="document-actions-menu" role="menu" (keydown.escape)="closeActionMenu()">
+                <button type="button" role="menuitem" (click)="requestReadingDeletion(reading)">Eliminar de mi biblioteca</button>
+              </div>
+            }
+            </article>
+          }
+          @for (document of visibleDocuments(); track document.documentId) {
+            <article class="library-card-shell document-card-shell">
+              <a [routerLink]="canReadDocument(document) ? ['/documents', document.documentId, 'read'] : null" [class.is-unavailable]="!canReadDocument(document)" [attr.aria-disabled]="!canReadDocument(document) ? 'true' : null" [attr.tabindex]="!canReadDocument(document) ? -1 : null" class="library-card document-card app-card flex min-w-0 flex-col overflow-hidden rounded-2xl transition focus-visible:outline-2 focus-visible:outline-offset-2">
+                <div class="library-card-visual document-cover">
+                  @if (documentCoverUrls()[document.documentId]; as coverUrl) {
+                    @if (!failedDocumentCoverIds().has(document.documentId)) {
+                      <img [src]="coverUrl" [alt]="'Portada de ' + document.title" loading="lazy" (error)="markDocumentCoverFailed(document.documentId)" />
+                    } @else { <div class="library-cover-fallback" aria-hidden="true"><span>{{ document.format }}</span><strong>{{ document.title }}</strong>@if (document.author) { <small>{{ document.author }}</small> }</div> }
+                  } @else { <div class="library-cover-fallback" aria-hidden="true"><span>{{ document.format }}</span><strong>{{ document.title }}</strong>@if (document.author) { <small>{{ document.author }}</small> }</div> }
+                </div>
+                <div class="flex min-h-0 flex-1 flex-col p-5">
+                  <p class="library-content-type">{{ document.format === 'PDF' ? 'DOCUMENTO · PDF' : 'LIBRO · EPUB' }}</p>
+                  <h2 class="library-card-title mt-2 font-serif text-[24px] font-normal leading-tight">{{ document.title }}</h2>
+                  @if (document.author) { <p class="mt-2 truncate text-[13px] text-[var(--app-muted)]">{{ document.author }}</p> }
+                  <div class="mt-auto pt-4 text-[13px] text-[var(--app-muted)]">
+                    <p><span class="font-semibold" [class.library-status-complete]="document.status === 'READY' && document.progressStatus === 'COMPLETED'" [class.library-status-active]="document.status === 'PROCESSING' || (document.status === 'READY' && document.progressStatus === 'IN_PROGRESS')">{{ documentStatusLabel(document) }}</span> · Añadido {{ document.createdAt | date:'d MMM y' }}</p>
+                    @if (documentCtaLabel(document); as cta) { <p class="mt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ cta }}</p> }
+                  </div>
+                </div>
+              </a>
+              @if (document.status === 'READY') {
+                <button type="button" class="document-actions-trigger" [attr.aria-label]="'Acciones para ' + document.title" [attr.aria-expanded]="openActionMenuKey() === documentActionKey(document.documentId)" [disabled]="deletingTargetKeys().has(documentActionKey(document.documentId))" (click)="toggleActionMenu(documentActionKey(document.documentId))">⋯</button>
+                @if (openActionMenuKey() === documentActionKey(document.documentId)) {
+                  <div class="document-actions-menu" role="menu" (keydown.escape)="closeActionMenu()">
+                    <button type="button" role="menuitem" (click)="requestDocumentDeletion(document)">Eliminar de mi biblioteca</button>
+                  </div>
+                }
+              }
+            </article>
           }
         </div>
+        } @else {
+          <div class="library-filter-empty">
+            <p class="font-serif text-[22px] text-[var(--app-text)]">Todavía no hay contenido en esta categoría.</p>
+            <p class="mt-2 text-[14px] text-[var(--app-muted)]">Por ahora, tu biblioteca contiene únicamente lecturas personales.</p>
+          </div>
+        }
       }
     </section>
   </main>
+
+  @if (deletionTarget(); as target) {
+    <div class="document-delete-backdrop" role="presentation">
+      <section class="document-delete-dialog" role="dialog" aria-modal="true" aria-labelledby="document-delete-title" (keydown.escape)="cancelDeletion()">
+        <p class="library-content-type">{{ target.type === 'reading' ? 'ELIMINAR LECTURA' : 'ELIMINAR DOCUMENTO' }}</p>
+        <h2 id="document-delete-title" class="mt-3 font-serif text-[26px] leading-tight">¿Eliminar “{{ deletionTitle(target) }}” de tu biblioteca?</h2>
+        <p class="mt-4 text-[14px] leading-6 text-[var(--app-text-secondary)]">Se eliminará {{ target.type === 'reading' ? 'esta lectura' : 'este documento' }} y perderás su progreso{{ target.type === 'reading' ? '' : ' de lectura' }}. Las palabras que hayas aprendido permanecerán en tu vocabulario.</p>
+        @if (deleteError()) { <p class="mt-4 text-[13px] leading-5 text-[var(--app-danger)]" role="alert">{{ deleteError() }}</p> }
+        <div class="document-delete-actions">
+          <button type="button" class="document-delete-cancel" autofocus [disabled]="isDeleting(target)" (click)="cancelDeletion()">Cancelar</button>
+          <button type="button" class="document-delete-confirm" [disabled]="isDeleting(target)" (click)="confirmDeletion()">{{ isDeleting(target) ? 'Eliminando…' : 'Eliminar' }}</button>
+        </div>
+      </section>
+    </div>
+  }
 </div>

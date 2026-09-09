@@ -8,6 +8,7 @@ import { ContinueReadingItem, RecommendedPlatformReading, ReadingOrigin } from '
 import { UserReading } from '../../../library/models/library.models';
 import { UserProfile } from '../../../profile/models/profile.models';
 import { ProfileService } from '../../../profile/services/profile';
+import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
 import {
   Home,
   calculateKnownPercentage,
@@ -230,8 +231,10 @@ describe('Home', () => {
     const userCard = fixture.nativeElement.querySelector('a[href="/reading/shared"]') as HTMLElement;
     const platformCard = fixture.nativeElement.querySelector('a[href="/reading/platform"]') as HTMLElement;
     expect(userCard).toBeTruthy();
-    expect(userCard.querySelector('img')).toBeFalsy();
-    expect(userCard.querySelector('.continue-user-visual')).toBeTruthy();
+    expect(userCard.querySelector('img')?.getAttribute('src')).toBe(userTextCoverUrl('shared'));
+    expect(userCard.querySelector('.continue-user-visual')).toBeFalsy();
+    expect(userCard.textContent).not.toContain('Aa');
+    expect(userCard.textContent).not.toContain('Texto');
     expect(platformCard.querySelector('img')?.getAttribute('src')).toBe('/assets/reading-covers/platform-cover.webp');
     expect(platformCard.textContent).toContain('A1 · Daily Life');
     expect(platformCard.textContent).toContain('En progreso');
@@ -260,6 +263,26 @@ describe('Home', () => {
     expect(card.querySelector('.cover-fallback')).toBeTruthy();
     expect(card.textContent).toContain('Broken cover');
     expect(card.textContent).toContain('Continuar');
+  });
+
+  it('keeps a USER cover stable after rerender and safely falls back on image error', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('stable-user', 'USER', 'Stable user reading'),
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('continue'); fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('a[href="/reading/stable-user"]') as HTMLElement;
+    const firstImage = card.querySelector('img') as HTMLImageElement;
+    const firstUrl = firstImage.getAttribute('src');
+
+    fixture.detectChanges();
+    expect(card.querySelector('img')?.getAttribute('src')).toBe(firstUrl);
+    expect(firstUrl).toBe(userTextCoverUrl('stable-user'));
+
+    firstImage.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    expect(card.querySelector('img')).toBeFalsy();
+    expect(card.querySelector('.cover-fallback')).toBeTruthy();
+    expect(card.getAttribute('href')).toBe('/reading/stable-user');
   });
 
   it('shows a PLATFORM in progress even when recommendations contain only not-started readings', () => {

@@ -5,7 +5,7 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Auth } from '../../auth/services/auth';
-import { LibraryService } from './library';
+import { LibraryService, ReadingNotFoundSoapError } from './library';
 
 describe('LibraryService', () => {
   let service: LibraryService;
@@ -176,5 +176,41 @@ describe('LibraryService', () => {
       language: 'en',
       createdAt: '2026-08-29T15:00:00Z',
     });
+  });
+
+  it('deletes an owned reading with the authenticated SOAP operation and no userId', () => {
+    let result: { success:boolean } | undefined;
+    service.deleteReading('reading-7').subscribe((response) => result = response);
+
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.body).toContain('<read:deleteReadingRequest>');
+    expect(request.request.body).toContain('<read:readingId>reading-7</read:readingId>');
+    expect(request.request.body).not.toContain('userId');
+    request.flush('<read:deleteReadingResponse xmlns:read="http://soap.com/english-reading/readings"><read:success>true</read:success></read:deleteReadingResponse>');
+
+    expect(result).toEqual({ success:true });
+  });
+
+  it('maps the existing Reading not found SOAP fault to a typed error', () => {
+    let received: unknown;
+    service.deleteReading('missing').subscribe({ error:(error) => received = error });
+    const request = httpTesting.expectOne('/ws');
+    request.flush(`
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+        <soapenv:Body><soapenv:Fault><faultcode>soapenv:Client</faultcode><faultstring>Reading not found</faultstring></soapenv:Fault></soapenv:Body>
+      </soapenv:Envelope>`, { status:500,statusText:'Internal Server Error' });
+    expect(received).toBeInstanceOf(ReadingNotFoundSoapError);
+  });
+
+  it('propagates an unexpected SOAP fault without exposing it as NOT_FOUND', () => {
+    let received: unknown;
+    service.deleteReading('reading-7').subscribe({ error:(error) => received = error });
+    const request = httpTesting.expectOne('/ws');
+    request.flush(`
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+        <soapenv:Body><soapenv:Fault><faultcode>soapenv:Server</faultcode><faultstring>Internal server error</faultstring></soapenv:Fault></soapenv:Body>
+      </soapenv:Envelope>`, { status:500,statusText:'Internal Server Error' });
+    expect(received).not.toBeInstanceOf(ReadingNotFoundSoapError);
   });
 });

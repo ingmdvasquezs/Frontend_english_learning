@@ -1,0 +1,15 @@
+@for (token of tokens(); track $index) {
+  @if (token.type === 'WORD') {
+    <button
+      type="button"
+      (click)="select(token, $event)"
+      class="rounded-[4px] px-0.5 py-0 font-inherit text-inherit transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
+      [class.bg-[#29445a]]="token.status === null || token.status === 'NEW'"
+      [class.bg-[#4a3a22]]="token.status === 'LEARNING'"
+      [class.text-[#70757b]]="token.status === 'IGNORED'"
+      [attr.aria-label]="'Cambiar estado de ' + token.value"
+    >{{ token.value }}</button>
+  } @else {
+    <span>{{ token.value }}</span>
+  }
+}

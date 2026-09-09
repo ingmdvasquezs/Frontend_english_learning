@@ -2,15 +2,21 @@
 
 @import 'tailwindcss';
 
-:root { color-scheme:light; --app-bg:#f5f1e8; --app-sidebar:#ece6da; --app-surface:#fffdf8; --app-surface-elevated:#ffffff; --app-text:#202830; --app-text-secondary:#596670; --app-muted:#626d75; --app-border:#d8d1c5; --app-active:#e7dfd2; --app-accent:#216ca8; --app-accent-soft:#dbeaf5; --app-success:#247a50; --app-learning:#9a630d; --app-danger:#b9473f; --word-new-bg:#dbeaf5; --word-new-text:#174f78; --word-learning-bg:#f9e9bd; --word-learning-text:#684405; --word-ignored-bg:transparent; --word-ignored-text:#626d75; }
-:root[data-theme='dark'] { color-scheme:dark; --app-bg:#121820; --app-sidebar:#18212b; --app-surface:#202b36; --app-surface-elevated:#263440; --app-text:#f3f0e8; --app-text-secondary:#c0c8ce; --app-muted:#98a5ae; --app-border:#394956; --app-active:#263440; --app-accent:#62aeea; --app-accent-soft:#8bc5ee; --app-success:#67c98b; --app-learning:#e8b85c; --app-danger:#e27d75; --word-new-bg:#29475d; --word-new-text:#f3f0e8; --word-learning-bg:#514321; --word-learning-text:#f7d98e; --word-ignored-bg:transparent; --word-ignored-text:#98a5ae; }
+:root { color-scheme:light; --app-bg:#f4f0e7; --app-sidebar:#eee9df; --app-surface:#faf7f0; --app-surface-elevated:#fffdf8; --app-text:#242925; --app-text-secondary:#59615b; --app-muted:#737972; --app-border:#d8d1c5; --app-active:#e5dfd4; --app-accent:#28688f; --app-accent-soft:#d9e8ef; --app-success:#347653; --app-learning:#966518; --app-danger:#ad4b43; --word-new-bg:#d9e8ef; --word-new-text:#174f6a; --word-learning-bg:#f3e4bc; --word-learning-text:#684605; --word-ignored-bg:transparent; --word-ignored-text:#737972; }
+:root[data-theme='dark'] { color-scheme:dark; --app-bg:#151a1d; --app-sidebar:#191f22; --app-surface:#1e2528; --app-surface-elevated:#252d31; --app-text:#ede9df; --app-text-secondary:#bec2bc; --app-muted:#929992; --app-border:#384044; --app-active:#252d31; --app-accent:#72a9c8; --app-accent-soft:#294451; --app-success:#72bd8d; --app-learning:#d4aa60; --app-danger:#d97970; --word-new-bg:#294451; --word-new-text:#edf0eb; --word-learning-bg:#4e4123; --word-learning-text:#f1d894; --word-ignored-bg:transparent; --word-ignored-text:#929992; }
 :root { --sidebar-bg:var(--app-sidebar); --surface:var(--app-surface); --surface-elevated:var(--app-surface-elevated); --text-primary:var(--app-text); --text-secondary:var(--app-text-secondary); --text-muted:var(--app-muted); --border:var(--app-border); --accent:var(--app-accent); --accent-soft:var(--app-accent-soft); --success:var(--app-success); --learning:var(--app-learning); --danger:var(--app-danger); }
-html,body { margin:0; min-height:100%; background:var(--app-bg); color:var(--app-text); }
+html,body { margin:0; min-height:100%; background:var(--app-bg); color:var(--app-text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; text-rendering:optimizeLegibility; }
+a { color:inherit; }
 .app-page { background:var(--app-bg) !important; color:var(--app-text) !important; }
 .app-card { background:var(--app-surface) !important; border:1px solid var(--app-border); box-shadow:none !important; }
 .reader-popover { background:color-mix(in srgb,var(--app-surface-elevated) 96%,transparent) !important; color:var(--app-text); border:1px solid var(--app-border); }
 .theme-toggle { position:fixed; z-index:60; top:1rem; right:1rem; padding:.55rem .8rem; border:1px solid var(--app-border); border-radius:999px; background:var(--app-surface); color:var(--app-text-secondary); font:600 .8rem/1 system-ui,sans-serif; cursor:pointer; }
 .theme-toggle:hover { color:var(--app-accent); border-color:var(--app-accent); }
+::selection { background:var(--app-accent-soft); color:var(--app-text); }
+.auth-page .app-card { max-width:28rem; border-radius:.5rem; padding:2.25rem; box-shadow:none !important; }
+.auth-page h1 { font-family:Georgia,'Times New Roman',serif; font-weight:400; letter-spacing:-.025em; }
+.auth-page input,.auth-page button[type='submit'] { border-radius:.35rem; }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; } }
 :root[data-theme='light'] [class*="text-[#e9e2d3]"],:root[data-theme='light'] [class*="hover:text-white"] { color:var(--app-text) !important; }
 :root[data-theme='light'] [class*="text-[#8d9299]"],:root[data-theme='light'] [class*="text-[#747a80]"],:root[data-theme='light'] [class*="text-[#6f747a]"] { color:var(--app-muted) !important; }
 :root[data-theme='light'] [class*="text-[#7cc0f5]"] { color:var(--app-accent) !important; }

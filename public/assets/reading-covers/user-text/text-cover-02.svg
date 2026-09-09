@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
+  <title id="title">Cubierta editorial con libros y una ventana</title>
+  <rect width="1200" height="675" fill="#dce4e6"/>
+  <rect x="725" y="105" width="300" height="330" fill="#edf1ef" stroke="#657d86" stroke-width="6"/>
+  <path d="M875 105v330M725 270h300" stroke="#657d86" stroke-width="4"/>
+  <circle cx="935" cy="191" r="46" fill="#d3b77f" opacity=".8"/>
+  <path d="M135 540h930M235 488h344v52H235zM280 421h362v67H280zM212 346h328v75H212z" fill="#f3eee5" stroke="#536b7c" stroke-width="6"/>
+  <path d="M260 375h208M321 451h258M275 515h250" stroke="#8c7964" stroke-width="5" stroke-linecap="round"/>
+</svg>
