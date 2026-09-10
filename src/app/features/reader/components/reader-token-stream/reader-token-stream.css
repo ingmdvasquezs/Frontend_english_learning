@@ -1,0 +1,2 @@
+:host { display:contents; }
+button.narration-current { box-shadow:inset 0 -.13em 0 var(--app-accent),0 0 0 1px color-mix(in srgb,var(--app-accent) 32%,transparent); }

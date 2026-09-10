@@ -1,0 +1,40 @@
+@if (narration.available()) {
+  @if (narration.state() === 'IDLE') {
+    <button type="button" class="narration-launch" [attr.aria-label]="playLabel()" (click)="togglePlayback()">
+      <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m7 4 8 6-8 6z" /></svg>
+    </button>
+  } @else {
+    <div class="narration-dock" role="group" aria-label="Controles de narración">
+      <button
+        type="button"
+        class="narration-primary"
+        [attr.aria-label]="primaryLabel()"
+        [attr.aria-pressed]="narration.state() === 'PLAYING'"
+        (click)="togglePlayback()"
+      >
+        <span class="narration-icon" aria-hidden="true">
+          @if (narration.state() === 'PLAYING') {
+            <svg viewBox="0 0 16 16" focusable="false"><path d="M4 3.25h2.75v9.5H4zM9.25 3.25H12v9.5H9.25z" /></svg>
+          } @else {
+            <svg viewBox="0 0 16 16" focusable="false"><path d="m5 3 7 5-7 5z" /></svg>
+          }
+        </span>
+        <span>{{ primaryLabel() }}</span>
+      </button>
+      <button type="button" class="narration-restart" aria-label="Reiniciar narración" (click)="restart()">
+        <span class="narration-icon narration-icon-small" aria-hidden="true">
+          <svg viewBox="0 0 16 16" focusable="false"><path d="M13.25 4.5V1.75l-1.2 1.2A5.75 5.75 0 1 0 13.7 8h-1.5a4.25 4.25 0 1 1-1.2-2.95L9.55 6.5h3.7v-2Z" /></svg>
+        </span>
+        <span>Reiniciar</span>
+      </button>
+      <label class="narration-rate">
+        <span class="sr-only">Velocidad</span>
+        <select aria-label="Velocidad de narración" [value]="narration.rate()" (change)="changeRate($event)">
+          @for (rate of rates; track rate) { <option [value]="rate" [selected]="rate === narration.rate()">{{ rate }}×</option> }
+        </select>
+      </label>
+      <button type="button" class="narration-close" aria-label="Cerrar reproductor y detener narración" (click)="close()">×</button>
+      <span class="sr-only" aria-live="polite">{{ primaryLabel() }}</span>
+    </div>
+  }
+}

@@ -33,8 +33,17 @@ describe('DocumentService', () => {
     service.getDocument('doc').subscribe(); http.expectOne('/api/v1/documents/doc').flush({});
     service.list(2, 8).subscribe();
     const list = http.expectOne((request) => request.url === '/api/v1/documents' && request.params.get('page') === '2' && request.params.get('size') === '8'); list.flush({});
-    service.getStructure('doc').subscribe((structure) => expect(structure.firstUnitId).toBe('unit-1'));
-    http.expectOne('/api/v1/documents/doc/structure').flush({ documentId:'doc',firstUnitId:'unit-1',sections:[],totalUnits:1 });
+    service.getStructure('doc').subscribe((structure) => {
+      expect(structure.firstUnitId).toBe('unit-1');
+      expect(structure.sections).toEqual([
+        { id:'section-1',ordinal:1,title:'Chapter 1',firstUnitId:'unit-1',unitCount:2 },
+        { id:'section-2',ordinal:2,title:null,firstUnitId:null,unitCount:0 },
+      ]);
+    });
+    http.expectOne('/api/v1/documents/doc/structure').flush({ documentId:'doc',firstUnitId:'unit-1',sections:[
+      { id:'section-1',ordinal:1,title:'Chapter 1',firstUnitId:'unit-1',unitCount:2 },
+      { id:'section-2',ordinal:2,title:null,firstUnitId:null,unitCount:0 },
+    ],totalUnits:2 });
     service.getUnit('doc','unit-1').subscribe(); http.expectOne('/api/v1/documents/doc/units/unit-1').flush({ tokens:[] });
   });
 

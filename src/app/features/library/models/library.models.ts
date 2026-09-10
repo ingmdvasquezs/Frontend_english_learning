@@ -11,6 +11,8 @@ export interface UserReading {
   explicitNewWords: number;
   ignoredWords: number;
   unclassifiedWords: number;
+  vocabularyFitPercentage?: number | null;
+  classificationConfidencePercentage?: number | null;
   progressStatus: ReadingProgressStatus | null;
 }
 

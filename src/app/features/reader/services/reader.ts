@@ -3,7 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import { VocabularyStatus } from '../../../shared/models/vocabulary-status';
 import { Auth } from '../../auth/services/auth';
-import { ReaderData, ReaderToken } from '../models/reader.models';
+import {
+  ReaderData,
+  ReaderToken,
+  UpdateReadingProgressRequest,
+} from '../models/reader.models';
 import { CompleteReadingResult } from '../models/reader.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
 
@@ -77,6 +81,24 @@ export class ReaderService {
     return this.postSoap(body, token);
   }
 
+  updateReadingProgress(request: UpdateReadingProgressRequest) {
+    const token = this.requireToken();
+    const body = `
+      <soapenv:Envelope xmlns:soapenv="${this.soapNamespace}" xmlns:read="${this.namespace}">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <read:updateReadingProgressRequest>
+            <read:readingId>${this.escapeXml(request.readingId)}</read:readingId>
+            <read:progressStatus>${request.progressStatus}</read:progressStatus>
+            <read:currentPartOrdinal>${request.currentPartOrdinal}</read:currentPartOrdinal>
+            <read:paginationVersion>${request.paginationVersion}</read:paginationVersion>
+          </read:updateReadingProgressRequest>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
+    return this.postSoap(body, token);
+  }
+
   parseReaderData(responseXml: string): ReaderData {
     const xml = this.parseXml(responseXml);
 
@@ -98,6 +120,8 @@ export class ReaderService {
       progressStatus: parseReadingProgressStatus(
         this.getOptionalValue(xml, 'progressStatus')
       ),
+      currentPartOrdinal: this.getOptionalInteger(xml, 'currentPartOrdinal'),
+      paginationVersion: this.getOptionalInteger(xml, 'paginationVersion'),
       tokens,
     };
   }
@@ -179,6 +203,19 @@ export class ReaderService {
     return (
       parent.getElementsByTagNameNS(this.namespace, name)[0]?.textContent ?? null
     );
+  }
+
+  private getOptionalInteger(
+    parent: Element | Document,
+    name: string
+  ): number | null {
+    const rawValue = this.getOptionalValue(parent, name);
+    if (rawValue === null || rawValue.trim() === '') return null;
+    const value = Number(rawValue);
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(`Invalid SOAP response: invalid ${name}`);
+    }
+    return value;
   }
 
   private requireToken(): string {

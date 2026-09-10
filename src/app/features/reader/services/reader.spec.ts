@@ -44,6 +44,8 @@ describe('ReaderService', () => {
 
     expect(result.readingId).toBe('reading-1');
     expect(result.progressStatus).toBe('IN_PROGRESS');
+    expect(result.currentPartOrdinal).toBe(7);
+    expect(result.paginationVersion).toBe(1);
     expect(result.tokens.map((token) => token.value).join('')).toBe(
       'Learning, learning!\nDone'
     );
@@ -96,6 +98,58 @@ describe('ReaderService', () => {
   it('parses absent and completed reader progress', () => {
     expect(service.parseReaderData(readerResponse().replace('<read:progressStatus>IN_PROGRESS</read:progressStatus>', '')).progressStatus).toBeNull();
     expect(service.parseReaderData(readerResponse().replace('IN_PROGRESS', 'COMPLETED')).progressStatus).toBe('COMPLETED');
+  });
+
+  it('maps legacy reader data without Part fields to null rather than zero', () => {
+    const response = readerResponse()
+      .replace('<read:currentPartOrdinal>7</read:currentPartOrdinal>', '')
+      .replace('<read:paginationVersion>1</read:paginationVersion>', '');
+
+    const result = service.parseReaderData(response);
+
+    expect(result.currentPartOrdinal).toBeNull();
+    expect(result.paginationVersion).toBeNull();
+    expect(result.currentPartOrdinal).not.toBe(0);
+    expect(result.paginationVersion).not.toBe(0);
+  });
+
+  it('serializes an authenticated updateReadingProgress with the required Part pair', () => {
+    service.updateReadingProgress({
+      readingId: 'reading&1',
+      progressStatus: 'IN_PROGRESS',
+      currentPartOrdinal: 7,
+      paginationVersion: 1,
+    }).subscribe();
+
+    const request = httpTesting.expectOne('/ws');
+    const body = request.request.body as string;
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(body).toContain('<read:updateReadingProgressRequest>');
+    expect(body).toContain('<read:readingId>reading&amp;1</read:readingId>');
+    expect(body).toContain('<read:progressStatus>IN_PROGRESS</read:progressStatus>');
+    expect(body).toContain('<read:currentPartOrdinal>7</read:currentPartOrdinal>');
+    expect(body).toContain('<read:paginationVersion>1</read:paginationVersion>');
+    expect(body.indexOf('<read:currentPartOrdinal>')).toBeLessThan(
+      body.indexOf('<read:paginationVersion>')
+    );
+    request.flush('<response/>');
+  });
+
+  it('turns an updateReadingProgress SOAP Fault into the existing observable error flow', () => {
+    let failed = false;
+    service.updateReadingProgress({
+      readingId: 'reading-1',
+      progressStatus: 'IN_PROGRESS',
+      currentPartOrdinal: 2,
+      paginationVersion: 1,
+    }).subscribe({ error: () => (failed = true) });
+
+    httpTesting.expectOne('/ws').flush(`
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+        <soapenv:Body><soapenv:Fault><faultstring>Failed</faultstring></soapenv:Fault></soapenv:Body>
+      </soapenv:Envelope>`);
+
+    expect(failed).toBe(true);
   });
 
   it('sends authenticated completeReading XML and parses timestamps', () => {
@@ -173,6 +227,8 @@ describe('ReaderService', () => {
         <read:title>Learning Story</read:title>
         <read:language>en</read:language>
         <read:progressStatus>IN_PROGRESS</read:progressStatus>
+        <read:currentPartOrdinal>7</read:currentPartOrdinal>
+        <read:paginationVersion>1</read:paginationVersion>
         <read:tokens><read:value>Learning</read:value><read:normalizedValue>learning</read:normalizedValue><read:type>WORD</read:type></read:tokens>
         <read:tokens><read:value>,</read:value><read:type>PUNCTUATION</read:type></read:tokens>
         <read:tokens><read:value> </read:value><read:type>WHITESPACE</read:type></read:tokens>

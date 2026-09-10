@@ -1,6 +1,6 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, NgZone, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DeleteReadingResponse, UserReading, UserReadingsPage } from '../../models/library.models';
 import { LibraryService, ReadingNotFoundSoapError } from '../../services/library';
@@ -25,7 +25,16 @@ type LibraryDeletionTarget =
 export class Library implements OnInit, OnDestroy {
   private readonly libraryService = inject(LibraryService);
   private readonly documentService = inject(DocumentService);
+  private readonly document = inject(DOCUMENT);
+  private readonly ngZone = inject(NgZone);
   private readonly destroy$ = new Subject<void>();
+  private actionMenuTrigger: HTMLElement | null = null;
+  private actionMenuContainer: HTMLElement | null = null;
+  private readonly outsidePointerDownHandler = (event: PointerEvent): void => {
+    if (!this.openActionMenuKey() || !this.actionMenuContainer) return;
+    if (event.composedPath().includes(this.actionMenuContainer)) return;
+    this.ngZone.run(() => this.closeActionMenu());
+  };
 
   readonly readingsPage = signal<UserReadingsPage | null>(null);
   readonly readings = computed(() => this.readingsPage()?.readings ?? []);
@@ -68,11 +77,16 @@ export class Library implements OnInit, OnDestroy {
   readonly textCoverUrl = userTextCoverUrl;
 
   ngOnInit(): void {
+    this.document.addEventListener('pointerdown', this.outsidePointerDownHandler, true);
     this.loadReadings();
     this.loadDocuments();
   }
 
   ngOnDestroy(): void {
+    this.document.removeEventListener('pointerdown', this.outsidePointerDownHandler, true);
+    this.closeActionMenu();
+    this.deletionTarget.set(null);
+    this.deleteError.set(null);
     this.destroy$.next();
     this.destroy$.complete();
     this.clearDocumentCovers();
@@ -132,6 +146,7 @@ export class Library implements OnInit, OnDestroy {
   }
 
   setFilter(filter: LibraryFilter): void {
+    this.closeActionMenu();
     this.activeFilter.set(filter);
   }
 
@@ -166,12 +181,27 @@ export class Library implements OnInit, OnDestroy {
     return `document:${documentId}`;
   }
 
-  toggleActionMenu(key: string): void {
-    this.openActionMenuKey.update((current) => current === key ? null : key);
+  toggleActionMenu(key: string, trigger: EventTarget | null = null): void {
+    const isClosing = this.openActionMenuKey() === key;
+    const triggerElement = trigger instanceof HTMLElement ? trigger : null;
+    this.openActionMenuKey.set(isClosing ? null : key);
+    this.actionMenuTrigger = isClosing ? null : triggerElement;
+    this.actionMenuContainer = isClosing
+      ? null
+      : triggerElement?.closest<HTMLElement>('[data-library-actions]') ?? null;
   }
 
-  closeActionMenu(): void {
+  closeActionMenu(restoreFocus = false): void {
+    const trigger = this.actionMenuTrigger;
     this.openActionMenuKey.set(null);
+    this.actionMenuTrigger = null;
+    this.actionMenuContainer = null;
+    if (restoreFocus) trigger?.focus();
+  }
+
+  @HostListener('document:keydown.escape')
+  closeActionMenuOnEscape(): void {
+    this.closeActionMenu(true);
   }
 
   requestReadingDeletion(reading: UserReading): void {

@@ -55,6 +55,8 @@ describe('LibraryService', () => {
           <read:uniqueWords>30</read:uniqueWords><read:knownWords>7</read:knownWords>
           <read:learningWords>2</read:learningWords><read:explicitNewWords>3</read:explicitNewWords>
           <read:ignoredWords>4</read:ignoredWords><read:unclassifiedWords>14</read:unclassifiedWords>
+          <read:vocabularyFitPercentage>56.00</read:vocabularyFitPercentage>
+          <read:classificationConfidencePercentage>82.50</read:classificationConfidencePercentage>
         </read:readings>
       </read:listUserReadingsResponse>`;
 
@@ -70,10 +72,36 @@ describe('LibraryService', () => {
           createdAt: '2026-08-29T12:00:00Z',
           uniqueWords: 30, knownWords: 7, learningWords: 2,
           explicitNewWords: 3, ignoredWords: 4, unclassifiedWords: 14,
+          vocabularyFitPercentage: 56,
+          classificationConfidencePercentage: 82.5,
           progressStatus: null,
         },
       ],
     });
+  });
+
+  it.each([
+    ['0', 0],
+    ['', null],
+    ['not-a-number', null],
+    ['-1', null],
+    ['101', null],
+  ])('preserves optional vocabulary fit %s as %s without NaN', (rawValue, expected) => {
+    const response = `
+      <read:listUserReadingsResponse xmlns:read="http://soap.com/english-reading/readings">
+        <read:page>0</read:page><read:size>20</read:size><read:totalElements>1</read:totalElements>
+        <read:readings>
+          <read:readingId>reading-1</read:readingId><read:title>Metrics</read:title><read:language>en</read:language>
+          <read:vocabularyFitPercentage>${rawValue}</read:vocabularyFitPercentage>
+          <read:classificationConfidencePercentage>${rawValue}</read:classificationConfidencePercentage>
+        </read:readings>
+      </read:listUserReadingsResponse>`;
+
+    const reading = service.parseUserReadings(response).readings[0];
+    expect(reading.vocabularyFitPercentage).toBe(expected);
+    expect(reading.classificationConfidencePercentage).toBe(expected);
+    expect(Number.isNaN(reading.vocabularyFitPercentage)).toBe(false);
+    expect(reading.knownWords).toBe(0);
   });
 
   it('parses an empty readings page', () => {
@@ -128,6 +156,8 @@ describe('LibraryService', () => {
           createdAt: null,
           uniqueWords: 0, knownWords: 0, learningWords: 0,
           explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0,
+          vocabularyFitPercentage: null,
+          classificationConfidencePercentage: null,
           progressStatus: null,
         },
         {
@@ -137,6 +167,8 @@ describe('LibraryService', () => {
           createdAt: '2026-08-29T14:00:00Z',
           uniqueWords: 0, knownWords: 0, learningWords: 0,
           explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0,
+          vocabularyFitPercentage: null,
+          classificationConfidencePercentage: null,
           progressStatus: null,
         },
       ],

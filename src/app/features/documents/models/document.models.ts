@@ -40,6 +40,7 @@ export interface DocumentSection {
   id: string;
   ordinal: number;
   title: string | null;
+  firstUnitId: string | null;
   unitCount: number;
 }
 

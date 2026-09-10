@@ -4,14 +4,40 @@
     @else if (error()) { <section class="py-20"><h1 class="font-serif text-[32px]">{{ error() }}</h1><a routerLink="/library" class="mt-6 inline-block font-semibold text-[var(--app-accent)]">Volver a Mi biblioteca</a></section> }
     @else if (unit(); as current) {
       <header class="pt-12 pb-9">
-        <p class="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--app-accent)]">{{ document()?.language }} · Reading</p>
+        <div class="document-reader-kicker">
+          <p class="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--app-accent)]">{{ document()?.language }} · Reading</p>
+          @if (showToc()) {
+            <button #tocTrigger type="button" class="document-toc-trigger" aria-haspopup="dialog" aria-controls="document-toc" [attr.aria-expanded]="tocOpen()" (click)="toggleToc()">Contenido</button>
+          }
+        </div>
         <h1 class="mt-4 font-serif text-[36px] font-normal leading-tight md:text-[52px]">{{ document()?.title }}</h1>
         @if (progress()?.status === 'IN_PROGRESS') { <p class="mt-4 text-[13px] font-semibold text-[var(--app-accent)]">En progreso</p> }
         @else if (progress()?.status === 'COMPLETED') { <p class="mt-4 text-[13px] font-semibold text-[var(--app-success)]">✓ Lectura terminada</p> }
       </header>
-      @if (current.sectionTitle) { <h2 class="document-section-title font-serif">{{ current.sectionTitle }}</h2> }
+      @if (tocOpen()) {
+        <div class="document-toc-backdrop" (pointerdown)="closeToc()">
+          <aside id="document-toc" class="document-toc-panel" role="dialog" aria-modal="true" aria-labelledby="document-toc-title" (pointerdown)="$event.stopPropagation()">
+            <header class="document-toc-header">
+              <div><p class="document-toc-eyebrow">NAVEGACIÓN</p><h2 id="document-toc-title" class="font-serif">Contenido</h2></div>
+              <button type="button" class="document-toc-close" aria-label="Cerrar contenido" autofocus (click)="closeToc()">×</button>
+            </header>
+            <nav class="document-toc-list" aria-label="Secciones del documento">
+              @for (section of navigableSections(); track section.id) {
+                <button #tocItem type="button" [attr.data-section-id]="section.id" [class.is-current]="isCurrentSection(section)" [attr.aria-current]="isCurrentSection(section) ? 'location' : null" [disabled]="loadingUnit() || savingProgress()" (click)="navigateToSection(section)">
+                  <span class="document-toc-item-copy"><strong>{{ sectionLabel(section) }}</strong><small>{{ sectionPartsLabel(section) }}</small></span>
+                  @if (isCurrentSection(section)) { <small>Actual</small> }
+                </button>
+              }
+            </nav>
+          </aside>
+        </div>
+      }
+      <div class="document-section-heading">
+        <h2 class="document-section-title font-serif">{{ currentSectionLabel(current) }}</h2>
+        <p>Parte {{ current.sectionUnitOrdinal }} de {{ current.sectionUnitCount }}</p>
+      </div>
       <article class="py-11 font-serif text-[22px] leading-[1.85] whitespace-pre-wrap md:text-[24px]" aria-label="Contenido del libro">
-        <app-reader-token-stream [tokens]="current.tokens" (wordSelected)="selectWordFromStream($event)" />
+        <app-reader-token-stream [tokens]="current.tokens" [activeNarrationTokenIndex]="activeNarrationTokenIndex()" (wordSelected)="selectWordFromStream($event)" />
       </article>
       <nav class="document-navigation" aria-label="Navegación del libro">
         <button type="button" (click)="navigateTo(current.previousUnitId)" [disabled]="!current.previousUnitId || loadingUnit()">← Anterior</button>
@@ -34,6 +60,7 @@
           />
         }
       }
+      <app-reader-narration-controls [text]="narrationContent().text" [language]="document()?.language ?? 'en'" playLabel="Escuchar parte" />
     }
   </main>
 </div>

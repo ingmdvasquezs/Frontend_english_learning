@@ -73,6 +73,8 @@ describe('Library', () => {
           createdAt: '2026-08-29',
           uniqueWords: 20, knownWords: 5, learningWords: 2,
           explicitNewWords: 1, ignoredWords: 3, unclassifiedWords: 9,
+          vocabularyFitPercentage: 56,
+          classificationConfidencePercentage: 80,
           progressStatus: 'IN_PROGRESS',
         },
       ],
@@ -82,8 +84,9 @@ describe('Library', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('A short story');
-    expect(fixture.nativeElement.textContent).toContain('25% de vocabulario conocido');
-    expect(fixture.nativeElement.textContent).toContain('10 por aprender');
+    expect(fixture.nativeElement.textContent).toContain('Compatibilidad 56%');
+    expect(fixture.nativeElement.textContent).not.toContain('% de vocabulario conocido');
+    expect(fixture.nativeElement.textContent).toContain('10 palabras por aprender');
     expect(fixture.nativeElement.textContent).toContain('En progreso');
     expect(fixture.nativeElement.textContent).toContain('Continuar');
     expect(fixture.nativeElement.textContent).toContain('LECTURA');
@@ -111,16 +114,38 @@ describe('Library', () => {
   });
 
   it('keeps detailed metrics in a desktop reveal without a fake progress bar or menu', () => {
-    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[{ readingId:'r',title:'Metrics',language:'en',createdAt:null,uniqueWords:20,knownWords:5,learningWords:2,explicitNewWords:1,ignoredWords:3,unclassifiedWords:9,progressStatus:null }] });
+    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[{ readingId:'r',title:'Metrics',language:'en',createdAt:null,uniqueWords:20,knownWords:5,learningWords:2,explicitNewWords:1,ignoredWords:3,unclassifiedWords:9,vocabularyFitPercentage:56,classificationConfidencePercentage:80,progressStatus:null }] });
     fixture.detectChanges(); response.next('x'); fixture.detectChanges();
     const card = fixture.nativeElement.querySelector('.library-card') as HTMLElement;
     const reveal = card.querySelector('.library-card-metrics') as HTMLElement;
-    expect(reveal.textContent).toContain('5 conocidas');
-    expect(reveal.textContent).toContain('2 aprendiendo');
-    expect(reveal.textContent).toContain('10 por aprender');
+    expect(reveal.textContent).toContain('5 palabras conocidas');
+    expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
+    expect(reveal.textContent).toContain('10 palabras por aprender');
+    expect(reveal.textContent).toContain('Compatibilidad 56%');
+    expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(card.querySelector('[role="progressbar"]')).toBeFalsy();
     expect(card.querySelector('button')).toBeFalsy();
     expect(card.getAttribute('href')).toBe('/reading/r');
+  });
+
+  it.each([
+    [0, 'Compatibilidad 0%'],
+    [null, 'Compatibilidad no disponible'],
+  ] as const)('renders TEXT vocabulary fit %s without falling back to known coverage', (vocabularyFitPercentage, expected) => {
+    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[{
+      readingId:'fit',title:'Fit',language:'en',createdAt:null,
+      uniqueWords:20,knownWords:1,learningWords:0,explicitNewWords:1,ignoredWords:0,unclassifiedWords:0,
+      vocabularyFitPercentage,classificationConfidencePercentage:null,progressStatus:null,
+    }] });
+    fixture.detectChanges(); response.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('.library-card') as HTMLElement;
+    expect(card.querySelector('.library-card-summary')?.textContent).toContain(expected);
+    expect(card.textContent).not.toContain('% de vocabulario conocido');
+    expect(card.textContent).not.toContain('NaN');
+    expect(card.querySelector('.library-card-metrics')?.textContent).toContain('1 palabra conocida');
+    expect(card.querySelector('.library-card-metrics')?.textContent).toContain('0 palabras que estás aprendiendo');
+    expect(card.querySelector('.library-card-metrics')?.textContent).toContain('1 palabra por aprender');
   });
 
   it('uses a safe fallback when the local cover fails', () => {
@@ -212,6 +237,9 @@ describe('Library', () => {
     expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"] .library-cover-fallback').textContent).toContain('PDF');
     expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"]').textContent).toContain('DOCUMENTO · PDF');
+    expect(Array.from(
+      fixture.nativeElement.querySelectorAll('.document-card') as NodeListOf<HTMLElement>
+    ).every((card) => !card.textContent?.includes('Compatibilidad'))).toBe(true);
 
     const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
     expect(filters[2].textContent?.trim()).toBe('Libros / eBooks (1)');
@@ -221,6 +249,7 @@ describe('Library', () => {
     expect(fixture.nativeElement.querySelector('a[href="/documents/epub/read"]')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('.document-card').textContent).toContain('DOCUMENTO · PDF');
     expect(fixture.nativeElement.querySelector('.document-card .library-cover-fallback').textContent).toContain('PDF');
+    expect(fixture.nativeElement.querySelector('.document-card').textContent).not.toContain('Compatibilidad');
   });
 
   it.each([
@@ -329,6 +358,110 @@ describe('Library', () => {
     expect(fixture.nativeElement.querySelector('[aria-label="Acciones para Processing PDF"]')).toBeFalsy();
   });
 
+  it('opens one contextual menu at a time and closes it by toggle, outside click or Escape', () => {
+    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[
+      { readingId:'text',title:'Personal',language:'en',createdAt:null,uniqueWords:1,knownWords:0,learningWords:0,explicitNewWords:1,ignoredWords:0,unclassifiedWords:0,progressStatus:null },
+    ] });
+    documentService.list.mockReturnValue(of({ page:0,size:20,totalElements:1,content:[
+      importedDocument({ documentId:'epub',title:'Ready EPUB' }),
+    ] }));
+    fixture.detectChanges(); response.next('text'); fixture.detectChanges();
+
+    const textTrigger = fixture.nativeElement.querySelector('[aria-label="Acciones para Personal"]') as HTMLButtonElement;
+    const documentTrigger = fixture.nativeElement.querySelector('[aria-label="Acciones para Ready EPUB"]') as HTMLButtonElement;
+    expect(textTrigger.getAttribute('aria-haspopup')).toBe('menu');
+
+    textTrigger.click(); fixture.detectChanges();
+    expect(textTrigger.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('[role="menu"]')).toHaveLength(1);
+
+    const otherCard = fixture.nativeElement.querySelector('a[href="/documents/epub/read"]') as HTMLAnchorElement;
+    otherCard.dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+
+    textTrigger.click(); fixture.detectChanges();
+    documentTrigger.click(); fixture.detectChanges();
+    expect(textTrigger.getAttribute('aria-expanded')).toBe('false');
+    expect(documentTrigger.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('[role="menu"]')).toHaveLength(1);
+
+    documentTrigger.click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+
+    textTrigger.click(); fixture.detectChanges();
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+
+    textTrigger.click(); fixture.detectChanges();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key:'Escape',bubbles:true })); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+    expect(document.activeElement).toBe(textTrigger);
+  });
+
+  it('renders a transparent square hit area whose wrapper contains only trigger and dropdown', () => {
+    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[
+      { readingId:'text',title:'Personal',language:'en',createdAt:null,uniqueWords:1,knownWords:0,learningWords:0,explicitNewWords:1,ignoredWords:0,unclassifiedWords:0,progressStatus:null },
+    ] });
+    fixture.detectChanges(); response.next('text'); fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('.library-card-shell') as HTMLElement;
+    const wrapper = card.querySelector('.library-actions') as HTMLElement;
+    const trigger = wrapper.querySelector('.document-actions-trigger') as HTMLButtonElement;
+    const styles = getComputedStyle(trigger);
+
+    expect(wrapper.contains(card.querySelector('.library-card'))).toBe(false);
+    expect(wrapper.children).toHaveLength(1);
+    expect(styles.backgroundColor === 'transparent' || styles.backgroundColor === 'rgba(0, 0, 0, 0)').toBe(true);
+    expect(styles.borderTopWidth).toBe('0px');
+    expect(styles.borderRadius).toBe('0px');
+    expect(styles.boxShadow).toBe('none');
+
+    trigger.click(); fixture.detectChanges();
+    expect(wrapper.children).toHaveLength(2);
+    expect(wrapper.querySelector('[role="menu"]')).toBeTruthy();
+  });
+
+  it('closes the menu for real DOM pointer events on the header and whenever a filter changes', () => {
+    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[
+      { readingId:'text',title:'Personal',language:'en',createdAt:null,uniqueWords:1,knownWords:0,learningWords:0,explicitNewWords:1,ignoredWords:0,unclassifiedWords:0,progressStatus:null },
+    ] });
+    fixture.detectChanges(); response.next('text'); fixture.detectChanges();
+    const trigger = fixture.nativeElement.querySelector('[aria-label="Acciones para Personal"]') as HTMLButtonElement;
+    const header = fixture.nativeElement.querySelector('.library-header') as HTMLElement;
+    const filters = fixture.nativeElement.querySelectorAll('.library-filters button') as NodeListOf<HTMLButtonElement>;
+
+    trigger.click(); fixture.detectChanges();
+    header.dispatchEvent(new PointerEvent('pointerdown', { bubbles:true })); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+
+    trigger.click(); fixture.detectChanges();
+    filters[1].click(); fixture.detectChanges();
+    expect(fixture.componentInstance.activeFilter()).toBe('personal');
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+
+    filters[0].click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
+  });
+
+  it('cleans up the capture listener and transient menu state when Library is destroyed', () => {
+    const removeListener = vi.spyOn(document, 'removeEventListener');
+    service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[
+      { readingId:'text',title:'Personal',language:'en',createdAt:null,uniqueWords:1,knownWords:0,learningWords:0,explicitNewWords:1,ignoredWords:0,unclassifiedWords:0,progressStatus:null },
+    ] });
+    fixture.detectChanges(); response.next('text'); fixture.detectChanges();
+    (fixture.nativeElement.querySelector('[aria-label="Acciones para Personal"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.openActionMenuKey()).toBe('reading:text');
+
+    fixture.destroy();
+    expect(removeListener).toHaveBeenCalledWith('pointerdown', expect.any(Function), true);
+    expect(fixture.componentInstance.openActionMenuKey()).toBeNull();
+    expect(fixture.componentInstance.deletionTarget()).toBeNull();
+
+    const recreated = TestBed.createComponent(Library);
+    expect(recreated.componentInstance.openActionMenuKey()).toBeNull();
+    recreated.destroy();
+  });
+
   it('opens a title-specific confirmation and cancel does not delete', () => {
     service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:0,readings:[] });
     documentService.list.mockReturnValue(of({ page:0,size:20,totalElements:1,content:[importedDocument({ title:'As You Like It' })] }));
@@ -338,11 +471,13 @@ describe('Library', () => {
     (fixture.nativeElement.querySelector('.document-actions-menu button') as HTMLButtonElement).click(); fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('#document-delete-title').textContent).toContain('As You Like It');
     expect(fixture.nativeElement.textContent).toContain('permanecerán en tu vocabulario');
     (fixture.nativeElement.querySelector('.document-delete-cancel') as HTMLButtonElement).click(); fixture.detectChanges();
     expect(documentService.deleteDocument).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('[role="menu"]')).toBeFalsy();
   });
 
   it('deletes an owned TEXT reading through SOAP without touching REST documents or Blob covers', () => {

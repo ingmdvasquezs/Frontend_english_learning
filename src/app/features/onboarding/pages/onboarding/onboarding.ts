@@ -1,14 +1,11 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { NORMAL_APPLICATION_PATH } from '../../../../app.paths';
 
 import {
-  DictionaryService,
-  DictionaryWord,
-} from '../../../../shared/services/dictionary';
-
-import {
   InitialVocabularyTest,
+  MINIMUM_ONBOARDING_CLASSIFICATIONS,
   VocabularyStatus,
 } from '../../models/onboarding.models';
 import { OnboardingService } from '../../services/onboarding';
@@ -19,47 +16,44 @@ import {
   getTextParts,
   normalizeWord,
 } from '../../utils/reading-text';
-
-interface PopoverPosition {
-  x: number;
-  y: number;
-  openAbove: boolean;
-  anchorTop: number;
-  anchorBottom: number;
-}
+import { ReaderWordPopover } from '../../../reader/components/reader-word-popover/reader-word-popover';
+import { ReaderToken } from '../../../reader/models/reader.models';
+import { ReaderWordInteraction } from '../../../reader/services/reader-word-interaction';
 
 @Component({
   selector: 'app-onboarding',
-  imports: [],
+  imports: [ReaderWordPopover],
+  providers: [ReaderWordInteraction],
   templateUrl: './onboarding.html',
   styleUrl: './onboarding.css',
 })
 export class Onboarding {
-  private readonly dictionaryService = inject(DictionaryService);
   private readonly onboardingService = inject(OnboardingService);
+  private readonly wordInteraction = inject(ReaderWordInteraction);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   readonly themeService = inject(ThemeService);
 
-  readonly selectedWord = signal<DictionaryWord | null>(null);
-
-  readonly wordLoading = signal(false);
   readonly loading = signal(false);
 
   readonly error = signal<string | null>(null);
-  readonly audioError = signal<string | null>(null);
 
   readonly test = signal<InitialVocabularyTest | null>(null);
 
   readonly wordStatuses =
     signal<Map<string, VocabularyStatus>>(new Map());
 
-  readonly popoverPosition =
-    signal<PopoverPosition | null>(null);
-
-  readonly statusMenuOpen = signal(false);
-
-  readonly wordDetailsOpen = signal(false);
+  readonly selectedToken = this.wordInteraction.selectedToken;
+  readonly dictionaryWord = this.wordInteraction.dictionaryWord;
+  readonly lookupLoading = this.wordInteraction.lookupLoading;
+  readonly lookupUnavailable = this.wordInteraction.lookupUnavailable;
+  readonly savingStatus = this.wordInteraction.savingStatus;
+  readonly statusError = this.wordInteraction.statusError;
+  readonly audioError = this.wordInteraction.audioError;
+  readonly definitionsOpen = this.wordInteraction.definitionsOpen;
+  readonly popoverPosition = this.wordInteraction.popoverPosition;
+  readonly vocabularyStatuses = this.wordInteraction.statuses;
+  readonly selectedExplicitStatus = this.wordInteraction.selectedStatus;
 
   readonly explicitClassifications = computed(() =>
     Array.from(this.wordStatuses(), ([word, status]) => ({ word, status }))
@@ -69,189 +63,56 @@ export class Onboarding {
     () => this.explicitClassifications().length
   );
 
+  readonly minimumClassifications = MINIMUM_ONBOARDING_CLASSIFICATIONS;
+
+  readonly canFinishTest = computed(
+    () => this.classifiedWordCount() >= MINIMUM_ONBOARDING_CLASSIFICATIONS
+  );
+
+  readonly remainingClassifications = computed(() =>
+    Math.max(
+      0,
+      MINIMUM_ONBOARDING_CLASSIFICATIONS - this.classifiedWordCount()
+    )
+  );
+
   openWord(word: string, event: MouseEvent): void {
-    event.stopPropagation();
-
     const normalizedWord = normalizeWord(word);
+    if (!normalizedWord) return;
 
-    if (!normalizedWord) {
-      return;
-    }
-
-    const element = event.currentTarget as HTMLElement;
-    const rect = element.getBoundingClientRect();
-
-    const popoverWidth = 310;
-    const estimatedPopoverHeight = 230;
-    const viewportPadding = 16;
-    const gap = 10;
-
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // CENTRO DE LA PALABRA
-    let x = rect.left + rect.width / 2;
-
-    // EVITAR SALIR POR LA IZQUIERDA
-    const minX =
-      popoverWidth / 2 + viewportPadding;
-
-    // EVITAR SALIR POR LA DERECHA
-    const maxX =
-      viewportWidth
-      - popoverWidth / 2
-      - viewportPadding;
-
-    x = Math.max(
-      minX,
-      Math.min(x, maxX)
-    );
-
-    // ESPACIO DISPONIBLE
-    const spaceBelow =
-      viewportHeight - rect.bottom;
-
-    const spaceAbove = rect.top;
-
-    const openAbove =
-      spaceBelow < estimatedPopoverHeight
-      && spaceAbove > spaceBelow;
-
-    const y = openAbove
-      ? rect.top - gap
-      : rect.bottom + gap;
-
-    this.popoverPosition.set({
-      x,
-      y,
-      openAbove,
-      anchorTop: rect.top,
-      anchorBottom: rect.bottom,
-    });
-
-    this.statusMenuOpen.set(false);
-    this.wordDetailsOpen.set(false);
-
-    this.audioError.set(null);
-    this.error.set(null);
-
-    this.selectedWord.set(null);
-    this.wordLoading.set(true);
-
-    this.dictionaryService
-      .lookupWord(normalizedWord)
-      .subscribe({
-        next: (response) => {
-          const dictionaryWord =
-            this.dictionaryService
-              .parseLookupWordResponse(response);
-
-          this.selectedWord.set(dictionaryWord);
-          this.wordLoading.set(false);
-
-          if (dictionaryWord.audioUrl) {
-            this.playAudio(dictionaryWord.audioUrl);
-          }
-        },
-
-        error: () => {
-          this.error.set(
-            `No se pudo obtener información de "${normalizedWord}"`
-          );
-
-          this.wordLoading.set(false);
-        },
-      });
+    const token: ReaderToken = {
+      value: word,
+      normalizedValue: normalizedWord,
+      type: 'WORD',
+      status: this.wordStatuses().get(normalizedWord) ?? null,
+    };
+    this.wordInteraction.selectWord(token, event);
   }
 
   closeWordPopover(): void {
-    this.selectedWord.set(null);
-    this.popoverPosition.set(null);
+    this.wordInteraction.close();
+  }
 
-    this.statusMenuOpen.set(false);
-    this.wordDetailsOpen.set(false);
-
-    this.audioError.set(null);
+  @HostListener('document:keydown.escape')
+  closeWordPopoverOnEscape(): void {
+    this.closeWordPopover();
   }
 
   toggleWordDetails(event: MouseEvent): void {
-    event.stopPropagation();
+    this.wordInteraction.toggleDefinitions(event);
+  }
 
-    const willOpen = !this.wordDetailsOpen();
-    this.wordDetailsOpen.set(willOpen);
-
-    const position = this.popoverPosition();
-
-    if (!position) {
-      return;
-    }
-
-    const gap = 10;
-    const viewportHeight = window.innerHeight;
-
-    const compactPopoverHeight = 230;
-    const expandedPopoverHeight = 520;
-
-    const requiredHeight = willOpen
-      ? expandedPopoverHeight
-      : compactPopoverHeight;
-
-    const spaceBelow =
-      viewportHeight - position.anchorBottom;
-
-    const spaceAbove =
-      position.anchorTop;
-
-    const openAbove =
-      spaceBelow < requiredHeight
-      && spaceAbove > spaceBelow;
-
-    const y = openAbove
-      ? position.anchorTop - gap
-      : position.anchorBottom + gap;
-
-    this.popoverPosition.set({
-      ...position,
-      y,
-      openAbove,
+  selectWordStatus(status: VocabularyStatus): void {
+    this.wordInteraction.setLocalStatus(status, (selected, nextStatus) => {
+      this.setWordStatus(
+        selected.normalizedValue ?? selected.value,
+        nextStatus
+      );
     });
-  }
-
-  toggleStatusMenu(event: MouseEvent): void {
-    event.stopPropagation();
-
-    this.statusMenuOpen.update(
-      (open) => !open
-    );
-  }
-
-  selectWordStatus(
-    word: string,
-    status: VocabularyStatus
-  ): void {
-    this.setWordStatus(word, status);
-
-    /*
-     * Al seleccionar un estado cerramos únicamente
-     * el menú lateral de estados.
-     */
-    this.statusMenuOpen.set(false);
   }
 
   playAudio(audioUrl: string | null): void {
-    if (!audioUrl) {
-      return;
-    }
-
-    this.audioError.set(null);
-
-    const audio = new Audio(audioUrl);
-
-    audio.play().catch(() => {
-      this.audioError.set(
-        'Audio temporalmente no disponible'
-      );
-    });
+    this.wordInteraction.playAudio(audioUrl);
   }
 
   loadTest(): void {
@@ -266,6 +127,7 @@ export class Onboarding {
             this.onboardingService
               .parseInitialVocabularyTest(response);
 
+          this.wordInteraction.reset();
           this.wordStatuses.set(new Map());
           this.test.set(test);
 
@@ -357,7 +219,7 @@ export class Onboarding {
   finishTest(): void {
     const currentTest = this.test();
 
-    if (!currentTest) {
+    if (!currentTest || !this.canFinishTest() || this.loading()) {
       return;
     }
 
@@ -376,14 +238,31 @@ export class Onboarding {
           void this.router.navigateByUrl(NORMAL_APPLICATION_PATH);
         },
 
-        error: () => {
+        error: (response: unknown) => {
           this.error.set(
-            'No se pudo completar el vocabulario inicial'
+            this.isMinimumClassificationsFault(response)
+              ? `Clasifica al menos ${MINIMUM_ONBOARDING_CLASSIFICATIONS} palabras antes de continuar.`
+              : 'No se pudo completar el vocabulario inicial'
           );
 
           this.loading.set(false);
         },
       });
+  }
+
+  private isMinimumClassificationsFault(response: unknown): boolean {
+    const rawMessage =
+      response instanceof HttpErrorResponse
+        ? typeof response.error === 'string'
+          ? response.error
+          : response.message
+        : response instanceof Error
+          ? response.message
+          : '';
+
+    return rawMessage
+      .toLowerCase()
+      .includes('unique vocabulary classifications are required');
   }
 
 }

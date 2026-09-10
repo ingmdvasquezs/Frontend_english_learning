@@ -11,6 +11,7 @@ import {
 import { coverUrl } from '../../utils/cover-url';
 import { ProfileService } from '../../../profile/services/profile';
 import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
+import { HomeReadingCard } from '../../components/home-reading-card/home-reading-card';
 
 export { calculateKnownPercentage, calculateWordsToLearn, wordCountLabel };
 
@@ -24,7 +25,7 @@ interface CollectionState {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink],
+  imports: [RouterLink, HomeReadingCard],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })

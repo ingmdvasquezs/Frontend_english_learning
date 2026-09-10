@@ -110,6 +110,14 @@ export class LibraryService {
       explicitNewWords: this.getOptionalCount(element, 'explicitNewWords'),
       ignoredWords: this.getOptionalCount(element, 'ignoredWords'),
       unclassifiedWords: this.getOptionalCount(element, 'unclassifiedWords'),
+      vocabularyFitPercentage: this.getOptionalPercentage(
+        element,
+        'vocabularyFitPercentage'
+      ),
+      classificationConfidencePercentage: this.getOptionalPercentage(
+        element,
+        'classificationConfidencePercentage'
+      ),
       progressStatus: parseReadingProgressStatus(
         this.getOptionalValue(element, 'progressStatus')
       ),
@@ -165,6 +173,18 @@ export class LibraryService {
     if (value === null || value.trim() === '') return 0;
     const count = Number(value);
     return Number.isFinite(count) && count >= 0 ? count : 0;
+  }
+
+  private getOptionalPercentage(
+    parent: Element | Document,
+    name: string
+  ): number | null {
+    const value = this.getOptionalValue(parent, name);
+    if (value === null || value.trim() === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 && number <= 100
+      ? number
+      : null;
   }
 
   private isReadingNotFoundFault(responseXml: string): boolean {

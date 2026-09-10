@@ -30,7 +30,7 @@
                text-[#e9e2d3]
                md:text-[54px]"
       >
-        Descubre tu nivel de inglés
+        Conozcamos tu vocabulario
       </h1>
 
       <p
@@ -40,9 +40,8 @@
                leading-8
                text-[#8d9299]"
       >
-        Lee el texto con naturalidad.
-        Marca cuánto conoces cada palabra y construiremos
-        una primera estimación de tu vocabulario.
+        Lee el texto con naturalidad y marca cuánto conoces cada palabra.
+        Usaremos tus respuestas para personalizar tus primeras lecturas.
       </p>
 
     </header>
@@ -131,9 +130,9 @@
 
           <span>
             —
-            Las palabras con fondo azul suave aún no están clasificadas.
-            Pulsa cualquiera para consultar su significado
-            y cambiar su estado.
+            Las palabras en azul aún no están clasificadas.
+            Selecciona una para escucharla, consultar su significado
+            y marcar cuánto la conoces.
           </span>
         </p>
 
@@ -165,12 +164,10 @@
           Lectura
         </p>
 
-        <!-- TITLE + COUNTER -->
+        <!-- TITLE -->
         <div
           class="mt-1 mb-8
-                 flex items-baseline
-                 justify-between
-                 gap-4"
+                 flex items-baseline"
         >
 
           <h2
@@ -181,15 +178,6 @@
           >
             Lee el texto
           </h2>
-
-          <span
-            class="shrink-0
-                   text-[14px]
-                   text-[#6f747a]"
-          >
-            {{ classifiedWordCount() }}
-            clasificadas
-          </span>
 
         </div>
 
@@ -227,7 +215,9 @@
                            text-inherit
                            transition
                            duration-150
-                           focus:outline-none"
+                           focus-visible:outline-2
+                           focus-visible:outline-offset-2
+                           focus-visible:outline-[var(--app-accent)]"
 
                     [class.bg-[#29445a]]="
                       getWordStatus(part) === 'NEW'
@@ -270,598 +260,27 @@
 
       </section>
 
-      <!-- POPOVER -->
-      @if (popoverPosition(); as position) {
-
-        <div
-          class="fixed z-50"
-          [style.left.px]="position.x"
-          [style.top.px]="position.y"
-          [style.transform]="
-            position.openAbove
-              ? 'translate(-50%, -100%)'
-              : 'translateX(-50%)'
-          "
-          (click)="$event.stopPropagation()"
-        >
-
-          <div class="relative">
-
-            <!-- COLITA -->
-            <div
-              class="reader-popover absolute
-                     left-1/2
-                     h-3 w-3
-                     -translate-x-1/2
-                     rotate-45
-                     rounded-[2px]
-                     bg-[rgba(30,35,40,0.96)]"
-
-              [class.-top-[6px]]="
-                !position.openAbove
-              "
-
-              [class.-bottom-[6px]]="
-                position.openAbove
-              "
-            ></div>
-
-            <!-- NOTA FLOTANTE -->
-            <div
-              class="reader-popover relative
-                     w-[310px]
-                     max-w-[calc(100vw-2rem)]
-                     rounded-2xl
-                     bg-[rgba(30,35,40,0.88)]
-                     px-5 py-5
-                     shadow-[0_24px_60px_rgba(0,0,0,0.48)]
-                     backdrop-blur-xl"
-            >
-
-              <!-- LOADING -->
-              @if (wordLoading()) {
-
-                <div
-                  class="flex min-h-28
-                         items-center
-                         justify-center"
-                >
-
-                  <div class="text-center">
-
-                    <div
-                      class="mx-auto
-                             h-5 w-5
-                             animate-spin
-                             rounded-full
-                             border-2
-                             border-[#4b5055]
-                             border-t-[#7cc0f5]"
-                    ></div>
-
-                    <p
-                      class="mt-3
-                             text-[14px]
-                             text-[#8d9299]"
-                    >
-                      Buscando palabra...
-                    </p>
-
-                  </div>
-
-                </div>
-
-              } @else {
-
-                @if (selectedWord(); as word) {
-
-                  <!-- HEADER -->
-                  <div
-                    class="flex
-                           items-start
-                           justify-between
-                           gap-3"
-                  >
-
-                    <div class="min-w-0">
-
-                      <div
-                        class="flex
-                               flex-wrap
-                               items-baseline
-                               gap-x-3
-                               gap-y-1"
-                      >
-
-                        <h2
-                          class="font-serif
-                                 text-[28px]
-                                 font-normal
-                                 text-[#e9e2d3]"
-                        >
-                          {{ word.word }}
-                        </h2>
-
-                        @if (word.phonetic) {
-
-                          <span
-                            class="text-[14px]
-                                   text-[#6f747a]"
-                          >
-                            {{ word.phonetic }}
-                          </span>
-
-                        }
-
-                      </div>
-
-                    </div>
-
-                    <!-- AUDIO + CLOSE -->
-                    <div
-                      class="flex
-                             shrink-0
-                             items-center
-                             gap-1"
-                    >
-
-                      @if (word.audioUrl) {
-
-                        <button
-                          type="button"
-                          (click)="
-                            playAudio(word.audioUrl);
-                            $event.stopPropagation()
-                          "
-                          class="flex
-                                 h-8 w-8
-                                 items-center
-                                 justify-center
-                                 rounded-full
-                                 text-[#8d9299]
-                                 transition
-                                 hover:bg-white/5
-                                 hover:text-[#7cc0f5]"
-                          aria-label="Escuchar pronunciación"
-                        >
-                          🔊
-                        </button>
-
-                      }
-
-                      <button
-                        type="button"
-                        (click)="closeWordPopover()"
-                        class="flex
-                               h-8 w-8
-                               items-center
-                               justify-center
-                               rounded-full
-                               text-[#6f747a]
-                               transition
-                               hover:bg-white/5
-                               hover:text-[#e9e2d3]"
-                        aria-label="Cerrar"
-                      >
-                        ×
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                  <!-- AUDIO ERROR -->
-                  @if (audioError()) {
-
-                    <p
-                      class="mt-2
-                             text-[13px]
-                             text-[#e8ab5c]"
-                    >
-                      {{ audioError() }}
-                    </p>
-
-                  }
-
-                  <!-- TRANSLATION -->
-                  <p
-                    class="mt-4
-                           font-serif
-                           text-[22px]
-                           text-white"
-                  >
-                    {{ word.translation }}
-                  </p>
-
-                  <!-- DETAIL EXPANDED -->
-                  @if (
-                    wordDetailsOpen()
-                    && word.meanings.length > 0
-                  ) {
-
-                    <div
-                      class="mt-4
-                             max-h-56
-                             space-y-5
-                             overflow-y-auto
-                             pr-1"
-                    >
-
-                      @for (
-                        meaning of word.meanings;
-                        track $index
-                      ) {
-
-                        <div>
-
-                          <p
-                            class="text-[13px]
-                                   font-bold
-                                   uppercase
-                                   tracking-[0.12em]
-                                   text-[#e8ab5c]"
-                          >
-                            {{ meaning.partOfSpeech }}
-                          </p>
-
-                          <div class="mt-2 space-y-3">
-
-                            @for (
-                              definition of meaning.definitions;
-                              track $index
-                            ) {
-
-                              <div>
-
-                                <p
-                                  class="text-[15px]
-                                         leading-6
-                                         text-[#a0a5aa]"
-                                >
-                                  {{ definition.definition }}
-                                </p>
-
-                                @if (definition.example) {
-
-                                  <p
-                                    class="mt-1
-                                           font-serif
-                                           text-[15px]
-                                           italic
-                                           leading-6
-                                           text-[#74797f]"
-                                  >
-                                    “{{ definition.example }}”
-                                  </p>
-
-                                }
-
-                              </div>
-
-                            }
-
-                          </div>
-
-                        </div>
-
-                      }
-
-                    </div>
-
-                  }
-
-                  <!-- STATUS -->
-                  <div
-                    class="mt-5
-                           border-t
-                           border-white/[0.07]
-                           pt-3"
-                  >
-
-                    <button
-                      type="button"
-                      (click)="toggleStatusMenu($event)"
-                      class="flex
-                             w-full
-                             items-center
-                             justify-between
-                             text-left
-                             text-[14px]
-                             transition
-                             hover:text-white"
-                    >
-
-                      @switch (
-                        getWordStatus(
-                          word.normalizedWord
-                        )
-                      ) {
-
-                        @case ('NEW') {
-
-                          <span class="text-[#7cc0f5]">
-                            Nueva
-                          </span>
-
-                        }
-
-                        @case ('LEARNING') {
-
-                          <span class="text-[#e8ab5c]">
-                            Aprendiendo
-                          </span>
-
-                        }
-
-                        @case ('KNOWN') {
-
-                          <span class="text-[#6fce9a]">
-                            Conocida
-                          </span>
-
-                        }
-
-                        @case ('IGNORED') {
-
-                          <span class="text-[#8d9299]">
-                            Ignorada
-                          </span>
-
-                        }
-
-                      }
-
-                      <span
-                        class="text-lg
-                               text-[#6f747a]"
-                      >
-                        ›
-                      </span>
-
-                    </button>
-
-                  </div>
-
-                  <!-- MORE -->
-                  @if (word.meanings.length > 0) {
-
-                    <button
-                      type="button"
-                      (click)="toggleWordDetails($event)"
-                      class="mt-3
-                             flex w-full
-                             items-center
-                             justify-center
-                             py-1
-                             text-[#6f747a]
-                             transition
-                             hover:text-[#e9e2d3]"
-                      [attr.aria-label]="
-                        wordDetailsOpen()
-                          ? 'Ocultar información'
-                          : 'Mostrar información'
-                      "
-                    >
-
-                      @if (wordDetailsOpen()) {
-
-                        <span
-                          class="text-xl
-                                 leading-none"
-                        >
-                          ⌃
-                        </span>
-
-                      } @else {
-
-                        <span
-                          class="text-xl
-                                 leading-none"
-                        >
-                          ⌄
-                        </span>
-
-                      }
-
-                    </button>
-
-                  }
-
-                }
-
-              }
-
-            </div>
-
-            <!-- STATUS MENU -->
-            @if (selectedWord(); as word) {
-
-              @if (statusMenuOpen()) {
-
-                <div
-                  class="reader-popover absolute
-                         left-full
-                         top-0
-                         z-20
-                         ml-3
-                         w-44
-                         overflow-hidden
-                         rounded-xl
-                         bg-[rgba(30,35,40,0.95)]
-                         py-1
-                         shadow-[0_20px_45px_rgba(0,0,0,0.42)]
-                         backdrop-blur-xl
-
-                         max-md:left-0
-                         max-md:top-full
-                         max-md:ml-0
-                         max-md:mt-3
-                         max-md:w-full"
-                  (click)="$event.stopPropagation()"
-                >
-
-                  <!-- NEW -->
-                  <button
-                    type="button"
-                    (click)="
-                      selectWordStatus(
-                        word.normalizedWord,
-                        'NEW'
-                      )
-                    "
-                    class="flex
-                           w-full
-                           items-center
-                           justify-between
-                           px-4 py-3
-                           text-left
-                           text-[14px]
-                           transition
-                           hover:bg-white/5"
-                  >
-
-                    <span class="text-[#7cc0f5]">
-                      Nueva
-                    </span>
-
-                    @if (
-                      getWordStatus(
-                        word.normalizedWord
-                      ) === 'NEW'
-                    ) {
-
-                      <span class="text-[#7cc0f5]">
-                        ✓
-                      </span>
-
-                    }
-
-                  </button>
-
-                  <!-- LEARNING -->
-                  <button
-                    type="button"
-                    (click)="
-                      selectWordStatus(
-                        word.normalizedWord,
-                        'LEARNING'
-                      )
-                    "
-                    class="flex
-                           w-full
-                           items-center
-                           justify-between
-                           px-4 py-3
-                           text-left
-                           text-[14px]
-                           transition
-                           hover:bg-white/5"
-                  >
-
-                    <span class="text-[#e8ab5c]">
-                      Aprendiendo
-                    </span>
-
-                    @if (
-                      getWordStatus(
-                        word.normalizedWord
-                      ) === 'LEARNING'
-                    ) {
-
-                      <span class="text-[#e8ab5c]">
-                        ✓
-                      </span>
-
-                    }
-
-                  </button>
-
-                  <!-- KNOWN -->
-                  <button
-                    type="button"
-                    (click)="
-                      selectWordStatus(
-                        word.normalizedWord,
-                        'KNOWN'
-                      )
-                    "
-                    class="flex
-                           w-full
-                           items-center
-                           justify-between
-                           px-4 py-3
-                           text-left
-                           text-[14px]
-                           transition
-                           hover:bg-white/5"
-                  >
-
-                    <span class="text-[#6fce9a]">
-                      Conocida
-                    </span>
-
-                    @if (
-                      getWordStatus(
-                        word.normalizedWord
-                      ) === 'KNOWN'
-                    ) {
-
-                      <span class="text-[#6fce9a]">
-                        ✓
-                      </span>
-
-                    }
-
-                  </button>
-
-                  <!-- IGNORED -->
-                  <button
-                    type="button"
-                    (click)="
-                      selectWordStatus(
-                        word.normalizedWord,
-                        'IGNORED'
-                      )
-                    "
-                    class="flex
-                           w-full
-                           items-center
-                           justify-between
-                           px-4 py-3
-                           text-left
-                           text-[14px]
-                           transition
-                           hover:bg-white/5"
-                  >
-
-                    <span class="text-[#8d9299]">
-                      Ignorar
-                    </span>
-
-                    @if (
-                      getWordStatus(
-                        word.normalizedWord
-                      ) === 'IGNORED'
-                    ) {
-
-                      <span class="text-[#8d9299]">
-                        ✓
-                      </span>
-
-                    }
-
-                  </button>
-
-                </div>
-
-              }
-
-            }
-
-          </div>
-
-        </div>
-
+      <!-- POPOVER COMPARTIDO -->
+      @if (selectedToken(); as token) {
+        @if (popoverPosition(); as position) {
+          <app-reader-word-popover
+            [token]="token"
+            [position]="position"
+            [word]="dictionaryWord()"
+            [lookupLoading]="lookupLoading()"
+            [lookupUnavailable]="lookupUnavailable()"
+            [savingStatus]="savingStatus()"
+            [statusError]="statusError()"
+            [audioError]="audioError()"
+            [definitionsOpen]="definitionsOpen()"
+            [selectedStatus]="selectedExplicitStatus()"
+            [statuses]="vocabularyStatuses"
+            (closed)="closeWordPopover()"
+            (audioPlayed)="playAudio($event)"
+            (definitionsToggled)="toggleWordDetails($event)"
+            (statusSelected)="selectWordStatus($event)"
+          />
+        }
       }
 
       <!-- LEGEND -->
@@ -914,22 +333,56 @@
       </div>
 
       <!-- CTA -->
-      <footer class="mt-12">
+      <footer class="mt-10 border-t border-[#2a2f34] pt-6 sm:flex sm:items-end sm:justify-between sm:gap-8">
+
+        <div
+          id="onboarding-classification-progress"
+          class="onboarding-completion-guidance max-w-[520px]"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          @if (canFinishTest()) {
+            <p class="text-[15px] font-semibold text-[#e9e2d3]">
+              {{ classifiedWordCount() }} palabras clasificadas
+            </p>
+            <p class="mt-1 text-[14px] leading-6 text-[#8d9299]">
+              Ya tenemos suficiente información para empezar a personalizar tus lecturas.
+            </p>
+          } @else {
+            <p class="text-[15px] font-semibold text-[#e9e2d3]">
+              {{ classifiedWordCount() }} de {{ minimumClassifications }} palabras clasificadas
+            </p>
+            <p class="mt-1 text-[14px] leading-6 text-[#8d9299]">
+              Clasifica al menos {{ minimumClassifications }} palabras para personalizar tus primeras recomendaciones.
+              Selecciona {{ remainingClassifications() }} más para continuar.
+            </p>
+          }
+        </div>
 
         <button
           type="button"
           (click)="finishTest()"
-          [disabled]="loading()"
-          class="inline-flex
+          [disabled]="loading() || !canFinishTest()"
+          aria-describedby="onboarding-classification-progress"
+          class="onboarding-finish-button mt-5 inline-flex
+                 min-h-12 w-full
                  items-center
+                 justify-center
                  gap-3
+                 rounded-lg
+                 border border-[#7cc0f5]
+                 px-5 py-3
                  text-[17px]
                  font-semibold
-                 text-[#e9e2d3]
+                 text-[#14181c]
+                 bg-[#7cc0f5]
                  transition
-                 hover:text-[#7cc0f5]
+                 hover:bg-[#9bd0f7]
                  disabled:cursor-not-allowed
-                 disabled:text-[#5c6167]"
+                 disabled:border-[#34393e]
+                 disabled:bg-transparent
+                 disabled:text-[#777c82]
+                 sm:mt-0 sm:w-auto sm:shrink-0"
         >
 
           @if (loading()) {
@@ -938,7 +391,7 @@
 
           } @else {
 
-            Terminar evaluación
+            Finalizar onboarding
 
             <span
               class="text-xl"

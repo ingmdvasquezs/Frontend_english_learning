@@ -1,4 +1,4 @@
-<div class="app-page reader-page min-h-screen bg-[var(--app-bg)] px-5 py-8 text-[var(--app-text)] md:px-8 md:py-12" (click)="closeSelector()">
+<div #readerTop class="app-page reader-page min-h-screen bg-[var(--app-bg)] px-5 py-8 text-[var(--app-text)] md:px-8 md:py-12" (click)="closeSelector()">
   <main class="mx-auto max-w-[880px]">
     @if (loading()) {
       <p class="py-20 text-[16px] text-[#8d9299]">Cargando lectura...</p>
@@ -21,11 +21,27 @@
         }
       </header>
 
-      <div class="h-px bg-[#2a2f34]"></div>
+      @if (currentPart(); as part) {
+        @if (parts().length > 1) {
+          <div class="text-part-heading" aria-live="polite">Parte {{ part.ordinal }} de {{ part.totalParts }}</div>
+        }
+        <article class="py-11 font-serif text-[22px] leading-[1.85] whitespace-pre-wrap md:text-[24px]" aria-label="Contenido de la lectura">
+          <app-reader-token-stream [tokens]="part.tokens" [activeNarrationTokenIndex]="activeNarrationTokenIndex()" (wordSelected)="selectWordFromStream($event)" />
+        </article>
 
-      <article class="py-11 font-serif text-[22px] leading-[1.85] whitespace-pre-wrap md:text-[24px]" aria-label="Contenido de la lectura">
-        <app-reader-token-stream [tokens]="data.tokens" (wordSelected)="selectWordFromStream($event)" />
-      </article>
+        @if (parts().length > 1) {
+          <nav class="text-part-navigation" aria-label="Navegación de la lectura">
+            <button type="button" (click)="navigatePart(-1); $event.stopPropagation()" [disabled]="part.ordinal === 1">← Anterior</button>
+            <span aria-live="polite">{{ part.ordinal }} de {{ part.totalParts }}</span>
+            <button type="button" (click)="navigatePart(1); $event.stopPropagation()" [disabled]="part.ordinal === part.totalParts">Siguiente →</button>
+          </nav>
+        }
+        @if (progressError()) {
+          <p class="mt-3 text-center text-[13px] text-[var(--app-danger)]" role="status">
+            {{ progressError() }}
+          </p>
+        }
+      }
 
       <div class="h-px bg-[var(--app-border)]"></div>
 
@@ -62,6 +78,7 @@
           />
         }
       }
+      <app-reader-narration-controls [text]="narrationContent().text" [language]="data.language" playLabel="Escuchar parte" />
     }
   </main>
 </div>

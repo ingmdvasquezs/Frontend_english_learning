@@ -13,7 +13,9 @@ export class ReaderWordInteraction {
   private readonly dictionary = inject(DictionaryService);
   private readonly destroyRef = inject(DestroyRef);
   private lookupRequestId = 0;
+  private pronunciationRequestId = 0;
   private statusSubscription: Subscription | null = null;
+  private pronunciationAudio: HTMLAudioElement | null = null;
 
   readonly selectedToken = signal<ReaderToken | null>(null);
   readonly dictionaryWord = signal<DictionaryWord | null>(null);
@@ -27,9 +29,14 @@ export class ReaderWordInteraction {
   readonly statuses: readonly VocabularyStatus[] = ['NEW', 'LEARNING', 'KNOWN', 'IGNORED'];
   readonly selectedStatus = computed(() => this.selectedToken()?.status ?? null);
 
+  constructor() {
+    this.destroyRef.onDestroy(() => this.stopPronunciation());
+  }
+
   selectWord(token: ReaderToken, event: MouseEvent): void {
     if (this.savingStatus()) return;
     event.stopPropagation();
+    this.stopPronunciation();
     this.positionFrom((event.currentTarget as HTMLElement).getBoundingClientRect(), 340);
     this.selectedToken.set(token);
     this.dictionaryWord.set(null);
@@ -67,6 +74,17 @@ export class ReaderWordInteraction {
     });
   }
 
+  setLocalStatus(
+    status: VocabularyStatus,
+    updateTokens: (selected: ReaderToken, status: VocabularyStatus) => void
+  ): void {
+    const selected = this.selectedToken();
+    if (!selected) return;
+    updateTokens(selected, status);
+    this.selectedToken.set({ ...selected, status });
+    this.statusError.set(null);
+  }
+
   close(): void {
     if (!this.savingStatus()) this.clearSelection();
   }
@@ -75,6 +93,7 @@ export class ReaderWordInteraction {
     this.statusSubscription?.unsubscribe();
     this.statusSubscription = null;
     this.savingStatus.set(false);
+    this.stopPronunciation();
     this.clearSelection();
   }
 
@@ -88,8 +107,23 @@ export class ReaderWordInteraction {
 
   playAudio(audioUrl: string | null): void {
     if (!audioUrl) return;
+    this.stopPronunciation();
     this.audioError.set(null);
-    new Audio(audioUrl).play().catch(() => this.audioError.set('Audio temporalmente no disponible'));
+    const requestId = ++this.pronunciationRequestId;
+    const audio = new Audio(audioUrl);
+    this.pronunciationAudio = audio;
+    try {
+      const playback = audio.play();
+      void playback?.catch(() => {
+        if (requestId === this.pronunciationRequestId) {
+          this.audioError.set('Audio temporalmente no disponible');
+        }
+      });
+    } catch {
+      if (requestId === this.pronunciationRequestId) {
+        this.audioError.set('Audio temporalmente no disponible');
+      }
+    }
   }
 
   private lookup(word: string): void {
@@ -100,7 +134,12 @@ export class ReaderWordInteraction {
         if (requestId !== this.lookupRequestId) return;
         try {
           const result = this.dictionary.parseLookupWordResponse(response);
-          result.word ? this.dictionaryWord.set(result) : this.lookupUnavailable.set(true);
+          if (result.word) {
+            this.dictionaryWord.set(result);
+            if (result.audioUrl) this.playAudio(result.audioUrl);
+          } else {
+            this.lookupUnavailable.set(true);
+          }
         } catch {
           this.lookupUnavailable.set(true);
         } finally {
@@ -125,6 +164,19 @@ export class ReaderWordInteraction {
     this.audioError.set(null);
     this.definitionsOpen.set(false);
     this.popoverPosition.set(null);
+  }
+
+  private stopPronunciation(): void {
+    this.pronunciationRequestId += 1;
+    const audio = this.pronunciationAudio;
+    this.pronunciationAudio = null;
+    if (!audio) return;
+    audio.pause();
+    try {
+      audio.currentTime = 0;
+    } catch {
+      // Some browser media implementations do not allow seeking before metadata.
+    }
   }
 
   private positionFrom(rect: DOMRect, requiredHeight: number): void {

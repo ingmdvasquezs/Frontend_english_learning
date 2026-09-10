@@ -37,7 +37,7 @@
           @for (card of visibleReadingCards(); track card.reading.readingId || $index) {
             @let reading = card.reading;
             <article class="library-card-shell">
-            <a [routerLink]="['/reading', reading.readingId]" class="library-card app-card flex min-w-0 flex-col overflow-hidden rounded-2xl transition focus-visible:outline-2 focus-visible:outline-offset-2">
+            <a [routerLink]="['/reading', reading.readingId]" (click)="closeActionMenu()" class="library-card app-card flex min-w-0 flex-col overflow-hidden rounded-2xl transition focus-visible:outline-2 focus-visible:outline-offset-2">
               <div class="library-card-visual">
                 @if (!failedCoverIds().has(reading.readingId)) {
                   <img [src]="textCoverUrl(reading.readingId)" [alt]="'Portada predeterminada de ' + reading.title" width="1200" height="675" loading="lazy" (error)="markCoverFailed(reading.readingId)" />
@@ -50,29 +50,31 @@
                 <h2 class="library-card-title mt-2 font-serif text-[24px] font-normal leading-tight">{{ reading.title }}</h2>
                 <div class="library-detail-stage">
                   <div class="library-card-summary flex h-full flex-col">
-                    <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.knownPercentage }}% de vocabulario conocido</p>
+                    <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.vocabularyFitLabel }}</p>
                     <p class="library-progress-line mt-3 text-[13px] text-[var(--app-muted)]"><span class="font-semibold" [class.library-status-complete]="reading.progressStatus === 'COMPLETED'" [class.library-status-active]="reading.progressStatus === 'IN_PROGRESS'">{{ reading.progressStatus === 'COMPLETED' ? 'Leída' : reading.progressStatus === 'IN_PROGRESS' ? 'En progreso' : 'Sin empezar' }}</span>@if (reading.createdAt) { <span aria-hidden="true"> · </span><span>Añadida {{ reading.createdAt | date:'d MMM y' }}</span> }</p>
                     <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →' }}</p>
                   </div>
                   <div class="library-card-metrics flex h-full flex-col" aria-hidden="true">
-                    <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.knownPercentage }}% de vocabulario conocido</p>
-                    <div class="mt-3 space-y-1 text-[13px] leading-5 text-[var(--app-text-secondary)]"><p>{{ reading.knownWords }} conocidas</p><p>{{ reading.learningWords }} aprendiendo</p><p>{{ card.wordsToLearn }} por aprender</p></div>
+                    <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.vocabularyFitLabel }}</p>
+                    <div class="mt-3 space-y-1 text-[13px] leading-5 text-[var(--app-text-secondary)]"><p>{{ card.knownLabel }}</p><p>{{ card.learningLabel }}</p><p>{{ card.wordsToLearnLabel }}</p></div>
                     <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →' }}</p>
                   </div>
                 </div>
               </div>
             </a>
-            <button type="button" class="document-actions-trigger" [attr.aria-label]="'Acciones para ' + reading.title" [attr.aria-expanded]="openActionMenuKey() === readingActionKey(reading.readingId)" [disabled]="deletingTargetKeys().has(readingActionKey(reading.readingId))" (click)="toggleActionMenu(readingActionKey(reading.readingId))">⋯</button>
-            @if (openActionMenuKey() === readingActionKey(reading.readingId)) {
-              <div class="document-actions-menu" role="menu" (keydown.escape)="closeActionMenu()">
-                <button type="button" role="menuitem" (click)="requestReadingDeletion(reading)">Eliminar de mi biblioteca</button>
-              </div>
-            }
+            <div class="library-actions" data-library-actions>
+              <button type="button" class="document-actions-trigger" [attr.aria-label]="'Acciones para ' + reading.title" aria-haspopup="menu" [attr.aria-controls]="'actions-menu-reading-' + reading.readingId" [attr.aria-expanded]="openActionMenuKey() === readingActionKey(reading.readingId)" [class.is-open]="openActionMenuKey() === readingActionKey(reading.readingId)" [disabled]="deletingTargetKeys().has(readingActionKey(reading.readingId))" (click)="toggleActionMenu(readingActionKey(reading.readingId), $event.currentTarget)">⋯</button>
+              @if (openActionMenuKey() === readingActionKey(reading.readingId)) {
+                <div class="document-actions-menu" [id]="'actions-menu-reading-' + reading.readingId" role="menu" [attr.aria-label]="'Acciones para ' + reading.title">
+                  <button type="button" role="menuitem" (click)="requestReadingDeletion(reading)">Eliminar de mi biblioteca</button>
+                </div>
+              }
+            </div>
             </article>
           }
           @for (document of visibleDocuments(); track document.documentId) {
             <article class="library-card-shell document-card-shell">
-              <a [routerLink]="canReadDocument(document) ? ['/documents', document.documentId, 'read'] : null" [class.is-unavailable]="!canReadDocument(document)" [attr.aria-disabled]="!canReadDocument(document) ? 'true' : null" [attr.tabindex]="!canReadDocument(document) ? -1 : null" class="library-card document-card app-card flex min-w-0 flex-col overflow-hidden rounded-2xl transition focus-visible:outline-2 focus-visible:outline-offset-2">
+              <a [routerLink]="canReadDocument(document) ? ['/documents', document.documentId, 'read'] : null" (click)="closeActionMenu()" [class.is-unavailable]="!canReadDocument(document)" [attr.aria-disabled]="!canReadDocument(document) ? 'true' : null" [attr.tabindex]="!canReadDocument(document) ? -1 : null" class="library-card document-card app-card flex min-w-0 flex-col overflow-hidden rounded-2xl transition focus-visible:outline-2 focus-visible:outline-offset-2">
                 <div class="library-card-visual document-cover">
                   @if (documentCoverUrls()[document.documentId]; as coverUrl) {
                     @if (!failedDocumentCoverIds().has(document.documentId)) {
@@ -91,12 +93,14 @@
                 </div>
               </a>
               @if (document.status === 'READY') {
-                <button type="button" class="document-actions-trigger" [attr.aria-label]="'Acciones para ' + document.title" [attr.aria-expanded]="openActionMenuKey() === documentActionKey(document.documentId)" [disabled]="deletingTargetKeys().has(documentActionKey(document.documentId))" (click)="toggleActionMenu(documentActionKey(document.documentId))">⋯</button>
-                @if (openActionMenuKey() === documentActionKey(document.documentId)) {
-                  <div class="document-actions-menu" role="menu" (keydown.escape)="closeActionMenu()">
-                    <button type="button" role="menuitem" (click)="requestDocumentDeletion(document)">Eliminar de mi biblioteca</button>
-                  </div>
-                }
+                <div class="library-actions" data-library-actions>
+                  <button type="button" class="document-actions-trigger" [attr.aria-label]="'Acciones para ' + document.title" aria-haspopup="menu" [attr.aria-controls]="'actions-menu-document-' + document.documentId" [attr.aria-expanded]="openActionMenuKey() === documentActionKey(document.documentId)" [class.is-open]="openActionMenuKey() === documentActionKey(document.documentId)" [disabled]="deletingTargetKeys().has(documentActionKey(document.documentId))" (click)="toggleActionMenu(documentActionKey(document.documentId), $event.currentTarget)">⋯</button>
+                  @if (openActionMenuKey() === documentActionKey(document.documentId)) {
+                    <div class="document-actions-menu" [id]="'actions-menu-document-' + document.documentId" role="menu" [attr.aria-label]="'Acciones para ' + document.title">
+                      <button type="button" role="menuitem" (click)="requestDocumentDeletion(document)">Eliminar de mi biblioteca</button>
+                    </div>
+                  }
+                </div>
               }
             </article>
           }

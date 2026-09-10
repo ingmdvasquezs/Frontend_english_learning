@@ -1,0 +1,61 @@
+@let item = reading();
+<a [routerLink]="['/reading', item.readingId]" class="recommendation-card app-card">
+  <div class="reading-card-cover">
+    @if (imageUrl(); as url) {
+      @if (!imageFailed()) {
+        <img
+          [src]="url"
+          [alt]="'Portada de ' + item.title"
+          width="1672"
+          height="941"
+          loading="lazy"
+          (error)="markImageFailed()"
+        />
+      } @else {
+        <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+      }
+    } @else {
+      <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+    }
+  </div>
+
+  <div class="recommendation-card-body">
+    <div class="reading-card-metadata">
+      <span>{{ item.editorialLevel }}</span>
+      <span>{{ item.category }}</span>
+    </div>
+
+    <h3 class="reading-card-title">{{ item.title }}</h3>
+
+    @if (progressLabel(); as progress) {
+      <p class="reading-card-progress" [class.reading-card-progress-completed]="item.progressStatus === 'COMPLETED'">{{ progress }}</p>
+    } @else {
+      <p class="reading-card-progress reading-card-progress-empty" aria-hidden="true">&nbsp;</p>
+    }
+
+    <div class="reading-card-summary">
+      <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
+      <p
+        class="reading-card-secondary-metric"
+        [class.reading-card-secondary-metric-empty]="!secondaryMetric()"
+        [attr.aria-hidden]="secondaryMetric() ? null : 'true'"
+      >{{ secondaryMetric() }}</p>
+      <p class="reading-card-cta">{{ ctaLabel() }}</p>
+    </div>
+
+    <div class="recommendation-metrics-reveal">
+      <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
+      @if (secondaryMetric(); as secondary) {
+        <p class="reading-card-secondary-metric">{{ secondary }}</p>
+      }
+      @if (revealMetrics().length) {
+        <div class="reading-card-reveal-details">
+          @for (metric of revealMetrics(); track metric) {
+            <p>{{ metric }}</p>
+          }
+        </div>
+      }
+      <p class="reading-card-cta reading-card-reveal-cta">{{ ctaLabel() }}</p>
+    </div>
+  </div>
+</a>

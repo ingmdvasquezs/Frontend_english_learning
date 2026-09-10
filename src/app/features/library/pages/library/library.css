@@ -21,12 +21,13 @@
 .library-card-shell>.library-card { height:100%; }
 .document-card { min-height:22rem; }
 .document-card.is-unavailable { cursor:default; }
-.document-actions-trigger { position:absolute; top:.65rem; right:.65rem; z-index:3; display:grid; width:2.25rem; height:2.25rem; place-items:center; border:1px solid var(--app-border); border-radius:999px; color:var(--app-text); background:color-mix(in srgb,var(--app-surface-elevated) 94%,transparent); font-size:1.25rem; line-height:1; box-shadow:0 1px 4px color-mix(in srgb,var(--app-text) 12%,transparent); }
-.document-actions-trigger:hover,.document-actions-trigger:focus-visible { border-color:var(--app-accent); color:var(--app-accent); }
+.library-actions { position:absolute; top:.7rem; right:.7rem; z-index:4; display:flex; align-items:flex-end; flex-direction:column; }
+.library-actions>.document-actions-trigger { appearance:none; display:grid; width:2.5rem; height:2.35rem; padding:.35rem; place-items:center; border:0 !important; border-radius:0 !important; color:var(--app-text-secondary); background:transparent !important; box-shadow:none !important; font:inherit; font-size:1.3rem; line-height:1; transition:color .15s ease,background-color .15s ease; }
+.library-actions>.document-actions-trigger:hover,.library-actions>.document-actions-trigger:focus-visible,.library-actions>.document-actions-trigger.is-open { color:var(--app-text); background:color-mix(in srgb,var(--app-active) 55%,transparent) !important; }
 .document-actions-trigger:focus-visible,.document-actions-menu button:focus-visible,.document-delete-actions button:focus-visible { outline:2px solid var(--app-accent); outline-offset:2px; }
 .document-actions-trigger:disabled { cursor:not-allowed; opacity:.55; }
-.document-actions-menu { position:absolute; top:3.25rem; right:.65rem; z-index:4; width:min(13.5rem,calc(100% - 1.3rem)); border:1px solid var(--app-border); border-radius:.35rem; padding:.35rem; background:var(--app-surface-elevated); box-shadow:0 .5rem 1.5rem color-mix(in srgb,var(--app-text) 14%,transparent); }
-.document-actions-menu button { width:100%; border:0; border-radius:.2rem; padding:.7rem .75rem; color:var(--app-danger); background:transparent; font-size:.8rem; font-weight:650; text-align:left; }
+.document-actions-menu { width:12.5rem; max-width:calc(100vw - 2.5rem); margin-top:.25rem; border:1px solid var(--app-border); border-radius:.25rem; padding:.2rem; background:var(--app-surface-elevated); box-shadow:0 .35rem .9rem color-mix(in srgb,var(--app-text) 11%,transparent); }
+.document-actions-menu button { width:100%; min-height:2.4rem; border:0; border-radius:.15rem; padding:.6rem .7rem; color:var(--app-danger); background:transparent; font-size:.78rem; font-weight:650; line-height:1.3; text-align:left; }
 .document-actions-menu button:hover { background:var(--app-active); }
 .library-card-visual { position:relative; aspect-ratio:16/9; overflow:hidden; background:var(--app-surface); border:1px solid var(--app-border); border-radius:.2rem; transition:border-color .16s ease,transform .16s ease; }
 .library-card-visual img { display:block; width:100%; height:100%; object-fit:cover; }

@@ -44,6 +44,8 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+temp-cover-audit/
+public/assets/reading-covers/*.png
 
 # System files
 .DS_Store

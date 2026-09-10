@@ -9,7 +9,7 @@
 .featured-content { position:relative; grid-area:content; padding:1.4rem 0 .75rem; }
 .featured-cover { grid-area:cover; height:9.5rem; }
 .featured-cta { grid-area:cta; padding:.75rem 0 1.25rem; color:var(--app-text); }
-.featured-title,.reading-card-title { overflow-wrap:anywhere; }
+.featured-title { overflow-wrap:anywhere; }
 .featured-title { font-size:clamp(1.75rem,2.7vw,2.35rem) !important; letter-spacing:-.02em; }
 .featured-summary { margin-top:.75rem !important; }
 .featured-metrics-reveal { padding:1.4rem 0; }
@@ -24,17 +24,11 @@
 .rail-arrow:focus-visible { outline:2px solid var(--app-accent); outline-offset:2px; }
 .recommendations-carousel,.continue-reading-carousel,.collection-carousel { display:flex; gap:1.4rem; width:100%; overflow-x:auto; overflow-y:hidden; padding:.15rem 0 .8rem; scroll-behavior:smooth; scroll-snap-type:x proximity; overscroll-behavior-inline:contain; scrollbar-width:none; }
 .recommendations-carousel::-webkit-scrollbar,.continue-reading-carousel::-webkit-scrollbar,.collection-carousel::-webkit-scrollbar { display:none; }
-.recommendation-card { flex:0 0 clamp(16.5rem,calc((100% - 4.2rem)/4),20rem); min-width:0; scroll-snap-align:start; border:0; border-radius:0; background:transparent !important; }
-.recommendation-card .reading-cover { border-radius:.2rem; }
-.recommendation-card:hover .reading-cover { outline:1px solid var(--app-accent); outline-offset:3px; }
 .continue-reading-card { flex:0 0 clamp(14rem,calc((100% - 5.6rem)/5),18rem); min-width:0; scroll-snap-align:start; border:0; border-top:1px solid var(--app-border); border-radius:0; background:transparent !important; }
 .continue-reading-cover { flex:none; margin-top:.75rem; border-radius:.2rem; }
 .continue-reading-body { min-height:8.75rem; padding-inline:0 !important; }
 .continue-reading-title { display:-webkit-box; overflow:hidden; overflow-wrap:anywhere; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
-.recommendation-card-body { position:relative; min-height:11.5rem; padding-inline:0 !important; }
-.reading-card-title { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
 .recommendation-metrics-reveal { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:1rem 0; color:var(--app-text); background:color-mix(in srgb,var(--app-bg) 97%,transparent); opacity:0; pointer-events:none; transform:translateY(.25rem); transition:opacity .16s ease,transform .16s ease; }
-.recommendation-card:hover .recommendation-metrics-reveal,.recommendation-card:focus-visible .recommendation-metrics-reveal,.recommendation-card:focus-within .recommendation-metrics-reveal { opacity:1; transform:translateY(0); }
 .collection-section { border-color:var(--app-border); }
 .carousel-status { display:grid; flex:0 0 min(18rem,80vw); place-content:center; min-height:17rem; padding:1.5rem; text-align:center; color:var(--app-muted); scroll-snap-align:start; }
 .carousel-end { display:grid; flex:0 0 4rem; place-content:center; color:var(--app-muted); font-size:.72rem; }
@@ -47,7 +41,7 @@
   .featured-metrics-reveal { padding:1.5rem 1.75rem; background:var(--app-surface); }
 }
 @media (min-width:768px) and (hover:hover) and (pointer:fine) { .featured-recommendation:hover .featured-metrics-reveal,.featured-recommendation:focus-visible .featured-metrics-reveal,.featured-recommendation:focus-within .featured-metrics-reveal { opacity:1; transform:translateY(0); } }
-@media (min-width:912px) and (max-width:1279px) { .recommendation-card,.continue-reading-card { flex-basis:calc((100% - 2.8rem)/3); } }
-@media (min-width:640px) and (max-width:911px) { .recommendation-card,.continue-reading-card { flex-basis:calc((100% - 1.4rem)/2); } }
-@media (max-width:639px) { .rail-arrow { display:none; } .recommendation-card,.continue-reading-card { flex-basis:86%; } .featured-content { padding-top:1.25rem; } }
+@media (min-width:912px) and (max-width:1279px) { .continue-reading-card { flex-basis:calc((100% - 2.8rem)/3); } }
+@media (min-width:640px) and (max-width:911px) { .continue-reading-card { flex-basis:calc((100% - 1.4rem)/2); } }
+@media (max-width:639px) { .rail-arrow { display:none; } .continue-reading-card { flex-basis:86%; } .featured-content { padding-top:1.25rem; } }
 @media (hover:none) { .recommendation-metrics-reveal { display:none; } }

@@ -15,7 +15,16 @@ export interface ReaderData {
   title: string;
   language: string;
   progressStatus: ReadingProgressStatus | null;
+  currentPartOrdinal?: number | null;
+  paginationVersion?: number | null;
   tokens: ReaderToken[];
+}
+
+export interface UpdateReadingProgressRequest {
+  readingId: string;
+  progressStatus: ReadingProgressStatus;
+  currentPartOrdinal: number;
+  paginationVersion: number;
 }
 
 export interface CompleteReadingResult {
