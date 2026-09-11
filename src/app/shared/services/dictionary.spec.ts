@@ -39,4 +39,34 @@ describe('DictionaryService', () => {
 
     expect(service.parseLookupWordResponse(response).translation).toBe('Fracaso');
   });
+
+  it('parses example and exampleTranslation from definitions when present', () => {
+    const response = `
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+        <soapenv:Body>
+          <lookupWordResponse xmlns="http://soap.com/english-reading/readings">
+            <word>would</word>
+            <normalizedWord>would</normalizedWord>
+            <translation></translation>
+            <phonetic>/wʊd/</phonetic>
+            <meanings>
+              <partOfSpeech>verb</partOfSpeech>
+              <definitions>
+                <definition>Used to indicate wish or desire.</definition>
+                <example>I would like to travel next year.</example>
+                <exampleTranslation>Me gustaría viajar el próximo año.</exampleTranslation>
+              </definitions>
+            </meanings>
+          </lookupWordResponse>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
+
+    const parsed = service.parseLookupWordResponse(response);
+    expect(parsed.word).toBe('would');
+    expect(parsed.translation).toBe('');
+    expect(parsed.phonetic).toBe('/wʊd/');
+    expect(parsed.meanings[0].definitions[0].example).toBe('I would like to travel next year.');
+    expect(parsed.meanings[0].definitions[0].exampleTranslation).toBe('Me gustaría viajar el próximo año.');
+  });
 });

@@ -1,20 +1,51 @@
 <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-  <header class="mb-8">
-    <h1 class="page-title">Mi vocabulario</h1>
-    <p class="page-subtitle">Palabras que has descubierto y su estado de aprendizaje.</p>
+  <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="page-title">Mi vocabulario</h1>
+      <p class="page-subtitle">Palabras que has descubierto y su estado de aprendizaje.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      @if (reviewAvailable()) {
+        <a
+          routerLink="/vocabulary/review"
+          class="btn-review inline-flex items-center gap-2 rounded-lg bg-[var(--app-accent)] px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
+          aria-label="Repasar palabras pendientes"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="m9 10 2 2 4-4"/>
+          </svg>
+          <span>Repasar palabras</span>
+        </a>
+      } @else {
+        <button
+          type="button"
+          disabled
+          class="btn-review inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium text-[var(--app-muted)] opacity-60 cursor-not-allowed"
+          title="No tienes palabras pendientes de repaso."
+          aria-label="No tienes palabras pendientes de repaso"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="m9 10 2 2 4-4"/>
+          </svg>
+          <span>Repasar palabras</span>
+        </button>
+      }
+    </div>
   </header>
 
   <!-- Summary Metrics Bar -->
   <section class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5" aria-label="Resumen de vocabulario">
     <button
       type="button"
-      class="summary-card"
-      [class.active]="selectedFilter() === 'ALL'"
-      (click)="selectFilter('ALL')"
-      aria-label="Ver todas las palabras"
+      class="summary-card card-learning"
+      [class.active]="selectedFilter() === 'LEARNING'"
+      (click)="selectFilter('LEARNING')"
+      aria-label="Filtrar palabras aprendiendo"
     >
-      <span class="summary-label">Total</span>
-      <span class="summary-value">{{ summary().totalCount }}</span>
+      <span class="summary-label">Aprendiendo</span>
+      <span class="summary-value">{{ summary().learningCount }}</span>
     </button>
 
     <button
@@ -26,17 +57,6 @@
     >
       <span class="summary-label">Nuevas</span>
       <span class="summary-value">{{ summary().newCount }}</span>
-    </button>
-
-    <button
-      type="button"
-      class="summary-card card-learning"
-      [class.active]="selectedFilter() === 'LEARNING'"
-      (click)="selectFilter('LEARNING')"
-      aria-label="Filtrar palabras aprendiendo"
-    >
-      <span class="summary-label">Aprendiendo</span>
-      <span class="summary-value">{{ summary().learningCount }}</span>
     </button>
 
     <button
@@ -59,6 +79,17 @@
     >
       <span class="summary-label">Ignoradas</span>
       <span class="summary-value">{{ summary().ignoredCount }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="summary-card"
+      [class.active]="selectedFilter() === 'ALL'"
+      (click)="selectFilter('ALL')"
+      aria-label="Ver todas las palabras"
+    >
+      <span class="summary-label">Total</span>
+      <span class="summary-value">{{ summary().totalCount }}</span>
     </button>
   </section>
 
@@ -104,6 +135,12 @@
     </div>
   </div>
 
+  @if (selectedFilter() === 'NEW') {
+    <p class="mb-4 text-xs text-[var(--app-muted)]">
+      Palabras que has añadido a tu vocabulario y aún no estás aprendiendo.
+    </p>
+  }
+
   <!-- Content State Handling -->
   @if (loading()) {
     <div class="space-y-3" role="status" aria-busy="true">
@@ -134,6 +171,22 @@
         Explorar lecturas
       </a>
     </div>
+  } @else if (isLearningEmpty()) {
+    <div class="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-12 text-center">
+      <h2 class="mb-1.5 text-lg font-semibold text-[var(--app-text)]">No tienes palabras en aprendizaje.</h2>
+      <p class="mx-auto mb-5 max-w-md text-sm text-[var(--app-muted)]">
+        Las palabras que decidas aprender aparecerán aquí.
+      </p>
+      @if (summary().newCount > 0) {
+        <button type="button" class="inline-block rounded border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-4 py-2 text-xs font-semibold text-[var(--app-text)] hover:bg-[var(--app-active)]" (click)="selectFilter('NEW')">
+          Ver nuevas
+        </button>
+      }
+    </div>
+  } @else if (isNewEmpty()) {
+    <div class="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-12 text-center">
+      <h2 class="mb-1.5 text-lg font-semibold text-[var(--app-text)]">No tienes palabras nuevas guardadas.</h2>
+    </div>
   } @else if (isFilterEmpty()) {
     <div class="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-12 text-center">
       <h2 class="mb-1.5 text-lg font-semibold text-[var(--app-text)]">No se encontraron palabras</h2>
@@ -160,14 +213,46 @@
           @for (entry of entries(); track entry.entryId) {
             <tr class="vocabulary-row transition-colors hover:bg-[var(--app-active)]">
               <td class="px-4 py-3 font-semibold text-[var(--app-text)]">
-                <button
-                  type="button"
-                  class="word-trigger-btn"
-                  (click)="openWordPopover(entry, $event)"
-                  [attr.aria-label]="'Consultar detalles de ' + entry.word"
-                >
-                  <span class="word-text">{{ entry.word }}</span>
-                </button>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <button
+                    type="button"
+                    class="word-trigger-btn text-left"
+                    (click)="openWordPopover(entry, $event)"
+                    [attr.aria-label]="'Consultar detalles de ' + entry.word"
+                  >
+                    <span class="word-text">{{ entry.word }}</span>
+                  </button>
+                  @if (entry.status === 'NEW') {
+                    <div class="flex items-center gap-1.5 text-xs font-normal">
+                      <button
+                        type="button"
+                        (click)="quickChangeStatus(entry, 'LEARNING', $event)"
+                        class="text-[var(--app-learning)] hover:underline"
+                        title="Aprender palabra"
+                      >
+                        Aprender
+                      </button>
+                      <span class="text-[var(--app-border)]" aria-hidden="true">•</span>
+                      <button
+                        type="button"
+                        (click)="quickChangeStatus(entry, 'KNOWN', $event)"
+                        class="text-[var(--app-success)] hover:underline"
+                        title="Ya la conozco"
+                      >
+                        Ya la conozco
+                      </button>
+                      <span class="text-[var(--app-border)]" aria-hidden="true">•</span>
+                      <button
+                        type="button"
+                        (click)="quickChangeStatus(entry, 'IGNORED', $event)"
+                        class="text-[var(--app-muted)] hover:underline"
+                        title="Ignorar palabra"
+                      >
+                        Ignorar
+                      </button>
+                    </div>
+                  }
+                </div>
               </td>
               <td class="px-4 py-3">
                 <span [class]="'status-badge ' + getStatusBadgeClass(entry.status)">
@@ -193,32 +278,34 @@
     </div>
 
     <!-- Pagination Toolbar -->
-    <footer class="mt-5 flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--app-muted)]" aria-label="Paginación de vocabulario">
-      <div>
-        Página {{ page() + 1 }} de {{ totalPages() }}
-        <span class="ml-1">({{ totalElements() }} {{ totalElements() === 1 ? 'palabra' : 'palabras' }})</span>
-      </div>
-      <div class="flex gap-2">
-        <button
-          type="button"
-          class="rounded border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-medium text-[var(--app-text)] hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
-          [disabled]="page() === 0 || loading()"
-          (click)="prevPage()"
-          aria-label="Página anterior"
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          class="rounded border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-medium text-[var(--app-text)] hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
-          [disabled]="page() + 1 >= totalPages() || loading()"
-          (click)="nextPage()"
-          aria-label="Página siguiente"
-        >
-          Siguiente
-        </button>
-      </div>
-    </footer>
+    @if (totalPages() > 1) {
+      <footer class="mt-5 flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--app-muted)]" aria-label="Paginación de vocabulario">
+        <div>
+          Página {{ page() + 1 }} de {{ totalPages() }}
+          <span class="ml-1">({{ totalElements() }} {{ totalElements() === 1 ? 'palabra' : 'palabras' }})</span>
+        </div>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="rounded border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-medium text-[var(--app-text)] hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="page() === 0 || loading()"
+            (click)="prevPage()"
+            aria-label="Página anterior"
+          >
+            Anterior
+          </button>
+          <button
+            type="button"
+            class="rounded border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-medium text-[var(--app-text)] hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            [disabled]="page() + 1 >= totalPages() || loading()"
+            (click)="nextPage()"
+            aria-label="Página siguiente"
+          >
+            Siguiente
+          </button>
+        </div>
+      </footer>
+    }
   }
 
   <!-- Reader Word Popover Integration -->

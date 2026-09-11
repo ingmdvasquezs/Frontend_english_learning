@@ -12,6 +12,7 @@ describe('Vocabulary Component', () => {
   let fixture: ComponentFixture<Vocabulary>;
   let vocabularyServiceMock: {
     listUserVocabulary: ReturnType<typeof vi.fn>;
+    setVocabularyStatus: ReturnType<typeof vi.fn>;
   };
   let wordInteractionMock: {
     selectWord: ReturnType<typeof vi.fn>;
@@ -34,7 +35,7 @@ describe('Vocabulary Component', () => {
 
   const samplePageData: UserVocabularyPage = {
     page: 0,
-    size: 20,
+    size: 10,
     totalElements: 2,
     summary: {
       totalCount: 30,
@@ -66,6 +67,7 @@ describe('Vocabulary Component', () => {
   beforeEach(async () => {
     vocabularyServiceMock = {
       listUserVocabulary: vi.fn(() => of(samplePageData)),
+      setVocabularyStatus: vi.fn(() => of('LEARNING')),
     };
 
     wordInteractionMock = {
@@ -112,8 +114,8 @@ describe('Vocabulary Component', () => {
 
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalledWith(
       0,
-      20,
-      null,
+      10,
+      'LEARNING',
       ''
     );
     expect(component.loading()).toBe(false);
@@ -140,8 +142,8 @@ describe('Vocabulary Component', () => {
     await vi.advanceTimersByTimeAsync(250);
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalledWith(
       0,
-      20,
-      null,
+      10,
+      'LEARNING',
       'seren'
     );
     expect(component.activeSearchTerm()).toBe('seren');
@@ -152,14 +154,14 @@ describe('Vocabulary Component', () => {
     fixture.detectChanges();
     vocabularyServiceMock.listUserVocabulary.mockClear();
 
-    component.selectFilter('LEARNING');
+    component.selectFilter('KNOWN');
 
-    expect(component.selectedFilter()).toBe('LEARNING');
+    expect(component.selectedFilter()).toBe('KNOWN');
     expect(component.page()).toBe(0);
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalledWith(
       0,
-      20,
-      'LEARNING',
+      10,
+      'KNOWN',
       ''
     );
   });
@@ -168,7 +170,7 @@ describe('Vocabulary Component', () => {
     fixture.detectChanges();
     vocabularyServiceMock.listUserVocabulary.mockClear();
 
-    component.selectFilter('ALL');
+    component.selectFilter('LEARNING');
 
     expect(vocabularyServiceMock.listUserVocabulary).not.toHaveBeenCalled();
   });
@@ -187,8 +189,8 @@ describe('Vocabulary Component', () => {
     expect(component.page()).toBe(1);
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalledWith(
       1,
-      20,
-      null,
+      10,
+      'LEARNING',
       ''
     );
 
@@ -197,8 +199,8 @@ describe('Vocabulary Component', () => {
     expect(component.page()).toBe(0);
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalledWith(
       0,
-      20,
-      null,
+      10,
+      'LEARNING',
       ''
     );
   });
@@ -223,7 +225,7 @@ describe('Vocabulary Component', () => {
       of({
         ...samplePageData,
         page: 2,
-        totalElements: 20, // maxPages = 1 (page 0)
+        totalElements: 10, // maxPages = 1 (page 0)
         entries: [],
       })
     );
@@ -237,7 +239,7 @@ describe('Vocabulary Component', () => {
     vocabularyServiceMock.listUserVocabulary.mockReturnValue(
       of({
         page: 0,
-        size: 20,
+        size: 10,
         totalElements: 0,
         summary: {
           totalCount: 0,
@@ -262,7 +264,7 @@ describe('Vocabulary Component', () => {
     vocabularyServiceMock.listUserVocabulary.mockReturnValue(
       of({
         page: 0,
-        size: 20,
+        size: 10,
         totalElements: 0,
         summary: {
           totalCount: 15,
@@ -275,7 +277,7 @@ describe('Vocabulary Component', () => {
       })
     );
 
-    component.selectedFilter.set('NEW');
+    component.selectedFilter.set('KNOWN');
     fixture.detectChanges();
 
     expect(component.isFilterEmpty()).toBe(true);
@@ -285,13 +287,13 @@ describe('Vocabulary Component', () => {
     vocabularyServiceMock.listUserVocabulary.mockClear();
     component.resetFilters();
 
-    expect(component.selectedFilter()).toBe('ALL');
+    expect(component.selectedFilter()).toBe('LEARNING');
     expect(component.activeSearchTerm()).toBe('');
     expect(component.searchControl.value).toBe('');
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalledWith(
       0,
-      20,
-      null,
+      10,
+      'LEARNING',
       ''
     );
   });
@@ -389,5 +391,114 @@ describe('Vocabulary Component', () => {
     expect(component.getStatusBadgeClass('LEARNING')).toBe('badge-learning');
     expect(component.getStatusBadgeClass('KNOWN')).toBe('badge-known');
     expect(component.getStatusBadgeClass('IGNORED')).toBe('badge-ignored');
+  });
+
+  it('enables review CTA when totalCount > 0', () => {
+    fixture.detectChanges();
+    expect(component.reviewAvailable()).toBe(true);
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const reviewLink = compiled.querySelector('a.btn-review');
+    expect(reviewLink).toBeTruthy();
+    expect(reviewLink?.getAttribute('href')).toBe('/vocabulary/review');
+  });
+
+  it('disables review CTA when totalCount === 0', () => {
+    vocabularyServiceMock.listUserVocabulary.mockReturnValue(
+      of({
+        ...samplePageData,
+        summary: {
+          totalCount: 0,
+          newCount: 0,
+          learningCount: 0,
+          knownCount: 0,
+          ignoredCount: 0,
+        },
+      })
+    );
+
+    component.loadVocabulary();
+    fixture.detectChanges();
+
+    expect(component.reviewAvailable()).toBe(false);
+    const compiled = fixture.nativeElement as HTMLElement;
+    const disabledBtn = compiled.querySelector('button.btn-review');
+    expect(disabledBtn).toBeTruthy();
+    expect(disabledBtn?.hasAttribute('disabled')).toBe(true);
+    expect(disabledBtn?.textContent).toContain('Repasar palabras');
+  });
+
+  it('displays learning empty state with CTA to view new words when newCount > 0', () => {
+    vocabularyServiceMock.listUserVocabulary.mockReturnValue(
+      of({
+        page: 0,
+        size: 10,
+        totalElements: 0,
+        summary: {
+          totalCount: 5,
+          newCount: 5,
+          learningCount: 0,
+          knownCount: 0,
+          ignoredCount: 0,
+        },
+        entries: [],
+      })
+    );
+
+    component.selectedFilter.set('LEARNING');
+    fixture.detectChanges();
+
+    expect(component.isLearningEmpty()).toBe(true);
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('No tienes palabras en aprendizaje');
+    expect(compiled.textContent).toContain('Ver nuevas');
+
+    vocabularyServiceMock.listUserVocabulary.mockClear();
+    component.selectFilter('NEW');
+    expect(component.selectedFilter()).toBe('NEW');
+  });
+
+  it('displays new empty state when selectedFilter is NEW and entries is empty', () => {
+    vocabularyServiceMock.listUserVocabulary.mockReturnValue(
+      of({
+        page: 0,
+        size: 10,
+        totalElements: 0,
+        summary: {
+          totalCount: 10,
+          newCount: 0,
+          learningCount: 5,
+          knownCount: 5,
+          ignoredCount: 0,
+        },
+        entries: [],
+      })
+    );
+
+    component.selectedFilter.set('NEW');
+    fixture.detectChanges();
+
+    expect(component.isNewEmpty()).toBe(true);
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('No tienes palabras nuevas guardadas.');
+  });
+
+  it('calls setVocabularyStatus and reloads vocabulary on quickChangeStatus', () => {
+    fixture.detectChanges();
+    vocabularyServiceMock.listUserVocabulary.mockClear();
+
+    const entry = samplePageData.entries[0];
+    const event = new MouseEvent('click');
+    vi.spyOn(event, 'stopPropagation');
+
+    component.quickChangeStatus(entry, 'KNOWN', event);
+
+    expect(event.stopPropagation).toHaveBeenCalled();
+    expect(vocabularyServiceMock.setVocabularyStatus).toHaveBeenCalledWith(
+      'serendipity',
+      'en',
+      'KNOWN'
+    );
+    expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalled();
   });
 });

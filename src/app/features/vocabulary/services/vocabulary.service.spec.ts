@@ -232,4 +232,157 @@ describe('VocabularyService', () => {
       'Invalid SOAP response: invalid status "UNKNOWN_STATUS"'
     );
   });
+
+  describe('prepareVocabularyReview', () => {
+    it('generates prepareVocabularyReview request with requested size', () => {
+      service.prepareVocabularyReview(20).subscribe();
+
+      const req = httpMock.expectOne('/ws');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('Content-Type')).toBe('text/xml');
+      expect(req.request.body).toContain('<read:prepareVocabularyReviewRequest>');
+      expect(req.request.body).toContain('<read:size>20</read:size>');
+    });
+
+    it('defaults to size 10 when not specified', () => {
+      service.prepareVocabularyReview().subscribe();
+
+      const req = httpMock.expectOne('/ws');
+      expect(req.request.body).toContain('<read:size>10</read:size>');
+    });
+
+    it('parses valid prepareVocabularyReview response including due KNOWN words and dueCount', () => {
+      const xml = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+          <soapenv:Body>
+            <read:prepareVocabularyReviewResponse xmlns:read="http://soap.com/english-reading/readings">
+              <read:dueCount>5</read:dueCount>
+              <read:totalReviewableCount>12</read:totalReviewableCount>
+              <read:entries>
+                <read:wordId>w-1</read:wordId>
+                <read:word>ephemeral</read:word>
+                <read:language>en</read:language>
+                <read:status>LEARNING</read:status>
+              </read:entries>
+              <read:entries>
+                <read:wordId>w-2</read:wordId>
+                <read:word>resilient</read:word>
+                <read:language>en</read:language>
+                <read:status>KNOWN</read:status>
+              </read:entries>
+            </read:prepareVocabularyReviewResponse>
+          </soapenv:Body>
+        </soapenv:Envelope>
+      `;
+
+      const result = service.parsePreparedReviewSession(xml);
+      expect(result.dueCount).toBe(5);
+      expect(result.totalReviewableCount).toBe(12);
+      expect(result.entries.length).toBe(2);
+      expect(result.entries[0]).toEqual({
+        wordId: 'w-1',
+        word: 'ephemeral',
+        language: 'en',
+        status: 'LEARNING',
+      });
+      expect(result.entries[1]).toEqual({
+        wordId: 'w-2',
+        word: 'resilient',
+        language: 'en',
+        status: 'KNOWN',
+      });
+    });
+
+    it('parses empty prepareVocabularyReview response gracefully', () => {
+      const xml = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+          <soapenv:Body>
+            <read:prepareVocabularyReviewResponse xmlns:read="http://soap.com/english-reading/readings">
+              <read:dueCount>0</read:dueCount>
+              <read:totalReviewableCount>0</read:totalReviewableCount>
+            </read:prepareVocabularyReviewResponse>
+          </soapenv:Body>
+        </soapenv:Envelope>
+      `;
+
+      const result = service.parsePreparedReviewSession(xml);
+      expect(result.dueCount).toBe(0);
+      expect(result.totalReviewableCount).toBe(0);
+      expect(result.entries).toEqual([]);
+    });
+
+    it('throws SOAP Fault if returned by backend', () => {
+      const xml = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+          <soapenv:Body>
+            <soapenv:Fault>
+              <faultstring>User not authenticated</faultstring>
+            </soapenv:Fault>
+          </soapenv:Body>
+        </soapenv:Envelope>
+      `;
+
+      expect(() => service.parsePreparedReviewSession(xml)).toThrowError(
+        'SOAP Fault: User not authenticated'
+      );
+    });
+  });
+
+  describe('recordVocabularyReview', () => {
+    it('generates recordVocabularyReview request with wordId and assessment', () => {
+      service.recordVocabularyReview('w-99', 'FORGOT').subscribe();
+
+      const req = httpMock.expectOne('/ws');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toContain('<read:recordVocabularyReviewRequest>');
+      expect(req.request.body).toContain('<read:wordId>w-99</read:wordId>');
+      expect(req.request.body).toContain('<read:assessment>FORGOT</read:assessment>');
+    });
+
+    it('parses recordVocabularyReview response with updated status', () => {
+      const xml = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+          <soapenv:Body>
+            <read:recordVocabularyReviewResponse xmlns:read="http://soap.com/english-reading/readings">
+              <read:wordId>w-99</read:wordId>
+              <read:status>LEARNING</read:status>
+            </read:recordVocabularyReviewResponse>
+          </soapenv:Body>
+        </soapenv:Envelope>
+      `;
+
+      const result = service.parseRecordedReviewResult(xml);
+      expect(result.wordId).toBe('w-99');
+      expect(result.status).toBe('LEARNING');
+    });
+
+    it('throws SOAP Fault on record failure', () => {
+      const xml = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+          <soapenv:Body>
+            <soapenv:Fault>
+              <faultstring>Word not found</faultstring>
+            </soapenv:Fault>
+          </soapenv:Body>
+        </soapenv:Envelope>
+      `;
+
+      expect(() => service.parseRecordedReviewResult(xml)).toThrowError(
+        'SOAP Fault: Word not found'
+      );
+    });
+  });
+
+  describe('setVocabularyStatus', () => {
+    it('generates setVocabularyStatus request with word, language, and status', () => {
+      service.setVocabularyStatus('wanderlust', 'en', 'LEARNING').subscribe();
+
+      const req = httpMock.expectOne('/ws');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toContain('<read:setVocabularyStatusRequest>');
+      expect(req.request.body).toContain('<read:word>wanderlust</read:word>');
+      expect(req.request.body).toContain('<read:language>en</read:language>');
+      expect(req.request.body).toContain('<read:status>LEARNING</read:status>');
+    });
+  });
 });

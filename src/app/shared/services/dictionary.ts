@@ -4,6 +4,7 @@ import { Injectable, inject } from '@angular/core';
 export interface DictionaryDefinition {
   definition: string;
   example: string | null;
+  exampleTranslation?: string | null;
 }
 
 export interface DictionaryMeaning {
@@ -96,6 +97,10 @@ export class DictionaryService {
             example: getFirstValue(
               definitionElement,
               'example'
+            ),
+            exampleTranslation: getFirstValue(
+              definitionElement,
+              'exampleTranslation'
             ),
           }));
 

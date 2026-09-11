@@ -4,6 +4,11 @@ import { Observable, map } from 'rxjs';
 import { VocabularyStatus } from '../../../shared/models/vocabulary-status';
 import { escapeXml } from '../../../shared/utils/xml-utils';
 import {
+  PreparedReviewEntry,
+  PreparedReviewSession,
+  ReviewAssessment,
+  ReviewBatchSize,
+  ReviewResult,
   UserVocabularyPage,
   VocabularyEntry,
   VocabularySummary,
@@ -19,7 +24,7 @@ export class VocabularyService {
 
   listUserVocabulary(
     page = 0,
-    size = 20,
+    size = 10,
     status?: VocabularyStatus | null,
     search?: string | null
   ): Observable<UserVocabularyPage> {
@@ -56,9 +61,143 @@ export class VocabularyService {
       .pipe(map((response) => this.parseUserVocabulary(response)));
   }
 
-  parseUserVocabulary(responseXml: string): UserVocabularyPage {
-    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+  setVocabularyStatus(
+    word: string,
+    language: string,
+    status: VocabularyStatus
+  ): Observable<string> {
+    const body = `
+      <soapenv:Envelope
+          xmlns:soapenv="${this.soapNamespace}"
+          xmlns:read="${this.namespace}">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <read:setVocabularyStatusRequest>
+            <read:word>${escapeXml(word)}</read:word>
+            <read:language>${escapeXml(language)}</read:language>
+            <read:status>${status}</read:status>
+          </read:setVocabularyStatusRequest>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
 
+    return this.http
+      .post(this.soapUrl, body, {
+        headers: this.soapHeaders(),
+        responseType: 'text',
+      })
+      .pipe(
+        map((response) => {
+          this.checkForSoapFault(
+            new DOMParser().parseFromString(response, 'text/xml')
+          );
+          return response;
+        })
+      );
+  }
+
+  prepareVocabularyReview(size: ReviewBatchSize = 10): Observable<PreparedReviewSession> {
+    const body = `
+      <soapenv:Envelope
+          xmlns:soapenv="${this.soapNamespace}"
+          xmlns:read="${this.namespace}">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <read:prepareVocabularyReviewRequest>
+            <read:size>${size}</read:size>
+          </read:prepareVocabularyReviewRequest>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
+
+    return this.http
+      .post(this.soapUrl, body, {
+        headers: this.soapHeaders(),
+        responseType: 'text',
+      })
+      .pipe(map((response) => this.parsePreparedReviewSession(response)));
+  }
+
+  recordVocabularyReview(
+    wordId: string,
+    assessment: ReviewAssessment
+  ): Observable<ReviewResult> {
+    const body = `
+      <soapenv:Envelope
+          xmlns:soapenv="${this.soapNamespace}"
+          xmlns:read="${this.namespace}">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <read:recordVocabularyReviewRequest>
+            <read:wordId>${escapeXml(wordId)}</read:wordId>
+            <read:assessment>${assessment}</read:assessment>
+          </read:recordVocabularyReviewRequest>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
+
+    return this.http
+      .post(this.soapUrl, body, {
+        headers: this.soapHeaders(),
+        responseType: 'text',
+      })
+      .pipe(map((response) => this.parseRecordedReviewResult(response)));
+  }
+
+  parsePreparedReviewSession(responseXml: string): PreparedReviewSession {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    this.checkForSoapFault(xml);
+
+    const dueCount = this.parseInteger(this.getOptionalValue(xml, 'dueCount'), 0);
+    const totalReviewableCount = this.parseInteger(
+      this.getOptionalValue(xml, 'totalReviewableCount'),
+      0
+    );
+
+    const entryNodes =
+      xml.getElementsByTagNameNS(this.namespace, 'entries').length > 0
+        ? Array.from(xml.getElementsByTagNameNS(this.namespace, 'entries'))
+        : Array.from(xml.getElementsByTagName('*')).filter(
+            (element) => element.localName === 'entries'
+          );
+
+    const entries: PreparedReviewEntry[] = entryNodes.map((element) => {
+      const rawStatus = this.getRequiredValue(element, 'status');
+      if (!this.isValidStatus(rawStatus)) {
+        throw new Error(`Invalid SOAP response: invalid status "${rawStatus}"`);
+      }
+
+      return {
+        wordId: this.getRequiredValue(element, 'wordId'),
+        word: this.getRequiredValue(element, 'word'),
+        language: this.getRequiredValue(element, 'language'),
+        status: rawStatus as VocabularyStatus,
+      };
+    });
+
+    return {
+      dueCount,
+      totalReviewableCount,
+      entries,
+    };
+  }
+
+  parseRecordedReviewResult(responseXml: string): ReviewResult {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    this.checkForSoapFault(xml);
+
+    const rawStatus = this.getRequiredValue(xml, 'status');
+    if (!this.isValidStatus(rawStatus)) {
+      throw new Error(`Invalid SOAP response: invalid status "${rawStatus}"`);
+    }
+
+    return {
+      wordId: this.getRequiredValue(xml, 'wordId'),
+      status: rawStatus as VocabularyStatus,
+    };
+  }
+
+  private checkForSoapFault(xml: Document): void {
     const fault =
       xml.getElementsByTagNameNS(this.soapNamespace, 'Fault')[0] ??
       Array.from(xml.getElementsByTagName('*')).find(
@@ -71,6 +210,11 @@ export class VocabularyService {
           ?.textContent?.trim() ?? 'SOAP Fault';
       throw new Error(`SOAP Fault: ${faultString}`);
     }
+  }
+
+  parseUserVocabulary(responseXml: string): UserVocabularyPage {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    this.checkForSoapFault(xml);
 
     const page = this.parseInteger(this.getRequiredValue(xml, 'page'), 0);
     const size = this.parseInteger(this.getRequiredValue(xml, 'size'), 20);

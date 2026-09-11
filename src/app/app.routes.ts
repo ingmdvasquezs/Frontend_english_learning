@@ -35,10 +35,23 @@ export const routes: Routes = [
       },
       {
         path: 'vocabulary',
-        loadComponent: () =>
-          import('./features/vocabulary/pages/vocabulary/vocabulary').then(
-            (m) => m.Vocabulary
-          ),
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./features/vocabulary/pages/vocabulary/vocabulary').then(
+                (m) => m.Vocabulary
+              ),
+          },
+          {
+            path: 'review',
+            loadComponent: () =>
+              import(
+                './features/vocabulary/pages/review/vocabulary-review'
+              ).then((m) => m.VocabularyReview),
+          },
+        ],
       },
       {
         path: 'reading/:readingId',

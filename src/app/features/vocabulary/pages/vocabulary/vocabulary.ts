@@ -48,8 +48,8 @@ export class Vocabulary implements OnInit {
   });
   readonly totalElements = signal(0);
   readonly page = signal(0);
-  readonly pageSize = 20;
-  readonly selectedFilter = signal<VocabularyFilter>('ALL');
+  readonly pageSize = 10;
+  readonly selectedFilter = signal<VocabularyFilter>('LEARNING');
   readonly activeSearchTerm = signal('');
 
   readonly searchControl = new FormControl('', { nonNullable: true });
@@ -58,30 +58,50 @@ export class Vocabulary implements OnInit {
     Math.max(1, Math.ceil(this.totalElements() / this.pageSize))
   );
   readonly hasEntries = computed(() => this.entries().length > 0);
+  readonly reviewAvailable = computed(
+    () => this.summary().totalCount > 0
+  );
   readonly isGlobalEmpty = computed(
     () =>
       !this.loading() &&
       !this.error() &&
       this.summary().totalCount === 0 &&
+      !this.activeSearchTerm()
+  );
+  readonly isLearningEmpty = computed(
+    () =>
+      !this.loading() &&
+      !this.error() &&
+      this.entries().length === 0 &&
+      this.selectedFilter() === 'LEARNING' &&
       !this.activeSearchTerm() &&
-      this.selectedFilter() === 'ALL'
+      this.summary().totalCount > 0
+  );
+  readonly isNewEmpty = computed(
+    () =>
+      !this.loading() &&
+      !this.error() &&
+      this.entries().length === 0 &&
+      this.selectedFilter() === 'NEW' &&
+      !this.activeSearchTerm() &&
+      this.summary().totalCount > 0
   );
   readonly isFilterEmpty = computed(
     () =>
       !this.loading() &&
       !this.error() &&
       this.entries().length === 0 &&
-      (this.summary().totalCount > 0 ||
-        !!this.activeSearchTerm() ||
-        this.selectedFilter() !== 'ALL')
+      !this.isGlobalEmpty() &&
+      !this.isLearningEmpty() &&
+      !this.isNewEmpty()
   );
 
   readonly filters: { key: VocabularyFilter; label: string }[] = [
-    { key: 'ALL', label: 'Todas' },
-    { key: 'NEW', label: 'Nuevas' },
     { key: 'LEARNING', label: 'Aprendiendo' },
+    { key: 'NEW', label: 'Nuevas' },
     { key: 'KNOWN', label: 'Conocidas' },
     { key: 'IGNORED', label: 'Ignoradas' },
+    { key: 'ALL', label: 'Todas' },
   ];
 
   ngOnInit(): void {
@@ -163,9 +183,28 @@ export class Vocabulary implements OnInit {
   resetFilters(): void {
     this.searchControl.setValue('', { emitEvent: false });
     this.activeSearchTerm.set('');
-    this.selectedFilter.set('ALL');
+    this.selectedFilter.set('LEARNING');
     this.page.set(0);
     this.loadVocabulary();
+  }
+
+  quickChangeStatus(
+    entry: VocabularyEntry,
+    newStatus: VocabularyStatus,
+    event?: Event
+  ): void {
+    event?.stopPropagation();
+    this.vocabularyService
+      .setVocabularyStatus(entry.word, entry.language, newStatus)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.loadVocabulary();
+        },
+        error: () => {
+          this.error.set('No pudimos actualizar el estado de la palabra.');
+        },
+      });
   }
 
   openWordPopover(entry: VocabularyEntry, event: MouseEvent): void {

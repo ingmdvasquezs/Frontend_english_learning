@@ -48,7 +48,7 @@ describe('DocumentService', () => {
     service.getUnit('doc','unit-1').subscribe(); http.expectOne('/api/v1/documents/doc/units/unit-1').flush({ tokens:[] });
   });
 
-  it('maps REST vocabularyStatus to the shared ReaderToken status without forcing NEW', () => {
+  it('maps REST vocabularyStatus to the shared ReaderToken status preserving null without forcing NEW', () => {
     let statuses: unknown[] = [];
     service.getUnit('doc', 'unit-1').subscribe((unit) => {
       statuses = unit.tokens.map((token) => token.status);
@@ -57,13 +57,14 @@ describe('DocumentService', () => {
       documentId: 'doc',
       unitId: 'unit-1',
       tokens: [
+        restToken('Unclassified', 'unclassified', null),
         restToken('New', 'new', 'NEW'),
         restToken('Learning', 'learning', 'LEARNING'),
         restToken('Known', 'known', 'KNOWN'),
         restToken('Ignored', 'ignored', 'IGNORED'),
       ],
     });
-    expect(statuses).toEqual(['NEW', 'LEARNING', 'KNOWN', 'IGNORED']);
+    expect(statuses).toEqual([null, 'NEW', 'LEARNING', 'KNOWN', 'IGNORED']);
   });
 
   it('gets and updates progress with expectedVersion', () => {
@@ -116,7 +117,7 @@ describe('DocumentService', () => {
     vi.useRealTimers();
   });
 
-  function restToken(value:string, normalizedValue:string, vocabularyStatus:string) {
-    return { value, normalizedValue, type:'WORD', vocabularyStatus };
+  function restToken(value: string, normalizedValue: string, vocabularyStatus: string | null) {
+    return { value, normalizedValue, type: 'WORD', vocabularyStatus };
   }
 });

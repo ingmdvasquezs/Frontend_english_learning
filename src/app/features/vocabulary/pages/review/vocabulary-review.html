@@ -1,0 +1,483 @@
+<main class="mx-auto max-w-2xl px-4 py-8 sm:px-6" aria-labelledby="review-page-heading">
+  <!-- Top Navigation / Back Link -->
+  <div class="mb-6 flex items-center justify-between">
+    <button
+      type="button"
+      class="back-btn inline-flex items-center gap-1.5 text-sm font-medium text-[var(--app-muted)] transition hover:text-[var(--app-text)] focus-visible:outline-2 focus-visible:outline-[var(--app-accent)]"
+      (click)="backToVocabulary()"
+      aria-label="Volver a Mi vocabulario"
+    >
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+      <span>Volver a Mi vocabulario</span>
+    </button>
+  </div>
+
+  <!-- State 0: Size Selector Configuration -->
+  @if (!sessionStarted()) {
+    <div class="review-card-container text-center max-w-lg mx-auto" role="region" aria-labelledby="review-page-heading">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--app-active)] text-[var(--app-accent)]">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+          <path d="M8 7h8"/>
+          <path d="M8 11h8"/>
+        </svg>
+      </div>
+      <h1 id="review-page-heading" class="mb-2 text-2xl font-bold text-[var(--app-text)]">
+        Repaso de vocabulario
+      </h1>
+      <p class="mb-6 text-sm text-[var(--app-muted)]">
+        ¿Cuántas palabras quieres repasar?
+      </p>
+
+      <!-- Size Selector -->
+      <div
+        class="mb-8 inline-flex rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-1.5"
+        role="radiogroup"
+        aria-label="Cantidad de palabras a repasar"
+      >
+        @for (size of availableSizes; track size) {
+          <button
+            type="button"
+            role="radio"
+            class="size-selector-btn px-6 py-2.5 text-sm font-semibold rounded-md transition"
+            [class.active]="selectedSize() === size"
+            [attr.aria-checked]="selectedSize() === size"
+            (click)="selectSize(size)"
+          >
+            {{ size }}
+          </button>
+        }
+      </div>
+
+      <div>
+        <button
+          type="button"
+          class="btn-primary w-full sm:w-auto rounded-lg bg-[var(--app-accent)] px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
+          (click)="startSession()"
+        >
+          Comenzar repaso
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- State 1: Session Loading -->
+  @else if (loadingSession()) {
+    <div class="review-card-container skeleton-card text-center" role="status" aria-busy="true">
+      <div class="skeleton-line w-24 mx-auto mb-4"></div>
+      <div class="skeleton-word w-48 mx-auto mb-6"></div>
+      <div class="skeleton-btn w-36 mx-auto"></div>
+      <span class="sr-only">Preparando sesión de repaso...</span>
+    </div>
+  }
+
+  <!-- State 2: Session Load Error -->
+  @else if (sessionLoadError()) {
+    <div class="review-card-container text-center" role="alert">
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-[var(--app-danger)]">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <h2 class="mb-2 text-lg font-semibold text-[var(--app-text)]">Error al cargar la sesión</h2>
+      <p class="mb-6 text-sm text-[var(--app-muted)]">{{ sessionLoadError() }}</p>
+      <div class="flex items-center justify-center gap-3">
+        <button
+          type="button"
+          class="btn-primary rounded-lg bg-[var(--app-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+          (click)="startSession()"
+        >
+          Reintentar
+        </button>
+        <button
+          type="button"
+          class="btn-secondary rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
+          (click)="backToVocabulary()"
+        >
+          Volver a Mi vocabulario
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- State 3: Empty State (No words to review) -->
+  @else if (isEmptySession()) {
+    <div class="review-card-container text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--app-active)] text-[var(--app-muted)]">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+          <path d="m9 10 2 2 4-4"/>
+        </svg>
+      </div>
+      <h2 class="mb-2 text-xl font-bold text-[var(--app-text)]">Por ahora no tienes palabras para repasar.</h2>
+      <p class="mb-6 text-sm text-[var(--app-muted)] max-w-md mx-auto">
+        Continúa leyendo y clasificando palabras para crear nuevos repasos.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          class="btn-primary rounded-lg bg-[var(--app-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+          (click)="backToVocabulary()"
+        >
+          Volver a Mi vocabulario
+        </button>
+        <a
+          routerLink="/library"
+          class="btn-secondary rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
+        >
+          Explorar lecturas
+        </a>
+      </div>
+    </div>
+  }
+
+  <!-- State 4: Session Completed Summary -->
+  @else if (completed()) {
+    <div class="review-card-container text-center" role="region" aria-label="Resumen de sesión">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-[var(--app-success)]">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <h2 class="mb-1 text-2xl font-bold text-[var(--app-text)]">Sesión completada</h2>
+      <p class="mb-6 text-sm text-[var(--app-muted)]">
+        Has repasado {{ totalWords() }} {{ totalWords() === 1 ? 'palabra' : 'palabras' }}.
+      </p>
+
+      <!-- Summary metrics breakdown -->
+      <div class="mb-8 grid grid-cols-3 gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-4">
+        <div class="flex flex-col items-center">
+          <span class="text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider">No la recordé</span>
+          <span class="mt-1 text-2xl font-bold text-[var(--app-danger)]">{{ forgotCount() }}</span>
+        </div>
+        <div class="flex flex-col items-center border-x border-[var(--app-border)]">
+          <span class="text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider">Me costó</span>
+          <span class="mt-1 text-2xl font-bold text-[var(--app-learning)]">{{ struggledCount() }}</span>
+        </div>
+        <div class="flex flex-col items-center">
+          <span class="text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider">La recordé</span>
+          <span class="mt-1 text-2xl font-bold text-[var(--app-success)]">{{ rememberedCount() }}</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button
+          type="button"
+          class="btn-primary w-full sm:w-auto rounded-lg bg-[var(--app-accent)] px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+          (click)="backToVocabulary()"
+        >
+          Volver a Mi vocabulario
+        </button>
+        <button
+          type="button"
+          class="btn-secondary w-full sm:w-auto rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
+          (click)="resetToSelector()"
+        >
+          Iniciar otro repaso
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- State 5: Active Flashcard Review -->
+  @else if (currentCard(); as card) {
+    <!-- Review Header and Progress -->
+    <header class="mb-4">
+      <div class="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+        <div class="flex items-center gap-2">
+          <span>Repaso de vocabulario</span>
+          @if (dueCount() > 0) {
+            <span class="text-[var(--app-muted)] font-normal">({{ dueCount() }} pendientes de repaso)</span>
+          }
+        </div>
+        @if (card.isReinforcement) {
+          <span aria-live="polite" class="text-[var(--app-accent)] font-bold">Refuerzo</span>
+        } @else {
+          <span aria-live="polite">Palabra {{ card.baseWordNumber }} de {{ baseTotalWords() }}</span>
+        }
+      </div>
+
+      <!-- Subtle Progress Bar -->
+      <div
+        class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-border)]"
+        role="progressbar"
+        [attr.aria-valuenow]="card.baseWordNumber"
+        aria-valuemin="1"
+        [attr.aria-valuemax]="baseTotalWords()"
+        aria-label="Progreso de la sesión"
+      >
+        <div
+          class="h-full bg-[var(--app-accent)] transition-all duration-300 ease-out"
+          [style.width.%]="progressPercentage()"
+        ></div>
+      </div>
+    </header>
+
+    <!-- The Flashcard Card -->
+    <article
+      class="review-card-container relative flex flex-col"
+      aria-labelledby="current-word-title"
+    >
+      <!-- Word and Status Header -->
+      <div class="mb-6 text-center">
+        <div class="mb-3 inline-block">
+          @if (card.isReinforcement) {
+            <span class="status-badge badge-reinforcement">Refuerzo</span>
+          } @else {
+            <span class="status-badge {{ getStatusBadgeClass(card.entry.status) }}">
+              {{ getStatusLabel(card.entry.status) }}
+            </span>
+          }
+        </div>
+
+        @if (card.isReinforcement) {
+          <p class="mb-2 text-sm font-medium text-[var(--app-muted)]">¿La recuerdas ahora?</p>
+        }
+
+        <h2
+          id="current-word-title"
+          class="word-display font-serif text-3xl font-bold tracking-tight text-[var(--app-text)] sm:text-4xl"
+        >
+          {{ card.entry.word }}
+        </h2>
+      </div>
+
+      <!-- PHASE A: Before Reveal -->
+      @if (!revealed()) {
+        <div class="my-6 flex flex-col items-center justify-center">
+          <button
+            type="button"
+            class="btn-reveal inline-flex items-center justify-center rounded-lg bg-[var(--app-accent)] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
+            (click)="revealMeaning()"
+            aria-label="Mostrar significado de la palabra"
+          >
+            Mostrar significado
+          </button>
+        </div>
+      }
+
+      <!-- PHASE B: After Reveal -->
+      @else {
+        <div class="revealed-content border-t border-[var(--app-border)] pt-6">
+          <!-- Lookup Loading -->
+          @if (lookupLoading()) {
+            <div class="py-6 text-center" role="status" aria-busy="true">
+              <div class="skeleton-line w-32 mx-auto mb-2"></div>
+              <div class="skeleton-line w-48 mx-auto"></div>
+              <p class="mt-2 text-xs text-[var(--app-muted)]">Cargando significado...</p>
+            </div>
+          }
+
+          <!-- Lookup Error -->
+          @else if (lookupError()) {
+            <div class="my-4 rounded-md border border-[var(--app-danger)] bg-[var(--app-surface-elevated)] p-4 text-center" role="alert">
+              <p class="mb-2 text-sm text-[var(--app-danger)]">{{ lookupError() }}</p>
+              <button
+                type="button"
+                class="rounded-md border border-[var(--app-border)] bg-transparent px-3 py-1.5 text-xs font-semibold text-[var(--app-text)] hover:bg-[var(--app-active)]"
+                (click)="retryLookup()"
+              >
+                Reintentar
+              </button>
+            </div>
+          }
+
+          <!-- Dictionary Meaning Data -->
+          @else if (dictionaryWord(); as dict) {
+            <div class="mb-6 space-y-4 text-center sm:text-left">
+              <!-- Phonetic & Manual Audio -->
+              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                @if (dict.phonetic) {
+                  <span class="font-mono text-sm text-[var(--app-muted)]">/{{ dict.phonetic }}/</span>
+                }
+                @if (dict.audioUrl) {
+                  <button
+                    type="button"
+                    class="audio-btn inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-3 py-1 text-xs font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
+                    (click)="playAudio()"
+                    aria-label="Escuchar pronunciación de {{ card.entry.word }}"
+                  >
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    </svg>
+                    <span>Pronunciación</span>
+                  </button>
+                }
+                @if (audioError()) {
+                  <span class="text-xs text-[var(--app-danger)]">{{ audioError() }}</span>
+                }
+              </div>
+
+              <!-- Main Translation (only if non-empty) -->
+              @if (dict.translation && dict.translation.trim().length > 0) {
+                <div>
+                  <p class="text-xl font-semibold text-[var(--app-text)]">
+                    {{ dict.translation }}
+                  </p>
+                </div>
+              }
+
+              <!-- Brief English Definition & Example -->
+              @if (dict.meanings.length > 0 && dict.meanings[0].definitions.length > 0) {
+                @let def = dict.meanings[0].definitions[0];
+                <div class="rounded-lg bg-[var(--app-surface-elevated)] p-4 text-left border border-[var(--app-border)] space-y-3">
+                  @if (def.definition) {
+                    <div>
+                      <span class="mb-1 block text-xs font-bold uppercase tracking-wider text-[var(--app-muted)]">
+                        Definición
+                      </span>
+                      <p class="text-sm text-[var(--app-text)] leading-relaxed">
+                        {{ def.definition }}
+                      </p>
+                    </div>
+                  }
+
+                  @if (def.example) {
+                    <div class="border-t border-[var(--app-border)] pt-2.5">
+                      <span class="mb-1 block text-xs font-bold uppercase tracking-wider text-[var(--app-muted)]">
+                        Ejemplo
+                      </span>
+                      <p class="text-sm italic text-[var(--app-text)]">
+                        "{{ def.example }}"
+                      </p>
+                      @if (def.exampleTranslation) {
+                        <p class="mt-1 text-xs text-[var(--app-muted)]">
+                          {{ def.exampleTranslation }}
+                        </p>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          <!-- REINFORCEMENT CARD ACTIONS -->
+          @if (card.isReinforcement) {
+            <div class="mt-8 border-t border-[var(--app-border)] pt-6">
+              <h3 class="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                ¿La recuerdas ahora?
+              </h3>
+              <div
+                class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                role="group"
+                aria-label="Evaluación de refuerzo"
+              >
+                <button
+                  type="button"
+                  class="btn-reinforcement-yes flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-success)] hover:bg-[var(--app-surface)]"
+                  (click)="handleReinforcementAction(true)"
+                  aria-label="Sí, ahora sí"
+                >
+                  <span class="text-sm font-bold text-[var(--app-success)]">Sí, ahora sí</span>
+                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Palabra reforzada</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-reinforcement-no flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-danger)] hover:bg-[var(--app-surface)]"
+                  (click)="handleReinforcementAction(false)"
+                  aria-label="Aún me cuesta"
+                >
+                  <span class="text-sm font-bold text-[var(--app-danger)]">Aún me cuesta</span>
+                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Seguiremos repasando</span>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- BASE CARD ACTIONS: Immediate Light Feedback for FORGOT -->
+          @else if (forgotFeedbackActive()) {
+            <div class="forgot-feedback-inline mt-8 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-4 text-center" role="status" aria-live="polite">
+              <p class="text-sm font-medium text-[var(--app-text)]">
+                No la recordaste. No pasa nada.
+              </p>
+              <p class="mt-1 text-xs text-[var(--app-muted)]">
+                Volveremos a repasarla más adelante en esta sesión.
+              </p>
+            </div>
+          }
+
+          <!-- BASE CARD ACTIONS: Standard Assessment -->
+          @else {
+            <div class="mt-8 border-t border-[var(--app-border)] pt-6">
+              <h3 class="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+                ¿Cómo te fue?
+              </h3>
+
+              <div
+                class="grid grid-cols-1 sm:grid-cols-3 gap-3"
+                role="group"
+                aria-label="Autoevaluación de la palabra"
+              >
+                <!-- Assessment 1: FORGOT -->
+                <button
+                  type="button"
+                  class="assessment-btn btn-forgot flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-danger)] hover:bg-[var(--app-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  [disabled]="mutationPending()"
+                  (click)="selectAssessment('FORGOT')"
+                  aria-label="No la recordé"
+                >
+                  <span class="text-sm font-bold text-[var(--app-danger)]">No la recordé</span>
+                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Seguir repasando</span>
+                </button>
+
+                <!-- Assessment 2: STRUGGLED -->
+                <button
+                  type="button"
+                  class="assessment-btn btn-struggled flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-learning)] hover:bg-[var(--app-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  [disabled]="mutationPending()"
+                  (click)="selectAssessment('STRUGGLED')"
+                  aria-label="Me costó"
+                >
+                  <span class="text-sm font-bold text-[var(--app-learning)]">Me costó</span>
+                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Casi memorizada</span>
+                </button>
+
+                <!-- Assessment 3: REMEMBERED -->
+                <button
+                  type="button"
+                  class="assessment-btn btn-remembered flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-success)] hover:bg-[var(--app-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  [disabled]="mutationPending()"
+                  (click)="selectAssessment('REMEMBERED')"
+                  aria-label="La recordé"
+                >
+                  <span class="text-sm font-bold text-[var(--app-success)]">La recordé</span>
+                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Palabra conocida</span>
+                </button>
+              </div>
+
+              <!-- Mutation Pending Indicator -->
+              @if (mutationPending()) {
+                <p class="mt-3 text-center text-xs text-[var(--app-muted)]" aria-live="polite">
+                  Guardando respuesta...
+                </p>
+              }
+
+              <!-- Mutation Error Banner -->
+              @if (mutationError()) {
+                <div class="mt-4 rounded-md border border-[var(--app-danger)] bg-[var(--app-surface-elevated)] p-3 text-center" role="alert">
+                  <p class="text-xs text-[var(--app-danger)] mb-2">{{ mutationError() }}</p>
+                  <button
+                    type="button"
+                    class="rounded border border-[var(--app-border)] px-3 py-1 text-xs font-semibold text-[var(--app-text)] hover:bg-[var(--app-active)]"
+                    (click)="retryMutation()"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </article>
+  }
+</main>
+

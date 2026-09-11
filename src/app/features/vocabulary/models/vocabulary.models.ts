@@ -26,3 +26,32 @@ export interface UserVocabularyPage {
 }
 
 export type VocabularyFilter = 'ALL' | VocabularyStatus;
+
+export type ReviewBatchSize = 10 | 20 | 30;
+
+export type ReviewAssessment = 'FORGOT' | 'STRUGGLED' | 'REMEMBERED';
+
+export interface PreparedReviewEntry {
+  wordId: string;
+  word: string;
+  language: string;
+  status: VocabularyStatus;
+}
+
+export interface PreparedReviewSession {
+  dueCount: number;
+  totalReviewableCount: number;
+  entries: PreparedReviewEntry[];
+}
+
+export interface ReviewResult {
+  wordId: string;
+  status: VocabularyStatus;
+}
+
+export interface ReviewResultItem {
+  word: string;
+  previousStatus: VocabularyStatus;
+  targetStatus: VocabularyStatus;
+  assessment: ReviewAssessment;
+}
