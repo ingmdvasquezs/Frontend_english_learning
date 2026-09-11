@@ -2,7 +2,6 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import { VocabularyStatus } from '../../../shared/models/vocabulary-status';
-import { Auth } from '../../auth/services/auth';
 import {
   ReaderData,
   ReaderToken,
@@ -10,13 +9,13 @@ import {
 } from '../models/reader.models';
 import { CompleteReadingResult } from '../models/reader.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
+import { escapeXml } from '../../../shared/utils/xml-utils';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ReaderService {
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(Auth);
 
   private readonly soapUrl = '/ws';
   private readonly namespace = 'http://soap.com/english-reading/readings';
@@ -24,8 +23,6 @@ export class ReaderService {
     'http://schemas.xmlsoap.org/soap/envelope/';
 
   getReaderData(readingId: string) {
-    const token = this.requireToken();
-
     const body = `
       <soapenv:Envelope
           xmlns:soapenv="${this.soapNamespace}"
@@ -33,13 +30,13 @@ export class ReaderService {
         <soapenv:Header/>
         <soapenv:Body>
           <read:getReadingReaderDataRequest>
-            <read:readingId>${this.escapeXml(readingId)}</read:readingId>
+            <read:readingId>${escapeXml(readingId)}</read:readingId>
           </read:getReadingReaderDataRequest>
         </soapenv:Body>
       </soapenv:Envelope>
     `;
 
-    return this.postSoap(body, token);
+    return this.postSoap(body);
   }
 
   setVocabularyStatus(
@@ -47,7 +44,6 @@ export class ReaderService {
     language: string,
     status: VocabularyStatus
   ) {
-    const token = this.requireToken();
     const body = `
       <soapenv:Envelope
           xmlns:soapenv="${this.soapNamespace}"
@@ -55,40 +51,38 @@ export class ReaderService {
         <soapenv:Header/>
         <soapenv:Body>
           <read:setVocabularyStatusRequest>
-            <read:word>${this.escapeXml(word)}</read:word>
-            <read:language>${this.escapeXml(language)}</read:language>
+            <read:word>${escapeXml(word)}</read:word>
+            <read:language>${escapeXml(language)}</read:language>
             <read:status>${status}</read:status>
           </read:setVocabularyStatusRequest>
         </soapenv:Body>
       </soapenv:Envelope>
     `;
 
-    return this.postSoap(body, token);
+    return this.postSoap(body);
   }
 
   completeReading(readingId: string) {
-    const token = this.requireToken();
     const body = `
       <soapenv:Envelope xmlns:soapenv="${this.soapNamespace}" xmlns:read="${this.namespace}">
         <soapenv:Header/>
         <soapenv:Body>
           <read:completeReadingRequest>
-            <read:readingId>${this.escapeXml(readingId)}</read:readingId>
+            <read:readingId>${escapeXml(readingId)}</read:readingId>
           </read:completeReadingRequest>
         </soapenv:Body>
       </soapenv:Envelope>
     `;
-    return this.postSoap(body, token);
+    return this.postSoap(body);
   }
 
   updateReadingProgress(request: UpdateReadingProgressRequest) {
-    const token = this.requireToken();
     const body = `
       <soapenv:Envelope xmlns:soapenv="${this.soapNamespace}" xmlns:read="${this.namespace}">
         <soapenv:Header/>
         <soapenv:Body>
           <read:updateReadingProgressRequest>
-            <read:readingId>${this.escapeXml(request.readingId)}</read:readingId>
+            <read:readingId>${escapeXml(request.readingId)}</read:readingId>
             <read:progressStatus>${request.progressStatus}</read:progressStatus>
             <read:currentPartOrdinal>${request.currentPartOrdinal}</read:currentPartOrdinal>
             <read:paginationVersion>${request.paginationVersion}</read:paginationVersion>
@@ -96,7 +90,7 @@ export class ReaderService {
         </soapenv:Body>
       </soapenv:Envelope>
     `;
-    return this.postSoap(body, token);
+    return this.postSoap(body);
   }
 
   parseReaderData(responseXml: string): ReaderData {
@@ -161,12 +155,11 @@ export class ReaderService {
     return value as VocabularyStatus;
   }
 
-  private postSoap(body: string, token: string) {
+  private postSoap(body: string) {
     return this.http
       .post(this.soapUrl, body, {
         headers: new HttpHeaders({
           'Content-Type': 'text/xml',
-          Authorization: `Bearer ${token}`,
         }),
         responseType: 'text',
       })
@@ -216,22 +209,5 @@ export class ReaderService {
       throw new Error(`Invalid SOAP response: invalid ${name}`);
     }
     return value;
-  }
-
-  private requireToken(): string {
-    const token = this.auth.accessToken();
-    if (!token) {
-      throw new Error('Authentication token is missing');
-    }
-    return token;
-  }
-
-  private escapeXml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&apos;');
   }
 }

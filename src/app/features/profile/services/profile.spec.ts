@@ -1,14 +1,15 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Auth } from '../../auth/services/auth';
+import { authInterceptor } from '../../auth/interceptors/auth.interceptor';
 import { ProfileService } from './profile';
 
 describe('ProfileService', () => {
   let service: ProfileService;
   let http: HttpTestingController;
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers:[ProfileService,provideHttpClient(),provideHttpClientTesting(),{provide:Auth,useValue:{accessToken:()=> 'jwt'}}] });
+    TestBed.configureTestingModule({ providers:[ProfileService,provideHttpClient(withInterceptors([authInterceptor])),provideHttpClientTesting(),{provide:Auth,useValue:{accessToken:()=> 'jwt', logout: () => undefined}}] });
     service=TestBed.inject(ProfileService); http=TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());

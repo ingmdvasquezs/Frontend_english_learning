@@ -1,14 +1,8 @@
 import { VocabularyStatus } from '../../../shared/models/vocabulary-status';
 import { ReadingProgressStatus } from '../../../shared/models/reading-progress-status';
 
-export type ReaderTokenType = 'WORD' | 'PUNCTUATION' | 'WHITESPACE';
-
-export interface ReaderToken {
-  value: string;
-  normalizedValue: string | null;
-  type: ReaderTokenType;
-  status: VocabularyStatus | null;
-}
+export * from '../../../shared/models/reader-token';
+import { ReaderToken } from '../../../shared/models/reader-token';
 
 export interface ReaderData {
   readingId: string;

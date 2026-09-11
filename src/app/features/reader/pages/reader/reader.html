@@ -1,13 +1,13 @@
 <div #readerTop class="app-page reader-page min-h-screen bg-[var(--app-bg)] px-5 py-8 text-[var(--app-text)] md:px-8 md:py-12" (click)="closeSelector()">
   <main class="mx-auto max-w-[880px]">
     @if (loading()) {
-      <p class="py-20 text-[16px] text-[#8d9299]">Cargando lectura...</p>
+      <p class="py-20 text-[16px] text-[var(--app-muted)]">Cargando lectura...</p>
     } @else if (error()) {
       <section class="py-20">
         <h1 class="font-serif text-[32px] font-normal">No pudimos cargar esta lectura.</h1>
         <div class="mt-6 flex gap-5 text-[15px] font-semibold">
-          <a routerLink="/home" class="hover:text-[#7cc0f5]">Volver a Inicio</a>
-          <a routerLink="/library" class="hover:text-[#7cc0f5]">Ir a Mi biblioteca</a>
+          <a routerLink="/home" class="hover:text-[var(--app-accent)]">Volver a Inicio</a>
+          <a routerLink="/library" class="hover:text-[var(--app-accent)]">Ir a Mi biblioteca</a>
         </div>
       </section>
     } @else if (readerData(); as data) {
@@ -49,7 +49,7 @@
         @if (data.progressStatus === 'COMPLETED') {
           <div class="app-card rounded-2xl p-6 sm:p-8">
             <h2 class="font-serif text-[28px] text-[var(--app-success)]">✓ Lectura terminada</h2>
-            <p class="mt-3 text-[15px] text-[#8d9299]">Has terminado esta lectura.</p>
+            <p class="mt-3 text-[15px] text-[var(--app-muted)]">Has terminado esta lectura.</p>
             <div class="mt-6 flex flex-wrap gap-5 font-semibold">
               <a routerLink="/home" class="text-[var(--app-accent)]">Volver al inicio</a>
               <a routerLink="/library" class="text-[var(--app-accent)]">Ver mi biblioteca</a>

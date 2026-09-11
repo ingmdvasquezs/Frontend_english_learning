@@ -46,6 +46,8 @@ testem.log
 __screenshots__/
 temp-cover-audit/
 public/assets/reading-covers/*.png
+/test-results/
+/playwright-report/
 
 # System files
 .DS_Store

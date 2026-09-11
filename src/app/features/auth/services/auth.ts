@@ -1,7 +1,9 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { map } from 'rxjs';
 import { LoginResult } from '../models/auth.models';
+import { IS_PUBLIC_REQUEST } from '../interceptors/auth.interceptor';
+import { escapeXml } from '../../../shared/utils/xml-utils';
 
 @Injectable({
   providedIn: 'root',
@@ -24,8 +26,8 @@ export class Auth {
         <soapenv:Header/>
         <soapenv:Body>
           <read:loginRequest>
-            <read:email>${this.escapeXml(email)}</read:email>
-            <read:password>${this.escapeXml(password)}</read:password>
+            <read:email>${escapeXml(email)}</read:email>
+            <read:password>${escapeXml(password)}</read:password>
           </read:loginRequest>
         </soapenv:Body>
       </soapenv:Envelope>
@@ -38,6 +40,7 @@ export class Auth {
     return this.http
       .post(this.soapUrl, body, {
         headers,
+        context: new HttpContext().set(IS_PUBLIC_REQUEST, true),
         responseType: 'text',
       })
       .pipe(map((response) => this.saveLoginResponse(response)));
@@ -50,9 +53,9 @@ export class Auth {
       <soapenv:Header/>
       <soapenv:Body>
         <read:registerUserRequest>
-          <read:name>${this.escapeXml(name)}</read:name>
-          <read:email>${this.escapeXml(email)}</read:email>
-          <read:password>${this.escapeXml(password)}</read:password>
+          <read:name>${escapeXml(name)}</read:name>
+          <read:email>${escapeXml(email)}</read:email>
+          <read:password>${escapeXml(password)}</read:password>
         </read:registerUserRequest>
       </soapenv:Body>
     </soapenv:Envelope>
@@ -64,6 +67,7 @@ export class Auth {
 
     return this.http.post(this.soapUrl, body, {
       headers,
+      context: new HttpContext().set(IS_PUBLIC_REQUEST, true),
       responseType: 'text',
     });
   }
@@ -115,14 +119,5 @@ export class Auth {
   private readStoredOnboardingCompleted(): boolean | null {
     const value = sessionStorage.getItem('onboardingCompleted');
     return value === 'true' ? true : value === 'false' ? false : null;
-  }
-
-  private escapeXml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&apos;');
   }
 }

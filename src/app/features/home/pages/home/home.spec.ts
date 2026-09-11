@@ -470,12 +470,36 @@ describe('Home', () => {
     expect(homeService.listCollectionReadings).toHaveBeenCalledWith('mystery', 0, 8);
     scienceResponse.next('science-page'); mysteryResponse.next('mystery-page'); fixture.detectChanges();
     const sections = fixture.nativeElement.querySelectorAll('.collection-section');
-    expect(sections).toHaveLength(2);
+    expect(sections).toHaveLength(1);
     expect(sections[0].textContent).toContain('Science, Technology & Ideas');
-    expect(sections[1].textContent).toContain('Mysteries & Imagination');
     expect(sections[0].querySelector('a[href="/reading/science-1"]')).toBeTruthy();
     expect(sections[0].textContent).toContain('Compatibilidad 90%');
-    expect(sections[1].textContent).toContain('todavía no tiene lecturas');
+    expect(componentText()).not.toContain('Mysteries & Imagination');
+    expect(componentText()).not.toContain('todavía no tiene lecturas');
+  });
+
+  it('preserves collection section while loading and shows error state with retry', () => {
+    const scienceResponse = new Subject<string>();
+    homeService.parseCollections.mockReturnValue([
+      collection('science', 'Science, Technology & Ideas', 1),
+    ]);
+    homeService.listCollectionReadings.mockReturnValue(scienceResponse.asObservable());
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage());
+    libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
+    fixture.detectChanges(); recommendationResponse.next('recommendations'); userReadingsResponse.next('users'); collectionsResponse.next('collections'); fixture.detectChanges();
+
+    // While loading: section is visible with loading indicator
+    let sections = fixture.nativeElement.querySelectorAll('.collection-section');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].textContent).toContain('Cargando lecturas...');
+
+    // On error: section is visible with error message and retry button
+    scienceResponse.error(new Error('Network error'));
+    fixture.detectChanges();
+    sections = fixture.nativeElement.querySelectorAll('.collection-section');
+    expect(sections).toHaveLength(1);
+    expect(sections[0].textContent).toContain('No se pudieron cargar estas lecturas');
+    expect(sections[0].querySelector('button')).toBeTruthy();
   });
 
   it('renders collection cards with the same personalized normal and reveal states', () => {

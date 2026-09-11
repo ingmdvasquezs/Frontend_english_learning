@@ -1,18 +1,18 @@
 <div class="app-page min-h-screen px-5 py-10 md:px-8 md:py-14">
   <main class="mx-auto max-w-[720px]">
     @if (profileService.loading() && !profileService.profile()) {
-      <p class="py-20 text-center text-[16px] text-[#8d9299]">Cargando perfil...</p>
+      <p class="py-20 text-center text-[16px] text-[var(--app-muted)]">Cargando perfil...</p>
     } @else if (profileService.loadError() && !profileService.profile()) {
       <section class="py-20 text-center" aria-live="polite">
         <h1 class="font-serif text-[32px]">No pudimos cargar tu perfil</h1>
-        <p class="mt-4 text-[#8d9299]">Inténtalo nuevamente.</p>
-        <button type="button" (click)="retry()" class="mt-6 font-semibold text-[#7cc0f5]">Reintentar</button>
+        <p class="mt-4 text-[var(--app-muted)]">Inténtalo nuevamente.</p>
+        <button type="button" (click)="retry()" class="mt-6 font-semibold text-[var(--app-accent)]">Reintentar</button>
       </section>
     } @else if (profileService.profile(); as profile) {
       <header class="text-center">
         <div class="mx-auto grid h-20 w-20 place-items-center rounded-full bg-[var(--app-active)] font-serif text-[28px] text-[var(--app-accent)]" aria-label="Iniciales del usuario">{{ initials() }}</div>
         <h1 class="mt-6 font-serif text-[44px]">Mi perfil</h1>
-        <p class="mt-3 text-[16px] text-[#8d9299]">Personaliza tu experiencia de lectura.</p>
+        <p class="mt-3 text-[16px] text-[var(--app-muted)]">Personaliza tu experiencia de lectura.</p>
       </header>
 
       <form class="app-card mt-10 space-y-6 rounded-2xl p-6 sm:p-8" (submit)="$event.preventDefault(); save()">
@@ -34,7 +34,7 @@
         <div>
           <label for="profile-native-language" class="mb-2 block text-sm font-semibold">Idioma nativo</label>
           <input id="profile-native-language" [value]="nativeLanguage()" (input)="onInput('nativeLanguage', $event)" class="profile-input" placeholder="Ej. es, es-CO, pt" />
-          <p class="mt-2 text-xs text-[#8d9299]">Código de idioma; puedes incluir región.</p>
+          <p class="mt-2 text-xs text-[var(--app-muted)]">Código de idioma; puedes incluir región.</p>
         </div>
         <div>
           <label for="profile-learning-language" class="mb-2 block text-sm font-semibold">Idioma que estás aprendiendo</label>
@@ -43,7 +43,7 @@
         <div>
           <label for="profile-email" class="mb-2 block text-sm font-semibold">Correo</label>
           <input id="profile-email" [value]="profile.email" readonly class="profile-input profile-readonly" />
-          <p class="mt-2 text-xs text-[#8d9299]">El correo de la cuenta no puede modificarse desde el perfil.</p>
+          <p class="mt-2 text-xs text-[var(--app-muted)]">El correo de la cuenta no puede modificarse desde el perfil.</p>
         </div>
         <div aria-live="polite">
           @if (success()) { <p class="text-sm font-semibold text-[#6fce9a]">{{ success() }}</p> }

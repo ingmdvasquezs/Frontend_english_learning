@@ -1,10 +1,11 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Auth } from '../../auth/services/auth';
+import { authInterceptor } from '../../auth/interceptors/auth.interceptor';
 import { LibraryService, ReadingNotFoundSoapError } from './library';
 
 describe('LibraryService', () => {
@@ -15,9 +16,9 @@ describe('LibraryService', () => {
     TestBed.configureTestingModule({
       providers: [
         LibraryService,
-        provideHttpClient(),
+        provideHttpClient(withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
-        { provide: Auth, useValue: { accessToken: () => 'token' } },
+        { provide: Auth, useValue: { accessToken: () => 'token', logout: () => undefined } },
       ],
     });
     service = TestBed.inject(LibraryService);

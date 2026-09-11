@@ -1,7 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { catchError, map, throwError } from 'rxjs';
-import { Auth } from '../../auth/services/auth';
 import {
   RegisteredReading,
   DeleteReadingResponse,
@@ -9,17 +8,16 @@ import {
   UserReadingsPage,
 } from '../models/library.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
+import { escapeXml } from '../../../shared/utils/xml-utils';
 
 @Injectable({ providedIn: 'root' })
 export class LibraryService {
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(Auth);
 
   private readonly soapUrl = '/ws';
   private readonly namespace = 'http://soap.com/english-reading/readings';
 
   listUserReadings(page = 0, size = 20) {
-    const token = this.requireToken();
     const body = `
       <soapenv:Envelope
           xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
@@ -35,13 +33,12 @@ export class LibraryService {
     `;
 
     return this.http.post(this.soapUrl, body, {
-      headers: this.authenticatedHeaders(token),
+      headers: this.soapHeaders(),
       responseType: 'text',
     });
   }
 
   registerReading(title: string, content: string, language: string) {
-    const token = this.requireToken();
     const body = `
       <soapenv:Envelope
           xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
@@ -49,22 +46,21 @@ export class LibraryService {
         <soapenv:Header/>
         <soapenv:Body>
           <read:registerReadingRequest>
-            <read:title>${this.escapeXml(title)}</read:title>
-            <read:content>${this.escapeXml(content)}</read:content>
-            <read:language>${this.escapeXml(language)}</read:language>
+            <read:title>${escapeXml(title)}</read:title>
+            <read:content>${escapeXml(content)}</read:content>
+            <read:language>${escapeXml(language)}</read:language>
           </read:registerReadingRequest>
         </soapenv:Body>
       </soapenv:Envelope>
     `;
 
     return this.http.post(this.soapUrl, body, {
-      headers: this.authenticatedHeaders(token),
+      headers: this.soapHeaders(),
       responseType: 'text',
     });
   }
 
   deleteReading(readingId: string) {
-    const token = this.requireToken();
     const body = `
       <soapenv:Envelope
           xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
@@ -72,14 +68,14 @@ export class LibraryService {
         <soapenv:Header/>
         <soapenv:Body>
           <read:deleteReadingRequest>
-            <read:readingId>${this.escapeXml(readingId)}</read:readingId>
+            <read:readingId>${escapeXml(readingId)}</read:readingId>
           </read:deleteReadingRequest>
         </soapenv:Body>
       </soapenv:Envelope>
     `;
 
     return this.http.post(this.soapUrl, body, {
-      headers: this.authenticatedHeaders(token),
+      headers: this.soapHeaders(),
       responseType: 'text',
     }).pipe(
       map((response) => this.parseDeleteReadingResponse(response)),
@@ -196,28 +192,10 @@ export class LibraryService {
     return faultString === 'Reading not found';
   }
 
-  private requireToken(): string {
-    const token = this.auth.accessToken();
-    if (!token) {
-      throw new Error('Authentication token is missing');
-    }
-    return token;
-  }
-
-  private authenticatedHeaders(token: string): HttpHeaders {
+  private soapHeaders(): HttpHeaders {
     return new HttpHeaders({
       'Content-Type': 'text/xml',
-      Authorization: `Bearer ${token}`,
     });
-  }
-
-  private escapeXml(value: string): string {
-    return value
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&apos;');
   }
 }
 

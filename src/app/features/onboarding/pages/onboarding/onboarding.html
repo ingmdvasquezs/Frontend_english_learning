@@ -1,8 +1,8 @@
 <div
   class="app-page onboarding-page min-h-screen
-         bg-[#14181c]
+         bg-[var(--app-bg)]
          px-5 py-12
-         text-[#e9e2d3]
+         text-[var(--app-text)]
          md:px-8 md:py-16"
   (click)="closeWordPopover()"
 >
@@ -16,7 +16,7 @@
         class="text-[13px]
                font-bold uppercase
                tracking-[0.18em]
-               text-[#7cc0f5]"
+               text-[var(--app-accent)]"
       >
         English Reading Platform
       </p>
@@ -27,7 +27,7 @@
                text-[46px]
                font-normal
                tracking-tight
-               text-[#e9e2d3]
+               text-[var(--app-text)]
                md:text-[54px]"
       >
         Conozcamos tu vocabulario
@@ -38,7 +38,7 @@
                max-w-[52ch]
                text-[18px]
                leading-8
-               text-[#8d9299]"
+               text-[var(--app-muted)]"
       >
         Lee el texto con naturalidad y marca cuánto conoces cada palabra.
         Usaremos tus respuestas para personalizar tus primeras lecturas.
@@ -68,7 +68,7 @@
           class="font-serif
                  text-[28px]
                  font-normal
-                 text-[#e9e2d3]"
+                 text-[var(--app-text)]"
         >
           Empecemos con una lectura corta
         </h2>
@@ -78,7 +78,7 @@
                  max-w-xl
                  text-[17px]
                  leading-8
-                 text-[#8d9299]"
+                 text-[var(--app-muted)]"
         >
           Lee a tu ritmo y clasifica las palabras según
           cuánto las conoces.
@@ -93,11 +93,11 @@
                  gap-2
                  text-[17px]
                  font-semibold
-                 text-[#e9e2d3]
+                 text-[var(--app-text)]
                  transition
-                 hover:text-[#7cc0f5]
+                 hover:text-[var(--app-accent)]
                  disabled:cursor-not-allowed
-                 disabled:text-[#5c6167]"
+                 disabled:text-[var(--app-muted)]"
         >
           @if (loading()) {
             Cargando...
@@ -119,11 +119,11 @@
         <p
           class="text-[16px]
                  leading-7
-                 text-[#6f747a]"
+                 text-[var(--app-muted)]"
         >
           <span
             class="font-semibold
-                   text-[#a2a7ad]"
+                   text-[var(--app-text-secondary)]"
           >
             ¿Cómo funciona?
           </span>
@@ -144,7 +144,7 @@
                h-px
                bg-gradient-to-r
                from-transparent
-               via-[#2a2f34]
+               via-[var(--app-border)]
                to-transparent"
       ></div>
 
@@ -159,7 +159,7 @@
           class="text-[13px]
                  font-bold uppercase
                  tracking-[0.18em]
-                 text-[#6a7076]"
+                 text-[var(--app-muted)]"
         >
           Lectura
         </p>
@@ -174,7 +174,7 @@
             class="font-serif
                    text-[28px]
                    font-normal
-                   text-[#e9e2d3]"
+                   text-[var(--app-text)]"
           >
             Lee el texto
           </h2>
@@ -187,7 +187,7 @@
                  text-[24px]
                  leading-[1.9]
                  tracking-[0.005em]
-                 text-[#e9e2d3]"
+                 text-[var(--app-text)]"
         >
 
           @for (
@@ -291,7 +291,7 @@
                gap-x-7
                gap-y-3
                text-[14px]
-               text-[#6f747a]"
+               text-[var(--app-muted)]"
       >
 
         <span class="flex items-center gap-2">
@@ -333,7 +333,7 @@
       </div>
 
       <!-- CTA -->
-      <footer class="mt-10 border-t border-[#2a2f34] pt-6 sm:flex sm:items-end sm:justify-between sm:gap-8">
+      <footer class="mt-10 border-t border-[var(--app-border)] pt-6 sm:flex sm:items-end sm:justify-between sm:gap-8">
 
         <div
           id="onboarding-classification-progress"
@@ -342,17 +342,17 @@
           aria-atomic="true"
         >
           @if (canFinishTest()) {
-            <p class="text-[15px] font-semibold text-[#e9e2d3]">
+            <p class="text-[15px] font-semibold text-[var(--app-text)]">
               {{ classifiedWordCount() }} palabras clasificadas
             </p>
-            <p class="mt-1 text-[14px] leading-6 text-[#8d9299]">
+            <p class="mt-1 text-[14px] leading-6 text-[var(--app-muted)]">
               Ya tenemos suficiente información para empezar a personalizar tus lecturas.
             </p>
           } @else {
-            <p class="text-[15px] font-semibold text-[#e9e2d3]">
+            <p class="text-[15px] font-semibold text-[var(--app-text)]">
               {{ classifiedWordCount() }} de {{ minimumClassifications }} palabras clasificadas
             </p>
-            <p class="mt-1 text-[14px] leading-6 text-[#8d9299]">
+            <p class="mt-1 text-[14px] leading-6 text-[var(--app-muted)]">
               Clasifica al menos {{ minimumClassifications }} palabras para personalizar tus primeras recomendaciones.
               Selecciona {{ remainingClassifications() }} más para continuar.
             </p>
@@ -370,18 +370,18 @@
                  justify-center
                  gap-3
                  rounded-lg
-                 border border-[#7cc0f5]
+                 border border-[var(--app-accent)]
                  px-5 py-3
                  text-[17px]
                  font-semibold
-                 text-[#14181c]
-                 bg-[#7cc0f5]
+                 text-[var(--app-surface-elevated)]
+                 bg-[var(--app-accent)]
                  transition
-                 hover:bg-[#9bd0f7]
+                 hover:brightness-110
                  disabled:cursor-not-allowed
-                 disabled:border-[#34393e]
+                 disabled:border-[var(--app-border)]
                  disabled:bg-transparent
-                 disabled:text-[#777c82]
+                 disabled:text-[var(--app-muted)]
                  sm:mt-0 sm:w-auto sm:shrink-0"
         >
 

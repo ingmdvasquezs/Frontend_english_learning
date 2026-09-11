@@ -1,9 +1,8 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, switchMap, takeUntil, takeWhile, throwError, timer } from 'rxjs';
-import { Auth } from '../../auth/services/auth';
 import { DocumentImportAccepted, DocumentProgress, DocumentStructure, DocumentUnit, ImportedDocument, ImportedDocumentPage, UpdateDocumentProgressRequest } from '../models/document.models';
-import { ReaderToken } from '../../reader/models/reader.models';
+import { ReaderToken } from '../../../shared/models/reader-token';
 
 interface DocumentUnitRestResponse extends Omit<DocumentUnit, 'tokens'> {
   tokens: DocumentTokenRestResponse[];
@@ -19,18 +18,17 @@ interface DocumentTokenRestResponse {
 @Injectable({ providedIn: 'root' })
 export class DocumentService {
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(Auth);
   private readonly baseUrl = '/api/v1/documents';
 
   upload(file: File, languageOverride?: 'en'): Observable<DocumentImportAccepted> {
     const form = new FormData();
     form.append('file', file);
     if (languageOverride) form.append('languageOverride', languageOverride);
-    return this.http.post<DocumentImportAccepted>(this.baseUrl, form, { headers: this.authHeaders() });
+    return this.http.post<DocumentImportAccepted>(this.baseUrl, form);
   }
 
   getDocument(documentId: string): Observable<ImportedDocument> {
-    return this.http.get<ImportedDocument>(`${this.baseUrl}/${documentId}`, { headers: this.authHeaders() });
+    return this.http.get<ImportedDocument>(`${this.baseUrl}/${documentId}`);
   }
 
   pollUntilTerminal(documentId: string, timeoutMs = 120_000): Observable<ImportedDocument> {
@@ -43,18 +41,16 @@ export class DocumentService {
 
   list(page = 0, size = 20): Observable<ImportedDocumentPage> {
     const params = new HttpParams().set('page', page).set('size', size);
-    return this.http.get<ImportedDocumentPage>(this.baseUrl, { headers: this.authHeaders(), params });
+    return this.http.get<ImportedDocumentPage>(this.baseUrl, { params });
   }
 
   getStructure(documentId: string): Observable<DocumentStructure> {
-    return this.http.get<DocumentStructure>(`${this.baseUrl}/${documentId}/structure`, { headers: this.authHeaders() });
+    return this.http.get<DocumentStructure>(`${this.baseUrl}/${documentId}/structure`);
   }
 
   getUnit(documentId: string, unitId: string): Observable<DocumentUnit> {
     return this.http
-      .get<DocumentUnitRestResponse>(`${this.baseUrl}/${documentId}/units/${unitId}`, {
-        headers: this.authHeaders(),
-      })
+      .get<DocumentUnitRestResponse>(`${this.baseUrl}/${documentId}/units/${unitId}`)
       .pipe(
         map((unit) => ({
           ...unit,
@@ -69,24 +65,18 @@ export class DocumentService {
   }
 
   getProgress(documentId: string): Observable<DocumentProgress> {
-    return this.http.get<DocumentProgress>(`${this.baseUrl}/${documentId}/progress`, { headers: this.authHeaders() });
+    return this.http.get<DocumentProgress>(`${this.baseUrl}/${documentId}/progress`);
   }
 
   updateProgress(documentId: string, request: UpdateDocumentProgressRequest): Observable<DocumentProgress> {
-    return this.http.put<DocumentProgress>(`${this.baseUrl}/${documentId}/progress`, request, { headers: this.authHeaders() });
+    return this.http.put<DocumentProgress>(`${this.baseUrl}/${documentId}/progress`, request);
   }
 
   getCover(documentId: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/${documentId}/cover`, { headers: this.authHeaders(), responseType: 'blob' });
+    return this.http.get(`${this.baseUrl}/${documentId}/cover`, { responseType: 'blob' });
   }
 
   deleteDocument(documentId: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${documentId}`, { headers: this.authHeaders() });
-  }
-
-  private authHeaders(): HttpHeaders {
-    const token = this.auth.accessToken();
-    if (!token) throw new Error('Authentication token is missing');
-    return new HttpHeaders({ Authorization: `Bearer ${token}` });
+    return this.http.delete<void>(`${this.baseUrl}/${documentId}`);
   }
 }

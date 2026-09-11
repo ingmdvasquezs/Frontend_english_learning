@@ -1,6 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Auth } from '../../auth/services/auth';
 import {
   PlatformReadingRecommendationsPage,
   RecommendedPlatformReading,
@@ -12,42 +11,22 @@ import {
   ReadingOrigin,
 } from '../models/home.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
+import { escapeXml } from '../../../shared/utils/xml-utils';
 
 @Injectable({ providedIn: 'root' })
 export class HomeService {
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(Auth);
 
   private readonly soapUrl = '/ws';
   private readonly namespace = 'http://soap.com/english-reading/readings';
 
   recommendPlatformReadings(page = 0, size = 12) {
-    const token = this.auth.accessToken();
-    if (!token) {
-      throw new Error('Authentication token is missing');
-    }
-
-    const body = `
-      <soapenv:Envelope
-          xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-          xmlns:read="${this.namespace}">
-        <soapenv:Header/>
-        <soapenv:Body>
-          <read:recommendPlatformReadingsRequest>
-            <read:page>${page}</read:page>
-            <read:size>${size}</read:size>
-          </read:recommendPlatformReadingsRequest>
-        </soapenv:Body>
-      </soapenv:Envelope>
-    `;
-
-    return this.http.post(this.soapUrl, body, {
-      headers: new HttpHeaders({
-        'Content-Type': 'text/xml',
-        Authorization: `Bearer ${token}`,
-      }),
-      responseType: 'text',
-    });
+    return this.postSoap(`
+      <read:recommendPlatformReadingsRequest>
+        <read:page>${page}</read:page>
+        <read:size>${size}</read:size>
+      </read:recommendPlatformReadingsRequest>
+    `);
   }
 
   listCollections() {
@@ -88,7 +67,7 @@ export class HomeService {
   listCollectionReadings(collectionKey: string, page = 0, size = 8) {
     return this.postSoap(`
       <read:listCollectionReadingsRequest>
-        <read:collectionKey>${this.escapeXml(collectionKey)}</read:collectionKey>
+        <read:collectionKey>${escapeXml(collectionKey)}</read:collectionKey>
         <read:page>${page}</read:page>
         <read:size>${size}</read:size>
       </read:listCollectionReadingsRequest>
@@ -122,8 +101,6 @@ export class HomeService {
   }
 
   private postSoap(payload: string) {
-    const token = this.auth.accessToken();
-    if (!token) throw new Error('Authentication token is missing');
     const body = `
       <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:read="${this.namespace}">
         <soapenv:Header/><soapenv:Body>${payload}</soapenv:Body>
@@ -132,16 +109,9 @@ export class HomeService {
     return this.http.post(this.soapUrl, body, {
       headers: new HttpHeaders({
         'Content-Type': 'text/xml',
-        Authorization: `Bearer ${token}`,
       }),
       responseType: 'text',
     });
-  }
-
-  private escapeXml(value: string): string {
-    return value.replace(/[&<>"']/g, (character) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;',
-    })[character]!);
   }
 
   parseRecommendations(

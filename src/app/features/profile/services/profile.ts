@@ -1,13 +1,12 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { catchError, map, tap, throwError } from 'rxjs';
-import { Auth } from '../../auth/services/auth';
 import { AliasAlreadyInUseError, UpdateUserProfile, UserProfile } from '../models/profile.models';
+import { escapeXml } from '../../../shared/utils/xml-utils';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(Auth);
   private readonly soapUrl = '/ws';
   private readonly namespace = 'http://soap.com/english-reading/readings';
   private readonly soapNamespace = 'http://schemas.xmlsoap.org/soap/envelope/';
@@ -39,7 +38,7 @@ export class ProfileService {
   }
 
   updateMyProfile(profile: UpdateUserProfile) {
-    const body = `<soapenv:Envelope xmlns:soapenv="${this.soapNamespace}" xmlns:read="${this.namespace}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soapenv:Header/><soapenv:Body><read:updateMyProfileRequest><read:name>${this.escapeXml(profile.name)}</read:name>${this.optionalText('alias', profile.alias)}${this.optionalNumber('age', profile.age)}${this.optionalText('nativeLanguage', profile.nativeLanguage)}<read:learningLanguage>${this.escapeXml(profile.learningLanguage)}</read:learningLanguage></read:updateMyProfileRequest></soapenv:Body></soapenv:Envelope>`;
+    const body = `<soapenv:Envelope xmlns:soapenv="${this.soapNamespace}" xmlns:read="${this.namespace}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soapenv:Header/><soapenv:Body><read:updateMyProfileRequest><read:name>${escapeXml(profile.name)}</read:name>${this.optionalText('alias', profile.alias)}${this.optionalNumber('age', profile.age)}${this.optionalText('nativeLanguage', profile.nativeLanguage)}<read:learningLanguage>${escapeXml(profile.learningLanguage)}</read:learningLanguage></read:updateMyProfileRequest></soapenv:Body></soapenv:Envelope>`;
     return this.post(body).pipe(
       tap(() => {
         const current = this.profile();
@@ -67,10 +66,8 @@ export class ProfileService {
   }
 
   private post(body: string) {
-    const token = this.auth.accessToken();
-    if (!token) throw new Error('Authentication token is missing');
     return this.http.post(this.soapUrl, body, {
-      headers: new HttpHeaders({ 'Content-Type': 'text/xml', Authorization: `Bearer ${token}` }),
+      headers: new HttpHeaders({ 'Content-Type': 'text/xml' }),
       responseType: 'text',
     }).pipe(
       map((response) => { this.parseXml(response); return response; }),
@@ -115,14 +112,10 @@ export class ProfileService {
   }
 
   private optionalText(name: string, value: string | null): string {
-    return value === null ? `<read:${name} xsi:nil="true"/>` : `<read:${name}>${this.escapeXml(value)}</read:${name}>`;
+    return value === null ? `<read:${name} xsi:nil="true"/>` : `<read:${name}>${escapeXml(value)}</read:${name}>`;
   }
 
   private optionalNumber(name: string, value: number | null): string {
     return value === null ? `<read:${name} xsi:nil="true"/>` : `<read:${name}>${value}</read:${name}>`;
-  }
-
-  private escapeXml(value: string): string {
-    return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
   }
 }

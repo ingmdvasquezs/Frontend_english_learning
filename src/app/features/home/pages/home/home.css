@@ -9,8 +9,7 @@
 .featured-content { position:relative; grid-area:content; padding:1.4rem 0 .75rem; }
 .featured-cover { grid-area:cover; height:9.5rem; }
 .featured-cta { grid-area:cta; padding:.75rem 0 1.25rem; color:var(--app-text); }
-.featured-title { overflow-wrap:anywhere; }
-.featured-title { font-size:clamp(1.75rem,2.7vw,2.35rem) !important; letter-spacing:-.02em; }
+.featured-title { overflow-wrap:anywhere; font-size:clamp(1.75rem,2.7vw,2.35rem) !important; letter-spacing:-.02em; }
 .featured-summary { margin-top:.75rem !important; }
 .featured-metrics-reveal { padding:1.4rem 0; }
 .cover-fallback { position:relative; display:grid; place-items:end start; width:100%; height:100%; overflow:hidden; padding:1rem; color:var(--app-muted); background:var(--app-active); }

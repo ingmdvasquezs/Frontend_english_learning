@@ -52,5 +52,3 @@ a { color:inherit; }
 :root[data-theme='light'] .auth-page .text-slate-400 { color:var(--app-muted) !important; }
 :root[data-theme='light'] .auth-page .text-sky-400 { color:var(--app-accent) !important; }
 :root[data-theme='light'] .auth-page .border-slate-800,:root[data-theme='light'] .auth-page .border-slate-700 { border-color:var(--app-border) !important; }
-:root[data-theme='light'] .onboarding-page [class*="text-[#e9e2d3]"] { color:var(--app-text) !important; }
-:root[data-theme='light'] .onboarding-page [class*="text-[#8d9299]"],:root[data-theme='light'] .onboarding-page [class*="text-[#6f747a]"],:root[data-theme='light'] .onboarding-page [class*="text-[#a2a7ad]"] { color:var(--app-muted) !important; }

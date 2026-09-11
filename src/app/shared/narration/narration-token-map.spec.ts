@@ -1,4 +1,4 @@
-import { ReaderToken } from '../../features/reader/models/reader.models';
+import { ReaderToken } from '../models/reader-token';
 import { createNarrationTokenMap, findNarrationWordTokenIndex } from './narration-token-map';
 
 describe('narration token map', () => {

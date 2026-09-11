@@ -1,4 +1,4 @@
-import { ReaderToken } from '../../features/reader/models/reader.models';
+import { ReaderToken } from '../models/reader-token';
 
 export interface NarrationTokenRange {
   readonly tokenIndex: number;

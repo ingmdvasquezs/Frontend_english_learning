@@ -1,6 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Auth } from '../../features/auth/services/auth';
 
 export interface DictionaryDefinition {
   definition: string;
@@ -26,19 +25,12 @@ export interface DictionaryWord {
 })
 export class DictionaryService {
   private readonly http = inject(HttpClient);
-  private readonly auth = inject(Auth);
 
   private readonly soapUrl = '/ws';
   private readonly namespace =
     'http://soap.com/english-reading/readings';
 
   lookupWord(word: string) {
-    const token = this.auth.accessToken();
-
-    if (!token) {
-      throw new Error('Authentication token is missing');
-    }
-
     const body = `
       <soapenv:Envelope
           xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
@@ -54,7 +46,6 @@ export class DictionaryService {
 
     const headers = new HttpHeaders({
       'Content-Type': 'text/xml',
-      Authorization: `Bearer ${token}`,
     });
 
     return this.http.post(this.soapUrl, body, {
