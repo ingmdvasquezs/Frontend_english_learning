@@ -73,6 +73,23 @@ test.describe('Browser Integration: Vocabulary Status Interaction', () => {
         });
       }
 
+      if (postData.includes('getMyProfileRequest')) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/xml',
+          body: `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:read="http://soap.com/english-reading/readings">
+              <soapenv:Body>
+                <read:getMyProfileResponse>
+                  <read:email>testuser@example.com</read:email>
+                  <read:name>Test User</read:name>
+                </read:getMyProfileResponse>
+              </soapenv:Body>
+            </soapenv:Envelope>
+          `,
+        });
+      }
+
       if (postData.includes('setVocabularyStatusRequest')) {
         const wordMatch = postData.match(/<read:word>(.*?)<\/read:word>/);
         const statusMatch = postData.match(/<read:status>(.*?)<\/read:status>/);

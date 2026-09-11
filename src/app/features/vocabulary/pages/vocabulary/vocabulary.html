@@ -1,0 +1,244 @@
+<div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+  <header class="mb-8">
+    <h1 class="page-title">Mi vocabulario</h1>
+    <p class="page-subtitle">Palabras que has descubierto y su estado de aprendizaje.</p>
+  </header>
+
+  <!-- Summary Metrics Bar -->
+  <section class="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5" aria-label="Resumen de vocabulario">
+    <button
+      type="button"
+      class="summary-card"
+      [class.active]="selectedFilter() === 'ALL'"
+      (click)="selectFilter('ALL')"
+      aria-label="Ver todas las palabras"
+    >
+      <span class="summary-label">Total</span>
+      <span class="summary-value">{{ summary().totalCount }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="summary-card card-new"
+      [class.active]="selectedFilter() === 'NEW'"
+      (click)="selectFilter('NEW')"
+      aria-label="Filtrar palabras nuevas"
+    >
+      <span class="summary-label">Nuevas</span>
+      <span class="summary-value">{{ summary().newCount }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="summary-card card-learning"
+      [class.active]="selectedFilter() === 'LEARNING'"
+      (click)="selectFilter('LEARNING')"
+      aria-label="Filtrar palabras aprendiendo"
+    >
+      <span class="summary-label">Aprendiendo</span>
+      <span class="summary-value">{{ summary().learningCount }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="summary-card card-known"
+      [class.active]="selectedFilter() === 'KNOWN'"
+      (click)="selectFilter('KNOWN')"
+      aria-label="Filtrar palabras conocidas"
+    >
+      <span class="summary-label">Conocidas</span>
+      <span class="summary-value">{{ summary().knownCount }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="summary-card card-ignored"
+      [class.active]="selectedFilter() === 'IGNORED'"
+      (click)="selectFilter('IGNORED')"
+      aria-label="Filtrar palabras ignoradas"
+    >
+      <span class="summary-label">Ignoradas</span>
+      <span class="summary-value">{{ summary().ignoredCount }}</span>
+    </button>
+  </section>
+
+  <!-- Controls: Search & Tabs -->
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-1 overflow-x-auto rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] p-1" role="tablist" aria-label="Filtros de estado">
+      @for (filter of filters; track filter.key) {
+        <button
+          type="button"
+          role="tab"
+          class="tab-btn"
+          [attr.aria-selected]="selectedFilter() === filter.key"
+          [class.active]="selectedFilter() === filter.key"
+          (click)="selectFilter(filter.key)"
+        >
+          {{ filter.label }}
+        </button>
+      }
+    </div>
+
+    <div class="relative flex w-full max-w-xs items-center">
+      <svg class="search-icon pointer-events-none absolute left-3 h-4 w-4" aria-hidden="true" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input
+        type="search"
+        class="search-input w-full rounded-md border border-[var(--app-border)] bg-[var(--app-surface)] py-2 pl-9 pr-8 text-sm text-[var(--app-text)]"
+        placeholder="Buscar palabra..."
+        [formControl]="searchControl"
+        aria-label="Buscar palabra en vocabulario"
+      />
+      @if (searchControl.value) {
+        <button
+          type="button"
+          class="absolute right-2 text-xs text-[var(--app-muted)] hover:text-[var(--app-text)]"
+          aria-label="Limpiar búsqueda"
+          (click)="searchControl.setValue('')"
+        >
+          ✕
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Content State Handling -->
+  @if (loading()) {
+    <div class="space-y-3" role="status" aria-busy="true">
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <div class="skeleton-row"></div>
+      <span class="sr-only">Cargando vocabulario...</span>
+    </div>
+  } @else if (error()) {
+    <div class="rounded-lg border border-[var(--app-danger)] bg-[var(--app-surface)] p-6 text-center" role="alert">
+      <p class="mb-3 text-sm text-[var(--app-danger)]">{{ error() }}</p>
+      <button type="button" class="retry-btn rounded border border-[var(--app-border)] bg-transparent px-4 py-1.5 text-xs font-semibold text-[var(--app-text)] hover:border-[var(--app-text)]" (click)="loadVocabulary()">
+        Reintentar
+      </button>
+    </div>
+  } @else if (isGlobalEmpty()) {
+    <div class="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-12 text-center">
+      <div class="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[var(--app-active)] text-[var(--app-muted)]" aria-hidden="true">
+        <svg class="h-6 w-6 stroke-current" fill="none" stroke-width="1.7" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <h2 class="mb-1.5 text-lg font-semibold text-[var(--app-text)]">Aún no tienes palabras en tu vocabulario</h2>
+      <p class="mx-auto mb-5 max-w-md text-sm text-[var(--app-muted)]">
+        A medida que leas textos y libros en la plataforma, las palabras que descubras y clasifiques aparecerán aquí para tu consulta.
+      </p>
+      <a routerLink="/library" class="inline-block rounded bg-[var(--app-accent)] px-5 py-2 text-sm font-semibold text-white no-underline hover:opacity-90">
+        Explorar lecturas
+      </a>
+    </div>
+  } @else if (isFilterEmpty()) {
+    <div class="rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-12 text-center">
+      <h2 class="mb-1.5 text-lg font-semibold text-[var(--app-text)]">No se encontraron palabras</h2>
+      <p class="mx-auto mb-5 max-w-md text-sm text-[var(--app-muted)]">
+        No hay palabras en tu vocabulario que coincidan con los filtros o la búsqueda actual.
+      </p>
+      <button type="button" class="inline-block rounded bg-[var(--app-accent)] px-5 py-2 text-sm font-semibold text-white no-underline hover:opacity-90" (click)="resetFilters()">
+        Restablecer filtros
+      </button>
+    </div>
+  } @else {
+    <!-- Vocabulary Word Table -->
+    <div class="overflow-x-auto rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)]">
+      <table class="w-full text-left text-sm" aria-label="Lista de vocabulario">
+        <thead>
+          <tr class="border-b border-[var(--app-border)] bg-[var(--app-surface-elevated)] text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+            <th scope="col" class="px-4 py-3">Palabra</th>
+            <th scope="col" class="px-4 py-3">Estado</th>
+            <th scope="col" class="px-4 py-3">Idioma</th>
+            <th scope="col" class="px-4 py-3">Descubierta</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--app-border)]">
+          @for (entry of entries(); track entry.entryId) {
+            <tr class="vocabulary-row transition-colors hover:bg-[var(--app-active)]">
+              <td class="px-4 py-3 font-semibold text-[var(--app-text)]">
+                <button
+                  type="button"
+                  class="word-trigger-btn"
+                  (click)="openWordPopover(entry, $event)"
+                  [attr.aria-label]="'Consultar detalles de ' + entry.word"
+                >
+                  <span class="word-text">{{ entry.word }}</span>
+                </button>
+              </td>
+              <td class="px-4 py-3">
+                <span [class]="'status-badge ' + getStatusBadgeClass(entry.status)">
+                  {{ getStatusLabel(entry.status) }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <span class="lang-tag">{{ entry.language | uppercase }}</span>
+              </td>
+              <td class="px-4 py-3 text-xs text-[var(--app-muted)]">
+                @if (entry.firstSeenAt) {
+                  <time [attr.datetime]="entry.firstSeenAt">
+                    {{ entry.firstSeenAt | date:'mediumDate' }}
+                  </time>
+                } @else {
+                  <span>—</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Toolbar -->
+    <footer class="mt-5 flex flex-wrap items-center justify-between gap-4 text-xs text-[var(--app-muted)]" aria-label="Paginación de vocabulario">
+      <div>
+        Página {{ page() + 1 }} de {{ totalPages() }}
+        <span class="ml-1">({{ totalElements() }} {{ totalElements() === 1 ? 'palabra' : 'palabras' }})</span>
+      </div>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="rounded border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-medium text-[var(--app-text)] hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="page() === 0 || loading()"
+          (click)="prevPage()"
+          aria-label="Página anterior"
+        >
+          Anterior
+        </button>
+        <button
+          type="button"
+          class="rounded border border-[var(--app-border)] bg-[var(--app-surface)] px-3 py-1.5 text-xs font-medium text-[var(--app-text)] hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+          [disabled]="page() + 1 >= totalPages() || loading()"
+          (click)="nextPage()"
+          aria-label="Página siguiente"
+        >
+          Siguiente
+        </button>
+      </div>
+    </footer>
+  }
+
+  <!-- Reader Word Popover Integration -->
+  @if (wordInteraction.popoverPosition(); as position) {
+    <app-reader-word-popover
+      [token]="wordInteraction.selectedToken()!"
+      [position]="position"
+      [word]="wordInteraction.dictionaryWord()"
+      [lookupLoading]="wordInteraction.lookupLoading()"
+      [lookupUnavailable]="wordInteraction.lookupUnavailable()"
+      [savingStatus]="wordInteraction.savingStatus()"
+      [statusError]="wordInteraction.statusError()"
+      [audioError]="wordInteraction.audioError()"
+      [definitionsOpen]="wordInteraction.definitionsOpen()"
+      [selectedStatus]="wordInteraction.selectedStatus()"
+      [statuses]="wordInteraction.statuses"
+      (closed)="closePopover()"
+      (audioPlayed)="wordInteraction.playAudio($event)"
+      (definitionsToggled)="wordInteraction.toggleDefinitions($event)"
+      (statusSelected)="onStatusSelected($event)"
+    />
+  }
+</div>

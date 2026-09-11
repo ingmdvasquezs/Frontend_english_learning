@@ -19,6 +19,7 @@ describe('AppShell', () => {
     const root = fixture.nativeElement as HTMLElement;
     expect(root.querySelector('a[href="/home"]')).toBeTruthy();
     expect(root.querySelector('a[href="/library"]')).toBeTruthy();
+    expect(root.querySelector('a[href="/vocabulary"]')).toBeTruthy();
     expect(root.querySelector('a[href="/library/new"]')).toBeFalsy();
     expect(root.textContent).not.toContain('Nueva lectura');
     expect(root.textContent).toContain('AdaPublic');

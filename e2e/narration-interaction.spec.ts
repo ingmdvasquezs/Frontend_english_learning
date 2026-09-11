@@ -80,6 +80,23 @@ test.describe('Browser Integration: Narration Interaction Flow', () => {
         });
       }
 
+      if (postData.includes('getMyProfileRequest')) {
+        return route.fulfill({
+          status: 200,
+          contentType: 'text/xml',
+          body: `
+            <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:read="http://soap.com/english-reading/readings">
+              <soapenv:Body>
+                <read:getMyProfileResponse>
+                  <read:email>testuser@example.com</read:email>
+                  <read:name>Test User</read:name>
+                </read:getMyProfileResponse>
+              </soapenv:Body>
+            </soapenv:Envelope>
+          `,
+        });
+      }
+
       return route.continue();
     });
 

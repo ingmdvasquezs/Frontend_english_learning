@@ -1,0 +1,34 @@
+:host { display: block; min-height: 100%; }
+.page-title { font: 400 clamp(1.8rem, 3vw, 2.4rem) Georgia, 'Times New Roman', serif; color: var(--app-text); margin: 0 0 0.4rem; letter-spacing: -0.02em; }
+.page-subtitle { color: var(--app-muted); font-size: 0.95rem; margin: 0; }
+
+.summary-card { display: flex; flex-direction: column; align-items: flex-start; padding: 0.85rem 1rem; background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 0.5rem; text-align: left; cursor: pointer; transition: all 0.16s ease; }
+.summary-card:hover { border-color: var(--app-accent); transform: translateY(-1px); }
+.summary-card.active { border-color: var(--app-accent); background: var(--app-surface-elevated); box-shadow: 0 0 0 1px var(--app-accent); }
+.summary-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--app-muted); margin-bottom: 0.25rem; }
+.summary-value { font-size: 1.4rem; font-weight: 700; color: var(--app-text); line-height: 1; }
+.card-new .summary-value { color: var(--app-accent); }
+.card-learning .summary-value { color: var(--app-learning); }
+.card-known .summary-value { color: var(--app-success); }
+.card-ignored .summary-value { color: var(--app-muted); }
+
+.tab-btn { padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 500; color: var(--app-muted); background: transparent; border: 0; border-radius: 0.35rem; cursor: pointer; white-space: nowrap; transition: all 0.15s ease; }
+.tab-btn:hover { color: var(--app-text); }
+.tab-btn.active { background: var(--app-active); color: var(--app-text); font-weight: 600; }
+
+.search-icon { fill: none; stroke: var(--app-muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.search-input:focus { outline: none; border-color: var(--app-accent); }
+
+.word-trigger-btn { display: inline-flex; align-items: center; background: transparent; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--app-text); cursor: pointer; }
+.word-trigger-btn:hover .word-text { color: var(--app-accent); text-decoration: underline; }
+
+.status-badge { display: inline-block; padding: 0.18rem 0.5rem; font-size: 0.72rem; font-weight: 600; border-radius: 999px; line-height: 1.2; }
+.badge-new { background: var(--word-new-bg); color: var(--word-new-text); }
+.badge-learning { background: var(--word-learning-bg); color: var(--word-learning-text); }
+.badge-known { background: color-mix(in srgb, var(--app-success) 18%, transparent); color: var(--app-success); }
+.badge-ignored { background: var(--app-active); color: var(--app-muted); }
+.lang-tag { font-size: 0.7rem; font-weight: 700; padding: 0.12rem 0.35rem; background: var(--app-active); color: var(--app-text-secondary); border-radius: 0.25rem; }
+
+.skeleton-row { height: 2.8rem; background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 0.35rem; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }

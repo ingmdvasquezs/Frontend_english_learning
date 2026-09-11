@@ -34,6 +34,13 @@ export const routes: Routes = [
         ],
       },
       {
+        path: 'vocabulary',
+        loadComponent: () =>
+          import('./features/vocabulary/pages/vocabulary/vocabulary').then(
+            (m) => m.Vocabulary
+          ),
+      },
+      {
         path: 'reading/:readingId',
         loadComponent: () =>
           import('./features/reader/pages/reader/reader').then((m) => m.Reader),
