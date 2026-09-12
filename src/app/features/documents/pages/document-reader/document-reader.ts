@@ -9,7 +9,7 @@ import { ReaderToken } from '../../../reader/models/reader.models';
 import { ReaderTokenStream, ReaderWordSelection } from '../../../reader/components/reader-token-stream/reader-token-stream';
 import { ReaderWordPopover } from '../../../reader/components/reader-word-popover/reader-word-popover';
 import { ReaderWordInteraction } from '../../../reader/services/reader-word-interaction';
-import { DocumentProgress, DocumentSection, DocumentStructure, DocumentUnit, ImportedDocument } from '../../models/document.models';
+import { DocumentProgress, DocumentSection, DocumentStructure, DocumentUnit, DocumentVocabularyCompatibility, ImportedDocument } from '../../models/document.models';
 import { DocumentService } from '../../services/document';
 import { ReaderNarrationControls } from '../../../../shared/components/reader-narration-controls/reader-narration-controls';
 import { NarrationService } from '../../../../shared/narration/narration.service';
@@ -30,6 +30,8 @@ export class DocumentReader implements OnInit {
   private tocScrollFrame: number | null = null;
   private previousBodyOverflow = '';
   private bodyScrollLocked = false;
+  private compatibilityLoaded = false;
+  private compatibilityStale = false;
 
   readonly document = signal<ImportedDocument | null>(null);
   readonly structure = signal<DocumentStructure | null>(null);
@@ -41,6 +43,9 @@ export class DocumentReader implements OnInit {
   readonly error = signal<string | null>(null);
   readonly progressError = signal<string | null>(null);
   readonly tocOpen = signal(false);
+  readonly compatibility = signal<DocumentVocabularyCompatibility | null>(null);
+  readonly compatibilityLoading = signal(false);
+  readonly compatibilityError = signal<string | null>(null);
   readonly navigableSections = computed(() =>
     (this.structure()?.sections ?? []).filter((section) => section.firstUnitId !== null && section.unitCount > 0)
   );
@@ -122,6 +127,7 @@ export class DocumentReader implements OnInit {
     this.bodyScrollLocked = true;
     this.tocOpen.set(true);
     this.scrollCurrentTocItemAfterRender();
+    this.loadCompatibilityIfNeeded();
   }
 
   closeToc(restoreFocus = true): void {
@@ -196,7 +202,48 @@ export class DocumentReader implements OnInit {
     this.wordInteraction.saveStatus(status, language, (token, nextStatus) => {
       const normalized = token.normalizedValue;
       this.unit.update((current) => current ? { ...current, tokens: current.tokens.map((candidate) => candidate.type === 'WORD' && (normalized !== null ? candidate.normalizedValue === normalized : candidate === token) ? { ...candidate, status:nextStatus } : candidate) } : current);
+      this.invalidateCompatibility();
     });
+  }
+
+  loadCompatibilityIfNeeded(): void {
+    const documentId = this.document()?.documentId;
+    if (!documentId || this.compatibilityLoading()) return;
+    if (this.compatibilityLoaded && !this.compatibilityStale) return;
+
+    this.compatibilityLoading.set(true);
+    this.compatibilityError.set(null);
+    this.documents
+      .getCompatibility(documentId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (compatibility) => {
+          this.compatibility.set(compatibility);
+          this.compatibilityLoading.set(false);
+          this.compatibilityLoaded = true;
+          this.compatibilityStale = false;
+        },
+        error: () => {
+          this.compatibilityError.set('No se pudo cargar el resumen de vocabulario.');
+          this.compatibilityLoading.set(false);
+        },
+      });
+  }
+
+  private invalidateCompatibility(): void {
+    this.compatibilityStale = true;
+    if (this.tocOpen()) {
+      this.loadCompatibilityIfNeeded();
+    }
+  }
+
+  formatNumber(value: number): string {
+    if (!Number.isFinite(value)) return '0';
+    return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  formatConfidence(value: number): string {
+    return Number.isFinite(value) ? `${Math.round(value)}%` : '0%';
   }
 
   scrollReaderToTopAfterRender(): void {

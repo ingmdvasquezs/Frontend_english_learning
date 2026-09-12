@@ -82,3 +82,15 @@ export interface UpdateDocumentProgressRequest {
   completed: boolean;
   expectedVersion: number;
 }
+
+export interface DocumentVocabularyCompatibility {
+  documentId: string;
+  uniqueWords: number;
+  knownWords: number;
+  learningWords: number;
+  explicitNewWords: number;
+  ignoredWords: number;
+  unclassifiedWords: number;
+  vocabularyFitPercentage: number;
+  classificationConfidencePercentage: number;
+}

@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, switchMap, takeUntil, takeWhile, throwError, timer } from 'rxjs';
-import { DocumentImportAccepted, DocumentProgress, DocumentStructure, DocumentUnit, ImportedDocument, ImportedDocumentPage, UpdateDocumentProgressRequest } from '../models/document.models';
+import { DocumentImportAccepted, DocumentProgress, DocumentStructure, DocumentUnit, DocumentVocabularyCompatibility, ImportedDocument, ImportedDocumentPage, UpdateDocumentProgressRequest } from '../models/document.models';
 import { ReaderToken } from '../../../shared/models/reader-token';
 
 interface DocumentUnitRestResponse extends Omit<DocumentUnit, 'tokens'> {
@@ -74,6 +74,10 @@ export class DocumentService {
 
   getCover(documentId: string): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/${documentId}/cover`, { responseType: 'blob' });
+  }
+
+  getCompatibility(documentId: string): Observable<DocumentVocabularyCompatibility> {
+    return this.http.get<DocumentVocabularyCompatibility>(`${this.baseUrl}/${documentId}/compatibility`);
   }
 
   deleteDocument(documentId: string): Observable<void> {

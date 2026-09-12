@@ -117,6 +117,32 @@ describe('DocumentService', () => {
     vi.useRealTimers();
   });
 
+  it('requests document vocabulary compatibility through the authenticated endpoint', () => {
+    let result: unknown = null;
+    service.getCompatibility('doc-123').subscribe((compatibility) => {
+      result = compatibility;
+    });
+
+    const request = http.expectOne('/api/v1/documents/doc-123/compatibility');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jwt');
+
+    const mockResponse = {
+      documentId: 'doc-123',
+      uniqueWords: 2845,
+      knownWords: 318,
+      learningWords: 42,
+      explicitNewWords: 8,
+      ignoredWords: 15,
+      unclassifiedWords: 2462,
+      vocabularyFitPercentage: 82.5,
+      classificationConfidencePercentage: 13.0,
+    };
+    request.flush(mockResponse);
+
+    expect(result).toEqual(mockResponse);
+  });
+
   function restToken(value: string, normalizedValue: string, vocabularyStatus: string | null) {
     return { value, normalizedValue, type: 'WORD', vocabularyStatus };
   }

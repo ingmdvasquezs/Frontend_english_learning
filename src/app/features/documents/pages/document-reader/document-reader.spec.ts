@@ -5,6 +5,7 @@ import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { DictionaryService } from '../../../../shared/services/dictionary';
 import { ReaderService } from '../../../reader/services/reader';
+import { DocumentVocabularyCompatibility } from '../../models/document.models';
 import { DocumentService } from '../../services/document';
 import { DocumentReader } from './document-reader';
 import { NarrationService } from '../../../../shared/narration/narration.service';
@@ -20,6 +21,7 @@ describe('DocumentReader', () => {
       getDocument:vi.fn(() => of(document())), getProgress:vi.fn(() => of(progress())),
       getStructure:vi.fn(() => of({ documentId:'doc',firstUnitId:'unit-1',sections:[],totalUnits:2 })),
       getUnit:vi.fn((_documentId:string,unitId:string) => of(unit(unitId))), updateProgress:vi.fn((_documentId:string,request:{currentUnitId:string}) => of({ ...progress(),status:'IN_PROGRESS',currentUnitId:request.currentUnitId,version:1 })),
+      getCompatibility:vi.fn((_documentId:string) => of(compatibility())),
     };
     reader = { setVocabularyStatus:vi.fn(() => of('<ok/>')) };
     const currentCharacterIndex=signal<number|null>(null);
@@ -383,6 +385,152 @@ describe('DocumentReader', () => {
     expect(documents['getUnit']).toHaveBeenLastCalledWith('doc','unit-1');
   });
 
+  it('lazy loads vocabulary compatibility only when the drawer is opened and not on initial reader load', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    fixture.detectChanges();
+
+    expect(documents['getCompatibility']).not.toHaveBeenCalled();
+
+    component.openToc();
+    fixture.detectChanges();
+
+    expect(documents['getCompatibility']).toHaveBeenCalledWith('doc');
+  });
+
+  it('renders vocabulary summary section with exact counts and neutral note in drawer', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    documents['getCompatibility'].mockReturnValue(of(compatibility({
+      uniqueWords: 2845,
+      knownWords: 318,
+      learningWords: 42,
+      explicitNewWords: 8,
+      unclassifiedWords: 2462,
+      ignoredWords: 15,
+      classificationConfidencePercentage: 13.0,
+      vocabularyFitPercentage: 82.5,
+    })));
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('Resumen de vocabulario');
+    expect(text).toContain('Palabras únicas');
+    expect(text).toContain('2.845');
+    expect(text).toContain('Conocidas');
+    expect(text).toContain('318');
+    expect(text).toContain('Aprendiendo');
+    expect(text).toContain('42');
+    expect(text).toContain('Nuevas');
+    expect(text).toContain('8');
+    expect(text).toContain('Sin clasificar');
+    expect(text).toContain('2.462');
+    expect(text).toContain('Ignoradas');
+    expect(text).toContain('15');
+    expect(text).toContain('Vocabulario clasificado: 13%');
+    expect(text).toContain('A medida que clasifiques palabras, este resumen será más preciso.');
+  });
+
+  it('does NOT display vocabularyFitPercentage as a prominent score, nor reason codes, nor user CEFR level', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    documents['getCompatibility'].mockReturnValue(of(compatibility({
+      vocabularyFitPercentage: 82.5,
+      classificationConfidencePercentage: 13.0,
+    })));
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).not.toContain('82.5');
+    expect(text).not.toContain('Compatibilidad 82');
+    expect(text).not.toContain('Compatibilidad 83%');
+    expect(text).not.toMatch(/DISCOVERY|HIGH_VOCABULARY_MATCH|BALANCED_CHALLENGE|PRACTICE_VOCABULARY|MORE_CHALLENGING/);
+    expect(text).not.toMatch(/tu nivel|nivel [A-C][12]|comprensión estimada|diagnóstico/i);
+  });
+
+  it('shows empty state when uniqueWords is 0 without displaying percentages', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    documents['getCompatibility'].mockReturnValue(of(compatibility({
+      uniqueWords: 0,
+      knownWords: 0,
+      learningWords: 0,
+      explicitNewWords: 0,
+      unclassifiedWords: 0,
+      classificationConfidencePercentage: 0,
+    })));
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain('No hay vocabulario disponible para analizar.');
+    expect(text).not.toContain('Vocabulario clasificado:');
+    expect(text).not.toContain('A medida que clasifiques');
+  });
+
+  it('handles compatibility endpoint error gracefully without breaking Reader', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    documents['getCompatibility'].mockReturnValue(throwError(() => new Error('COMPATIBILITY_FAILURE')));
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+
+    expect(component.error()).toBeNull();
+    expect(fixture.nativeElement.querySelector('article')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('No se pudo cargar el resumen de vocabulario.');
+  });
+
+  it('does not re-request compatibility on repeated drawer open while cache is valid', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+    expect(documents['getCompatibility']).toHaveBeenCalledTimes(1);
+
+    component.closeToc();
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+    expect(documents['getCompatibility']).toHaveBeenCalledTimes(1);
+  });
+
+  it('invalidates compatibility cache after successful vocabulary mutation so reopening the drawer re-queries', () => {
+    const sections = [section('one',1,'One','unit-1',1), section('two',2,'Two','unit-2',1)];
+    documents['getStructure'].mockReturnValue(of(structure(sections)));
+    fixture.detectChanges();
+
+    component.openToc();
+    fixture.detectChanges();
+    expect(documents['getCompatibility']).toHaveBeenCalledTimes(1);
+
+    component.closeToc();
+    fixture.detectChanges();
+
+    component.selectWord(component.unit()!.tokens[0], wordClick());
+    component.saveStatus('KNOWN');
+    fixture.detectChanges();
+
+    expect(documents['getCompatibility']).toHaveBeenCalledTimes(1);
+
+    component.openToc();
+    fixture.detectChanges();
+    expect(documents['getCompatibility']).toHaveBeenCalledTimes(2);
+  });
+
+
   function document() { return {documentId:'doc',title:'Book',author:null,language:'en',format:'EPUB',status:'READY',failureReason:null,coverAvailable:false,coverUrl:null,progressStatus:'NOT_STARTED',lastReadAt:null,createdAt:'2026-09-07'}; }
   function progress() { return {documentId:'doc',status:'NOT_STARTED',currentUnitId:null,version:0,startedAt:null,completedAt:null}; }
   function structure(sections: ReturnType<typeof section>[]) { return {documentId:'doc',firstUnitId:'unit-1',sections,totalUnits:sections.reduce((sum,item)=>sum+item.unitCount,0)}; }
@@ -390,4 +538,18 @@ describe('DocumentReader', () => {
   function unit(unitId:string) { return {documentId:'doc',sectionId:'section',sectionTitle:'Chapter 1',sectionOrdinal:1,totalSections:1,unitId,sectionUnitOrdinal:unitId==='unit-1'?1:2,sectionUnitCount:2,globalOrdinal:unitId==='unit-1'?1:2,totalUnits:2,tokens:[{value:'Hello',normalizedValue:'hello',type:'WORD' as const,status:null}],previousUnitId:unitId==='unit-1'?null:'unit-1',nextUnitId:unitId==='unit-1'?'unit-2':null,progressStatus:'IN_PROGRESS' as const}; }
   function word(value:string,normalizedValue:string,status:'NEW'|'LEARNING'|'KNOWN'|'IGNORED') { return {value,normalizedValue,type:'WORD' as const,status}; }
   function wordClick(): MouseEvent { const element=globalThis.document.createElement('button'); element.getBoundingClientRect=()=>({left:100,right:160,top:200,bottom:230,width:60,height:30} as DOMRect); return {stopPropagation:vi.fn(),currentTarget:element} as unknown as MouseEvent; }
+  function compatibility(overrides: Partial<DocumentVocabularyCompatibility> = {}): DocumentVocabularyCompatibility {
+    return {
+      documentId: 'doc',
+      uniqueWords: 2845,
+      knownWords: 318,
+      learningWords: 42,
+      explicitNewWords: 8,
+      ignoredWords: 15,
+      unclassifiedWords: 2462,
+      vocabularyFitPercentage: 82.5,
+      classificationConfidencePercentage: 13.0,
+      ...overrides,
+    };
+  }
 });

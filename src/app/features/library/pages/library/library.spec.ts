@@ -60,6 +60,11 @@ describe('Library', () => {
     expect(link.textContent).toContain('Añadir lectura');
   });
 
+  it('does not request document vocabulary compatibility from Library', () => {
+    fixture.detectChanges();
+    expect((documentService as Record<string, unknown>)['getCompatibility']).toBeUndefined();
+  });
+
   it('shows readings returned by the backend', () => {
     service.parseUserReadings.mockReturnValue({
       page: 0,

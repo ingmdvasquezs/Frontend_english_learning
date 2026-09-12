@@ -21,14 +21,70 @@
               <div><p class="document-toc-eyebrow">NAVEGACIÓN</p><h2 id="document-toc-title" class="font-serif">Contenido</h2></div>
               <button type="button" class="document-toc-close" aria-label="Cerrar contenido" autofocus (click)="closeToc()">×</button>
             </header>
-            <nav class="document-toc-list" aria-label="Secciones del documento">
-              @for (section of navigableSections(); track section.id) {
-                <button #tocItem type="button" [attr.data-section-id]="section.id" [class.is-current]="isCurrentSection(section)" [attr.aria-current]="isCurrentSection(section) ? 'location' : null" [disabled]="loadingUnit() || savingProgress()" (click)="navigateToSection(section)">
-                  <span class="document-toc-item-copy"><strong>{{ sectionLabel(section) }}</strong><small>{{ sectionPartsLabel(section) }}</small></span>
-                  @if (isCurrentSection(section)) { <small>Actual</small> }
-                </button>
-              }
-            </nav>
+            <div class="document-toc-content">
+              <section class="document-vocab-section" aria-labelledby="document-vocab-title">
+                <h3 id="document-vocab-title" class="document-vocab-title">Resumen de vocabulario</h3>
+                @if (compatibilityLoading()) {
+                  <p class="document-vocab-status">Cargando resumen de vocabulario...</p>
+                } @else if (compatibilityError()) {
+                  <p class="document-vocab-status document-vocab-error">{{ compatibilityError() }}</p>
+                } @else if (compatibility(); as comp) {
+                  @if (comp.uniqueWords === 0) {
+                    <p class="document-vocab-empty">No hay vocabulario disponible para analizar.</p>
+                  } @else {
+                    <div class="document-vocab-metrics">
+                      <div class="document-vocab-row">
+                        <span>Palabras únicas</span>
+                        <strong>{{ formatNumber(comp.uniqueWords) }}</strong>
+                      </div>
+                      <div class="document-vocab-row">
+                        <span>Conocidas</span>
+                        <strong>{{ formatNumber(comp.knownWords) }}</strong>
+                      </div>
+                      <div class="document-vocab-row">
+                        <span>Aprendiendo</span>
+                        <strong>{{ formatNumber(comp.learningWords) }}</strong>
+                      </div>
+                      <div class="document-vocab-row">
+                        <span>Nuevas</span>
+                        <strong>{{ formatNumber(comp.explicitNewWords) }}</strong>
+                      </div>
+                      <div class="document-vocab-row">
+                        <span>Sin clasificar</span>
+                        <strong>{{ formatNumber(comp.unclassifiedWords) }}</strong>
+                      </div>
+                      @if (comp.ignoredWords > 0) {
+                        <div class="document-vocab-row">
+                          <span>Ignoradas</span>
+                          <strong>{{ formatNumber(comp.ignoredWords) }}</strong>
+                        </div>
+                      }
+                    </div>
+
+                    <div class="document-vocab-confidence">
+                      <p class="document-vocab-confidence-label">
+                        Vocabulario clasificado: <strong>{{ formatConfidence(comp.classificationConfidencePercentage) }}</strong>
+                      </p>
+                      <p class="document-vocab-note">
+                        A medida que clasifiques palabras, este resumen será más preciso.
+                      </p>
+                    </div>
+                  }
+                }
+              </section>
+
+              <div class="document-toc-sections-wrapper">
+                <p class="document-toc-sections-title">Secciones</p>
+                <nav class="document-toc-list" aria-label="Secciones del documento">
+                  @for (section of navigableSections(); track section.id) {
+                    <button #tocItem type="button" [attr.data-section-id]="section.id" [class.is-current]="isCurrentSection(section)" [attr.aria-current]="isCurrentSection(section) ? 'location' : null" [disabled]="loadingUnit() || savingProgress()" (click)="navigateToSection(section)">
+                      <span class="document-toc-item-copy"><strong>{{ sectionLabel(section) }}</strong><small>{{ sectionPartsLabel(section) }}</small></span>
+                      @if (isCurrentSection(section)) { <small>Actual</small> }
+                    </button>
+                  }
+                </nav>
+              </div>
+            </div>
           </aside>
         </div>
       }
