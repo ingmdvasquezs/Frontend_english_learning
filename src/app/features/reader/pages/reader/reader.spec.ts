@@ -3,7 +3,11 @@ import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/route
 import { Subject, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { DictionaryService, DictionaryWord } from '../../../../shared/services/dictionary';
-import { ReaderData } from '../../models/reader.models';
+import {
+  ReaderData,
+  ComprehensionQuiz,
+  ComprehensionAttemptResult,
+} from '../../models/reader.models';
 import { ReaderService } from '../../services/reader';
 import { Reader } from './reader';
 import { NarrationService } from '../../../../shared/narration/narration.service';
@@ -22,6 +26,8 @@ describe('Reader page', () => {
     updateReadingProgress: ReturnType<typeof vi.fn>;
     completeReading: ReturnType<typeof vi.fn>;
     parseCompleteReading: ReturnType<typeof vi.fn>;
+    getReadingComprehensionQuiz: ReturnType<typeof vi.fn>;
+    submitComprehensionAttempt: ReturnType<typeof vi.fn>;
   };
   let dictionaryService: {
     lookupWord: ReturnType<typeof vi.fn>;
@@ -49,6 +55,8 @@ describe('Reader page', () => {
       updateReadingProgress: vi.fn(() => of('<response/>')),
       completeReading: vi.fn(() => completionResponse.asObservable()),
       parseCompleteReading: vi.fn(() => ({ readingId: 'reading-1', status: 'COMPLETED', startedAt: '2026-08-30T10:00:00Z', completedAt: '2026-08-30T10:10:00Z' })),
+      getReadingComprehensionQuiz: vi.fn(() => of({ readingId: 'reading-1', available: false, questions: [] })),
+      submitComprehensionAttempt: vi.fn(),
     };
     dictionaryService = {
       lookupWord: vi.fn(() => lookupResponse.asObservable()),
@@ -770,4 +778,410 @@ describe('Reader page', () => {
       currentTarget: element,
     } as unknown as MouseEvent;
   }
+
+  function mockQuiz(available = true): ComprehensionQuiz {
+    return {
+      readingId: 'reading-1',
+      available,
+      questions: available
+        ? [
+            {
+              questionId: 'q-1',
+              ordinal: 1,
+              questionType: 'FACTUAL',
+              prompt: 'What did the main character do?',
+              options: [
+                { optionId: 'opt-1-1', ordinal: 1, content: 'He walked to the library.' },
+                { optionId: 'opt-1-2', ordinal: 2, content: 'He stayed home.' },
+                { optionId: 'opt-1-3', ordinal: 3, content: 'He went to work.' },
+                { optionId: 'opt-1-4', ordinal: 4, content: 'He took a train.' },
+              ],
+            },
+            {
+              questionId: 'q-2',
+              ordinal: 2,
+              questionType: 'INFERENCE',
+              prompt: 'Why was the character excited?',
+              options: [
+                { optionId: 'opt-2-1', ordinal: 1, content: 'Because it was sunny.' },
+                { optionId: 'opt-2-2', ordinal: 2, content: 'Because of the new book.' },
+                { optionId: 'opt-2-3', ordinal: 3, content: 'Because he won a prize.' },
+                { optionId: 'opt-2-4', ordinal: 4, content: 'Because his friend arrived.' },
+              ],
+            },
+            {
+              questionId: 'q-3',
+              ordinal: 3,
+              questionType: 'MAIN_IDEA',
+              prompt: 'What is the central theme of the story?',
+              options: [
+                { optionId: 'opt-3-1', ordinal: 1, content: 'Lifelong learning.' },
+                { optionId: 'opt-3-2', ordinal: 2, content: 'Traveling abroad.' },
+                { optionId: 'opt-3-3', ordinal: 3, content: 'Cooking dinner.' },
+                { optionId: 'opt-3-4', ordinal: 4, content: 'Buying clothes.' },
+              ],
+            },
+          ]
+        : [],
+    };
+  }
+
+  function mockAttemptResult(): ComprehensionAttemptResult {
+    return {
+      attemptId: 'att-1',
+      readingId: 'reading-1',
+      submissionId: 'uuid-1',
+      scorePercentage: 66.67,
+      correctAnswersCount: 2,
+      totalQuestionsCount: 3,
+      submittedAt: '2026-09-12T10:00:00Z',
+      questions: [
+        {
+          questionId: 'q-1',
+          ordinal: 1,
+          questionType: 'FACTUAL',
+          prompt: 'What did the main character do?',
+          selectedOptionId: 'opt-1-1',
+          correctOptionId: 'opt-1-1',
+          isCorrect: true,
+          explanation: 'The text says he walked to the library.',
+          options: [
+            { optionId: 'opt-1-1', ordinal: 1, content: 'He walked to the library.' },
+            { optionId: 'opt-1-2', ordinal: 2, content: 'He stayed home.' },
+            { optionId: 'opt-1-3', ordinal: 3, content: 'He went to work.' },
+            { optionId: 'opt-1-4', ordinal: 4, content: 'He took a train.' },
+          ],
+        },
+        {
+          questionId: 'q-2',
+          ordinal: 2,
+          questionType: 'INFERENCE',
+          prompt: 'Why was the character excited?',
+          selectedOptionId: 'opt-2-1',
+          correctOptionId: 'opt-2-2',
+          isCorrect: false,
+          explanation: 'The context implies excitement came from the new book.',
+          options: [
+            { optionId: 'opt-2-1', ordinal: 1, content: 'Because it was sunny.' },
+            { optionId: 'opt-2-2', ordinal: 2, content: 'Because of the new book.' },
+            { optionId: 'opt-2-3', ordinal: 3, content: 'Because he won a prize.' },
+            { optionId: 'opt-2-4', ordinal: 4, content: 'Because his friend arrived.' },
+          ],
+        },
+        {
+          questionId: 'q-3',
+          ordinal: 3,
+          questionType: 'MAIN_IDEA',
+          prompt: 'What is the central theme of the story?',
+          selectedOptionId: 'opt-3-1',
+          correctOptionId: 'opt-3-1',
+          isCorrect: true,
+          explanation: 'Lifelong learning is central.',
+          options: [
+            { optionId: 'opt-3-1', ordinal: 1, content: 'Lifelong learning.' },
+            { optionId: 'opt-3-2', ordinal: 2, content: 'Traveling abroad.' },
+            { optionId: 'opt-3-3', ordinal: 3, content: 'Cooking dinner.' },
+            { optionId: 'opt-3-4', ordinal: 4, content: 'Buying clothes.' },
+          ],
+        },
+      ],
+    };
+  }
+
+  describe('Comprehension Quiz (Phase 6B)', () => {
+    it('does not check comprehension quiz availability while reading is IN_PROGRESS', () => {
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+
+      expect(service.getReadingComprehensionQuiz).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
+    });
+
+    it('displays "Comprobar mi comprensión" CTA when reading completes and quiz is available', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      expect(service.getReadingComprehensionQuiz).toHaveBeenCalledWith('reading-1');
+      expect(fixture.nativeElement.textContent).toContain('Comprobar mi comprensión');
+    });
+
+    it('keeps standard completion card when quiz available is false', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(false)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
+      expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
+    });
+
+    it('silently degrades to standard card when comprehension_not_available fault occurs', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(
+        throwError(() => new Error('SOAP Fault: Comprehension quiz is only available for platform readings'))
+      );
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
+      expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
+    });
+
+    it('opens inline quiz and renders 3 questions upon clicking CTA', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      const cta = Array.from(fixture.nativeElement.querySelectorAll('button')).find(
+        (b: unknown) => (b as HTMLElement).textContent?.includes('Comprobar mi comprensión')
+      ) as HTMLButtonElement;
+      cta.click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Comprueba tu comprensión');
+      expect(fixture.nativeElement.textContent).toContain('Responde las preguntas basadas en la lectura.');
+      const fieldsets = fixture.nativeElement.querySelectorAll('fieldset');
+      expect(fieldsets.length).toBe(3);
+      expect(fieldsets[0].textContent).toContain('Comprensión literal');
+      expect(fieldsets[1].textContent).toContain('Inferencia');
+      expect(fieldsets[2].textContent).toContain('Idea principal');
+    });
+
+    it('renders 4 accessible radio options for each question', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      fixture.detectChanges();
+
+      const fieldsets = fixture.nativeElement.querySelectorAll('fieldset');
+      fieldsets.forEach((fs: HTMLElement) => {
+        const radios = fs.querySelectorAll('input[type="radio"]');
+        expect(radios.length).toBe(4);
+      });
+    });
+
+    it('disables submit button while answers are incomplete and enables when all answered', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      fixture.detectChanges();
+
+      expect(component.canSubmitQuiz()).toBe(false);
+
+      component.selectAnswer('q-1', 'opt-1-1');
+      component.selectAnswer('q-2', 'opt-2-2');
+      fixture.detectChanges();
+      expect(component.canSubmitQuiz()).toBe(false);
+
+      component.selectAnswer('q-3', 'opt-3-1');
+      fixture.detectChanges();
+      expect(component.canSubmitQuiz()).toBe(true);
+    });
+
+    it('sends correct submit payload with readingId, submissionId and ordered answers without local score computation', () => {
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockReturnValue('mock-uuid-1234' as `${string}-${string}-${string}-${string}-${string}`);
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      component.selectAnswer('q-1', 'opt-1-1');
+      component.selectAnswer('q-2', 'opt-2-1');
+      component.selectAnswer('q-3', 'opt-3-1');
+      fixture.detectChanges();
+
+      component.submitQuiz();
+
+      expect(service.submitComprehensionAttempt).toHaveBeenCalledWith({
+        readingId: 'reading-1',
+        submissionId: 'mock-uuid-1234',
+        answers: [
+          { questionId: 'q-1', selectedOptionId: 'opt-1-1' },
+          { questionId: 'q-2', selectedOptionId: 'opt-2-1' },
+          { questionId: 'q-3', selectedOptionId: 'opt-3-1' },
+        ],
+      });
+      uuidSpy.mockRestore();
+    });
+
+    it('displays backend result, score, question feedback, and editorial explanations', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      component.selectAnswer('q-1', 'opt-1-1');
+      component.selectAnswer('q-2', 'opt-2-1');
+      component.selectAnswer('q-3', 'opt-3-1');
+      component.submitQuiz();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Resultado');
+      expect(fixture.nativeElement.textContent).toContain('Resultado de este intento: 2 de 3 correctas · 66.67%');
+      expect(fixture.nativeElement.textContent).toContain('✓ Correcta');
+      expect(fixture.nativeElement.textContent).toContain('✕ Incorrecta');
+      expect(fixture.nativeElement.textContent).toContain('The text says he walked to the library.');
+      expect(fixture.nativeElement.textContent).toContain('Respuesta correcta:');
+      expect(fixture.nativeElement.textContent).toContain('Because of the new book.');
+    });
+
+    it('preserves answers and submissionId on network failure and allows retry', () => {
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockReturnValue('mock-uuid-network' as `${string}-${string}-${string}-${string}-${string}`);
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.submitComprehensionAttempt.mockReturnValueOnce(throwError(() => new Error('Network error')));
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      component.selectAnswer('q-1', 'opt-1-1');
+      component.selectAnswer('q-2', 'opt-2-1');
+      component.selectAnswer('q-3', 'opt-3-1');
+
+      component.submitQuiz();
+      fixture.detectChanges();
+
+      expect(component.comprehensionSubmitError()).toContain('No pudimos enviar tus respuestas');
+      expect(component.selectedAnswers()).toEqual({
+        'q-1': 'opt-1-1',
+        'q-2': 'opt-2-1',
+        'q-3': 'opt-3-1',
+      });
+      expect(component.currentSubmissionId()).toBe('mock-uuid-network');
+
+      // Retry network submission: sends EXACTLY the same submissionId
+      service.submitComprehensionAttempt.mockReturnValueOnce(of(mockAttemptResult()));
+      component.submitQuiz();
+
+      expect(service.submitComprehensionAttempt).toHaveBeenLastCalledWith({
+        readingId: 'reading-1',
+        submissionId: 'mock-uuid-network',
+        answers: [
+          { questionId: 'q-1', selectedOptionId: 'opt-1-1' },
+          { questionId: 'q-2', selectedOptionId: 'opt-2-1' },
+          { questionId: 'q-3', selectedOptionId: 'opt-3-1' },
+        ],
+      });
+      uuidSpy.mockRestore();
+    });
+
+    it('generates a new submissionId, resets answers and reopens quiz on pedagogical retry', () => {
+      let counter = 1;
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockImplementation(() => `uuid-${counter++}` as `${string}-${string}-${string}-${string}-${string}`);
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      expect(component.currentSubmissionId()).toBe('uuid-1');
+
+      component.selectAnswer('q-1', 'opt-1-1');
+      component.selectAnswer('q-2', 'opt-2-1');
+      component.selectAnswer('q-3', 'opt-3-1');
+      component.submitQuiz();
+      fixture.detectChanges();
+
+      // Click "Intentar de nuevo"
+      component.retryQuiz();
+      fixture.detectChanges();
+
+      expect(component.quizMode()).toBe('QUIZ');
+      expect(component.currentSubmissionId()).toBe('uuid-2');
+      expect(component.selectedAnswers()).toEqual({});
+      expect(component.comprehensionResult()).toBeNull();
+
+      uuidSpy.mockRestore();
+    });
+
+    it('returns to completion view when canceling quiz', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      component.selectAnswer('q-1', 'opt-1-1');
+      fixture.detectChanges();
+
+      component.cancelQuiz();
+      fixture.detectChanges();
+
+      expect(component.quizMode()).toBe('COMPLETION');
+      expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
+      expect(fixture.nativeElement.textContent).toContain('Comprobar mi comprensión');
+    });
+
+    it('loads comprehension quiz when Reader is initially opened with COMPLETED status', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.parseReaderData.mockReturnValue({ ...readerData(), progressStatus: 'COMPLETED' });
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+
+      expect(service.getReadingComprehensionQuiz).toHaveBeenCalledWith('reading-1');
+      expect(fixture.nativeElement.textContent).toContain('Comprobar mi comprensión');
+    });
+
+    it('does not break reader if availability check throws an error', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(throwError(() => new Error('Server error')));
+      service.parseReaderData.mockReturnValue({ ...readerData(), progressStatus: 'COMPLETED' });
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+
+      expect(component.comprehensionQuiz()).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
+      expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
+    });
+  });
 });

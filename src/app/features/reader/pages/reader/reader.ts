@@ -3,7 +3,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { EMPTY, Subject, catchError, concatMap } from 'rxjs';
 import { VocabularyStatus } from '../../../../shared/models/vocabulary-status';
-import { ReaderData, ReaderToken, UpdateReadingProgressRequest } from '../../models/reader.models';
+import {
+  ReaderData,
+  ReaderToken,
+  UpdateReadingProgressRequest,
+  QuestionType,
+  ComprehensionQuiz,
+  ComprehensionQuestionResult,
+  ComprehensionAttemptResult,
+  ComprehensionAnswerInput,
+  SubmitComprehensionAttemptRequest,
+} from '../../models/reader.models';
 import { ReaderService } from '../../services/reader';
 import { ReaderTokenStream, ReaderWordSelection } from '../../components/reader-token-stream/reader-token-stream';
 import { ReaderWordPopover } from '../../components/reader-word-popover/reader-word-popover';
@@ -54,6 +64,22 @@ export class Reader implements OnInit {
   readonly activeNarrationTokenIndex = computed(() =>
     findNarrationWordTokenIndex(this.narrationContent().ranges,this.narration.currentCharacterIndex())
   );
+
+  readonly comprehensionQuiz = signal<ComprehensionQuiz | null>(null);
+  readonly quizAvailabilityLoading = signal<boolean>(false);
+  readonly quizMode = signal<'COMPLETION' | 'QUIZ' | 'RESULT'>('COMPLETION');
+  readonly selectedAnswers = signal<Record<string, string>>({});
+  readonly currentSubmissionId = signal<string | null>(null);
+  readonly submittingComprehension = signal<boolean>(false);
+  readonly comprehensionResult = signal<ComprehensionAttemptResult | null>(null);
+  readonly comprehensionSubmitError = signal<string | null>(null);
+
+  readonly canSubmitQuiz = computed(() => {
+    const quiz = this.comprehensionQuiz();
+    if (!quiz || quiz.questions.length === 0) return false;
+    const answeredCount = Object.keys(this.selectedAnswers()).length;
+    return answeredCount === quiz.questions.length && !this.submittingComprehension();
+  });
 
   constructor() {
     this.progressUpdates
@@ -157,6 +183,7 @@ export class Reader implements OnInit {
           this.readerData.update((current) =>
             current ? { ...current, progressStatus: result.status } : current
           );
+          this.loadComprehensionQuizIfAvailable(data.readingId);
         } catch {
           this.completionError.set(
             'No pudimos marcar la lectura como terminada. Inténtalo de nuevo.'
@@ -169,6 +196,117 @@ export class Reader implements OnInit {
           'No pudimos marcar la lectura como terminada. Inténtalo de nuevo.'
         );
         this.completingReading.set(false);
+      },
+    });
+  }
+
+  openQuiz(): void {
+    this.currentSubmissionId.set(crypto.randomUUID());
+    this.selectedAnswers.set({});
+    this.comprehensionResult.set(null);
+    this.comprehensionSubmitError.set(null);
+    this.quizMode.set('QUIZ');
+  }
+
+  cancelQuiz(): void {
+    this.quizMode.set('COMPLETION');
+    this.selectedAnswers.set({});
+    this.currentSubmissionId.set(null);
+    this.comprehensionSubmitError.set(null);
+  }
+
+  selectAnswer(questionId: string, optionId: string): void {
+    this.selectedAnswers.update((curr) => ({
+      ...curr,
+      [questionId]: optionId,
+    }));
+  }
+
+  submitQuiz(): void {
+    const quiz = this.comprehensionQuiz();
+    if (!quiz || !this.canSubmitQuiz() || this.submittingComprehension()) {
+      return;
+    }
+
+    this.submittingComprehension.set(true);
+    this.comprehensionSubmitError.set(null);
+
+    const answers: ComprehensionAnswerInput[] = quiz.questions.map((q) => ({
+      questionId: q.questionId,
+      selectedOptionId: this.selectedAnswers()[q.questionId] ?? '',
+    }));
+
+    const submissionId = this.currentSubmissionId() || crypto.randomUUID();
+    this.currentSubmissionId.set(submissionId);
+
+    const request: SubmitComprehensionAttemptRequest = {
+      readingId: quiz.readingId,
+      submissionId,
+      answers,
+    };
+
+    this.readerService.submitComprehensionAttempt(request).subscribe({
+      next: (result) => {
+        this.comprehensionResult.set(result);
+        this.quizMode.set('RESULT');
+        this.submittingComprehension.set(false);
+      },
+      error: () => {
+        this.comprehensionSubmitError.set(
+          'No pudimos enviar tus respuestas. Inténtalo de nuevo.'
+        );
+        this.submittingComprehension.set(false);
+      },
+    });
+  }
+
+  retryQuiz(): void {
+    this.currentSubmissionId.set(crypto.randomUUID());
+    this.selectedAnswers.set({});
+    this.comprehensionResult.set(null);
+    this.comprehensionSubmitError.set(null);
+    this.quizMode.set('QUIZ');
+  }
+
+  getQuestionTypeLabel(type: QuestionType): string {
+    switch (type) {
+      case 'FACTUAL':
+        return 'Comprensión literal';
+      case 'INFERENCE':
+        return 'Inferencia';
+      case 'MAIN_IDEA':
+        return 'Idea principal';
+      default:
+        return '';
+    }
+  }
+
+  getOptionContent(question: ComprehensionQuestionResult, optionId: string): string {
+    const opt = question.options.find((o) => o.optionId === optionId);
+    return opt ? opt.content : optionId;
+  }
+
+  private loadComprehensionQuizIfAvailable(readingId: string): void {
+    if (this.quizAvailabilityLoading() || this.comprehensionQuiz() !== null) {
+      return;
+    }
+    const request$ = this.readerService.getReadingComprehensionQuiz?.(readingId);
+    if (!request$) {
+      return;
+    }
+    this.quizAvailabilityLoading.set(true);
+    request$.subscribe({
+      next: (quiz) => {
+        if (quiz?.available && quiz.questions?.length > 0) {
+          this.comprehensionQuiz.set(quiz);
+        } else {
+          this.comprehensionQuiz.set(null);
+        }
+        this.quizAvailabilityLoading.set(false);
+      },
+      error: () => {
+        this.comprehensionQuiz.set(null);
+        this.quizAvailabilityLoading.set(false);
       },
     });
   }
@@ -203,7 +341,9 @@ export class Reader implements OnInit {
           this.currentPartIndex.set(
             this.resolveInitialPartIndex(data, this.parts().length)
           );
-          if (data.progressStatus === null && this.currentPart()) {
+          if (data.progressStatus === 'COMPLETED') {
+            this.loadComprehensionQuizIfAvailable(data.readingId);
+          } else if (data.progressStatus === null && this.currentPart()) {
             this.persistCurrentPart();
           }
         } catch {
