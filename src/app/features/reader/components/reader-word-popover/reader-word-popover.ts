@@ -33,4 +33,14 @@ export class ReaderWordPopover {
   readonly audioPlayed = output<string>();
   readonly definitionsToggled = output<MouseEvent>();
   readonly statusSelected = output<VocabularyStatus>();
+
+  getStatusLabel(status: VocabularyStatus): string {
+    const labels: Record<VocabularyStatus, string> = {
+      KNOWN: 'I KNOW IT',
+      LEARNING: 'I WANT TO LEARN IT',
+      NEW: 'NEW TO ME',
+      IGNORED: 'NOT INTERESTED',
+    };
+    return labels[status] ?? status;
+  }
 }

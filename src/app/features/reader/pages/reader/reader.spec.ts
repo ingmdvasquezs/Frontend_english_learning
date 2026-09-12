@@ -409,7 +409,7 @@ describe('Reader page', () => {
     const newOption = fixture.nativeElement.querySelector(
       'aside button[aria-pressed="true"]'
     ) as HTMLButtonElement;
-    expect(newOption.textContent?.trim()).toBe('NEW');
+    expect(newOption.textContent?.trim()).toBe('NEW TO ME');
   });
 
   it('opens selector only for WORD tokens', () => {
@@ -508,7 +508,7 @@ describe('Reader page', () => {
 
     expect(dictionaryService.lookupWord).toHaveBeenCalledOnce();
     expect(fixture.nativeElement.textContent).toContain('Learning');
-    expect(fixture.nativeElement.textContent).toContain('Buscando definición');
+    expect(fixture.nativeElement.textContent).toContain('Looking up definitions...');
 
     lookupResponse.next('<lookup/>');
     fixture.detectChanges();
@@ -522,7 +522,7 @@ describe('Reader page', () => {
     expect(translation!.classList.contains('text-white')).toBe(false);
     expect(
       fixture.nativeElement.querySelector(
-        'button[aria-label="Escuchar pronunciación"]'
+        'button[aria-label="Play pronunciation"]'
       )
     ).toBeTruthy();
 
@@ -552,7 +552,7 @@ describe('Reader page', () => {
 
     expect(component.selectedToken()).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain(
-      'Definición no disponible.'
+      'Definition unavailable.'
     );
 
     component.saveStatus('KNOWN');

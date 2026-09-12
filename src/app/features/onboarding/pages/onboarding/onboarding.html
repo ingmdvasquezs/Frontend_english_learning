@@ -1,12 +1,27 @@
+<a
+  href="#onboarding-controls"
+  class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-[var(--app-surface-elevated)] focus:px-4 focus:py-2 focus:text-[var(--app-accent)] focus:shadow-lg focus:outline-none"
+>
+  Saltar a los controles
+</a>
+
 <div
   class="app-page onboarding-page min-h-screen
          bg-[var(--app-bg)]
-         px-5 py-12
+         px-5 py-12 pb-36
          text-[var(--app-text)]
-         md:px-8 md:py-16"
-  (click)="closeWordPopover()"
+         md:px-8 md:py-16 md:pb-40"
+  (click)="onPageClick()"
 >
-  <button type="button" class="theme-toggle" (click)="themeService.toggleTheme(); $event.stopPropagation()" [attr.aria-label]="themeService.theme() === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'">{{ themeService.theme() === 'light' ? 'Oscuro' : 'Claro' }}</button>
+  <button
+    type="button"
+    class="theme-toggle"
+    (click)="themeService.toggleTheme(); $event.stopPropagation()"
+    [attr.aria-label]="themeService.theme() === 'light' ? 'Cambiar a modo oscuro' : 'Cambiar a modo claro'"
+  >
+    {{ themeService.theme() === 'light' ? 'Oscuro' : 'Claro' }}
+  </button>
+
   <main class="mx-auto max-w-[900px]">
 
     <!-- HEADER -->
@@ -24,24 +39,24 @@
       <h1
         class="mt-4
                font-serif
-               text-[46px]
+               text-[42px]
                font-normal
                tracking-tight
                text-[var(--app-text)]
                md:text-[54px]"
       >
-        Conozcamos tu vocabulario
+        Personalicemos tu lectura
       </h1>
 
       <p
         class="mt-5
-               max-w-[52ch]
-               text-[18px]
+               max-w-[54ch]
+               text-[17px]
                leading-8
-               text-[var(--app-muted)]"
+               text-[var(--app-muted)]
+               md:text-[18px]"
       >
-        Lee el texto con naturalidad y marca cuánto conoces cada palabra.
-        Usaremos tus respuestas para personalizar tus primeras lecturas.
+        Lee a tu ritmo y selecciona algunas palabras según qué tan familiares te resulten.
       </p>
 
     </header>
@@ -70,7 +85,7 @@
                  font-normal
                  text-[var(--app-text)]"
         >
-          Empecemos con una lectura corta
+          Comencemos con una lectura breve
         </h2>
 
         <p
@@ -80,8 +95,7 @@
                  leading-8
                  text-[var(--app-muted)]"
         >
-          Lee a tu ritmo y clasifica las palabras según
-          cuánto las conoces.
+          Lee a tu ritmo y clasifica palabras según qué tan bien las conozcas.
         </p>
 
         <button
@@ -113,13 +127,14 @@
 
     @if (test(); as currentTest) {
 
-      <!-- COMO FUNCIONA -->
-      <section class="mb-12">
+      <!-- HOW IT WORKS -->
+      <section class="mb-10">
 
         <p
-          class="text-[16px]
+          class="text-[15px]
                  leading-7
-                 text-[var(--app-muted)]"
+                 text-[var(--app-muted)]
+                 md:text-[16px]"
         >
           <span
             class="font-semibold
@@ -129,18 +144,16 @@
           </span>
 
           <span>
-            —
-            Las palabras en azul aún no están clasificadas.
-            Selecciona una para escucharla, consultar su significado
-            y marcar cuánto la conoces.
+            — Selecciona cualquier palabra para escuchar su pronunciación, consultar su significado y clasificarla.
+            No necesitas clasificarlas todas: con 10 palabras es suficiente para personalizar tus primeras lecturas.
           </span>
         </p>
 
       </section>
 
-      <!-- SEPARADOR -->
+      <!-- SEPARATOR -->
       <div
-        class="mb-11
+        class="mb-9
                h-px
                bg-gradient-to-r
                from-transparent
@@ -154,113 +167,113 @@
         (click)="$event.stopPropagation()"
       >
 
-        <!-- LABEL -->
-        <p
-          class="text-[13px]
-                 font-bold uppercase
-                 tracking-[0.18em]
-                 text-[var(--app-muted)]"
-        >
-          Lectura
-        </p>
-
-        <!-- TITLE -->
-        <div
-          class="mt-1 mb-8
-                 flex items-baseline"
-        >
-
-          <h2
-            class="font-serif
-                   text-[28px]
-                   font-normal
-                   text-[var(--app-text)]"
+        <!-- LABEL AND SECTION -->
+        <div class="mb-6 flex items-center justify-between">
+          <p
+            class="text-[13px]
+                   font-bold uppercase
+                   tracking-[0.18em]
+                   text-[var(--app-accent)]"
           >
-            Lee el texto
-          </h2>
+            PARTE {{ currentSectionIndex() + 1 }} DE {{ totalSections() }}
+          </p>
 
+          <span
+            class="text-[13px]
+                   text-[var(--app-muted)]"
+          >
+            {{ classifiedWordCount() }} de {{ minimumClassifications }} palabras clasificadas
+          </span>
         </div>
 
-        <!-- TEXTO -->
+        <!-- TEXT (Current paragraph with attached punctuation) -->
         <div
           class="font-serif
-                 text-[24px]
-                 leading-[1.9]
+                 text-[18px]
+                 leading-[1.85]
                  tracking-[0.005em]
-                 text-[var(--app-text)]"
+                 text-[var(--app-text)]
+                 md:text-[22px]"
         >
 
-          @for (
-            paragraph of getParagraphs(currentTest.text);
-            track $index
-          ) {
+          <p class="mb-8">
 
-            <p class="mb-8 last:mb-0">
+            @for (
+              part of getTextParts(currentParagraph());
+              track $index
+            ) {
 
-              @for (
-                part of getTextParts(paragraph);
-                track $index
-              ) {
+              @if (part.prefix) {<span>{{ part.prefix }}</span>}
+              @if (part.isWord && isSelectable(part.word)) {
 
-                @if (isSelectable(part)) {
+                <button
+                  type="button"
+                  (click)="openWord(part.word, $event)"
+                  [attr.aria-label]="getWordAriaLabel(part.word)"
+                  class="relative
+                         cursor-pointer
+                         rounded-[4px]
+                         px-0.5 py-0
+                         font-inherit
+                         text-inherit
+                         transition
+                         duration-150
+                         focus-visible:outline-2
+                         focus-visible:outline-offset-2
+                         focus-visible:outline-[var(--app-accent)]"
 
-                  <button
-                    type="button"
-                    (click)="openWord(part, $event)"
-                    class="relative
-                           cursor-pointer
-                           rounded-[4px]
-                           px-0.5 py-0
-                           font-inherit
-                           text-inherit
-                           transition
-                           duration-150
-                           focus-visible:outline-2
-                           focus-visible:outline-offset-2
-                           focus-visible:outline-[var(--app-accent)]"
+                  [class.hover:bg-[var(--app-active)]]="
+                    getWordStatus(part.word) === null
+                  "
 
-                    [class.bg-[#29445a]]="
-                      getWordStatus(part) === 'NEW'
-                    "
+                  [class.bg-[#29445a]]="
+                    getWordStatus(part.word) === 'NEW'
+                  "
 
-                    [class.bg-[#4a3a22]]="
-                      getWordStatus(part) === 'LEARNING'
-                    "
+                  [class.text-[#7cc0f5]]="
+                    getWordStatus(part.word) === 'NEW'
+                  "
 
-                    [class.text-[#e9e2d3]]="
-                      getWordStatus(part) === 'KNOWN'
-                    "
+                  [class.bg-[#4a3a22]]="
+                    getWordStatus(part.word) === 'LEARNING'
+                  "
 
-                    [class.text-[#70757b]]="
-                      getWordStatus(part) === 'IGNORED'
-                    "
+                  [class.text-[#e8ab5c]]="
+                    getWordStatus(part.word) === 'LEARNING'
+                  "
 
-                    [class.hover:text-white]="
-                      getWordStatus(part) !== 'IGNORED'
-                    "
-                  >
-                    {{ part }}
-                  </button>
+                  [class.text-[#6fce9a]]="
+                    getWordStatus(part.word) === 'KNOWN'
+                  "
 
-                } @else {
+                  [class.text-[#70757b]]="
+                    getWordStatus(part.word) === 'IGNORED'
+                  "
 
-                  <span>
-                    {{ part }}
-                  </span>
+                  [class.opacity-60]="
+                    getWordStatus(part.word) === 'IGNORED'
+                  "
 
-                }
+                  [class.hover:brightness-125]="
+                    getWordStatus(part.word) !== null
+                  "
+                >{{ part.word }}</button>@if (part.punctuation) {<span>{{ part.punctuation }}</span>}@if (part.trailingSpace) {<span>{{ part.trailingSpace }}</span>}
+
+              } @else {
+
+                <span>{{ part.word }}</span>@if (part.punctuation) {<span>{{ part.punctuation }}</span>}@if (part.trailingSpace) {<span>{{ part.trailingSpace }}</span>}
 
               }
 
-            </p>
+            }
 
-          }
+          </p>
 
         </div>
 
       </section>
 
-      <!-- POPOVER COMPARTIDO -->
+      <!-- SHARED POPOVER -->
       @if (selectedToken(); as token) {
         @if (popoverPosition(); as position) {
           <app-reader-word-popover
@@ -298,112 +311,134 @@
           <span
             class="h-2 w-2
                    rounded-full
-                   bg-[#7cc0f5]"
+                   border border-[var(--app-border)]
+                   bg-transparent"
           ></span>
-          Nueva
+          Sin clasificar
         </span>
 
-        <span class="flex items-center gap-2">
+        <span class="flex items-center gap-2 font-medium">
+          <span
+            class="h-2 w-2
+                   rounded-full
+                   bg-[#7cc0f5]"
+          ></span>
+          <span class="uppercase">ES NUEVA PARA MÍ</span>
+        </span>
+
+        <span class="flex items-center gap-2 font-medium">
           <span
             class="h-2 w-2
                    rounded-full
                    bg-[#e8ab5c]"
           ></span>
-          Aprendiendo
+          <span class="uppercase">QUIERO APRENDERLA</span>
         </span>
 
-        <span class="flex items-center gap-2">
+        <span class="flex items-center gap-2 font-medium">
           <span
             class="h-2 w-2
                    rounded-full
                    bg-[#6fce9a]"
           ></span>
-          Conocida
+          <span class="uppercase">YA LA CONOZCO</span>
         </span>
 
-        <span class="flex items-center gap-2">
+        <span class="flex items-center gap-2 font-medium">
           <span
             class="h-2 w-2
                    rounded-full
                    bg-[#5c6167]"
           ></span>
-          Ignorada
+          <span class="uppercase">NO ME INTERESA</span>
         </span>
 
       </div>
 
-      <!-- CTA -->
-      <footer class="mt-10 border-t border-[var(--app-border)] pt-6 sm:flex sm:items-end sm:justify-between sm:gap-8">
+      <!-- STICKY FOOTER CONTROLS -->
+      <footer
+        id="onboarding-controls"
+        class="fixed bottom-0 left-0 right-0 z-40
+               border-t border-[var(--app-border)]
+               bg-[var(--app-bg)]/95 backdrop-blur-sm
+               px-5 py-4
+               sm:px-8"
+      >
+        <div class="mx-auto flex max-w-[900px] flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
-        <div
-          id="onboarding-classification-progress"
-          class="onboarding-completion-guidance max-w-[520px]"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          @if (canFinishTest()) {
-            <p class="text-[15px] font-semibold text-[var(--app-text)]">
-              {{ classifiedWordCount() }} palabras clasificadas
-            </p>
-            <p class="mt-1 text-[14px] leading-6 text-[var(--app-muted)]">
-              Ya tenemos suficiente información para empezar a personalizar tus lecturas.
-            </p>
-          } @else {
-            <p class="text-[15px] font-semibold text-[var(--app-text)]">
-              {{ classifiedWordCount() }} de {{ minimumClassifications }} palabras clasificadas
-            </p>
-            <p class="mt-1 text-[14px] leading-6 text-[var(--app-muted)]">
-              Clasifica al menos {{ minimumClassifications }} palabras para personalizar tus primeras recomendaciones.
-              Selecciona {{ remainingClassifications() }} más para continuar.
-            </p>
-          }
+          <div
+            id="onboarding-classification-progress"
+            class="onboarding-completion-guidance"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div class="flex items-center gap-2">
+              <span class="text-[14px] font-semibold text-[var(--app-text)]">
+                Parte {{ currentSectionIndex() + 1 }} de {{ totalSections() }}
+              </span>
+              <span class="text-[var(--app-muted)]">•</span>
+              <span class="text-[14px] text-[var(--app-text-secondary)]">
+                {{ classifiedWordCount() }} de {{ minimumClassifications }} palabras clasificadas
+              </span>
+            </div>
+
+            @if (isLastSection()) {
+              @if (canFinishTest()) {
+                <p class="mt-1 text-[13px] leading-5 text-[var(--app-muted)]">
+                  {{ classifiedWordCount() }} palabras clasificadas. Ya tenemos suficiente información para personalizar tus lecturas.
+                </p>
+              } @else {
+                <p class="mt-1 text-[13px] leading-5 text-[var(--app-muted)]">
+                  Selecciona al menos {{ minimumClassifications }} palabras para finalizar. Faltan {{ remainingClassifications() }} para continuar.
+                </p>
+              }
+            } @else {
+              <p class="mt-1 text-[13px] leading-5 text-[var(--app-muted)]">
+                Selecciona cualquier palabra para escuchar su pronunciación, consultar su significado o clasificarla.
+              </p>
+            }
+          </div>
+
+          <div class="flex items-center gap-3 sm:shrink-0">
+            @if (!isFirstSection()) {
+              <button
+                type="button"
+                (click)="previousSection()"
+                class="onboarding-prev-button inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--app-border)] px-4 py-2 text-[15px] font-medium text-[var(--app-text)] transition hover:bg-[var(--app-surface-elevated)]"
+              >
+                <span aria-hidden="true">←</span>
+                Anterior
+              </button>
+            }
+
+            @if (!isLastSection()) {
+              <button
+                type="button"
+                (click)="nextSection()"
+                class="onboarding-next-button inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--app-accent)] px-5 py-2 text-[15px] font-semibold text-[var(--app-surface-elevated)] transition hover:brightness-110"
+              >
+                Siguiente
+                <span aria-hidden="true">→</span>
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="finishTest()"
+                [disabled]="loading() || !canFinishTest()"
+                aria-describedby="onboarding-classification-progress"
+                class="onboarding-finish-button inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[var(--app-accent)] bg-[var(--app-accent)] px-5 py-2 text-[15px] font-semibold text-[var(--app-surface-elevated)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:border-[var(--app-border)] disabled:bg-transparent disabled:text-[var(--app-muted)]"
+              >
+                @if (loading()) {
+                  Guardando...
+                } @else {
+                  Finalizar onboarding
+                  <span class="text-lg" aria-hidden="true">→</span>
+                }
+              </button>
+            }
+          </div>
+
         </div>
-
-        <button
-          type="button"
-          (click)="finishTest()"
-          [disabled]="loading() || !canFinishTest()"
-          aria-describedby="onboarding-classification-progress"
-          class="onboarding-finish-button mt-5 inline-flex
-                 min-h-12 w-full
-                 items-center
-                 justify-center
-                 gap-3
-                 rounded-lg
-                 border border-[var(--app-accent)]
-                 px-5 py-3
-                 text-[17px]
-                 font-semibold
-                 text-[var(--app-surface-elevated)]
-                 bg-[var(--app-accent)]
-                 transition
-                 hover:brightness-110
-                 disabled:cursor-not-allowed
-                 disabled:border-[var(--app-border)]
-                 disabled:bg-transparent
-                 disabled:text-[var(--app-muted)]
-                 sm:mt-0 sm:w-auto sm:shrink-0"
-        >
-
-          @if (loading()) {
-
-            Guardando...
-
-          } @else {
-
-            Finalizar onboarding
-
-            <span
-              class="text-xl"
-              aria-hidden="true"
-            >
-              →
-            </span>
-
-          }
-
-        </button>
-
       </footer>
 
     }

@@ -17,6 +17,8 @@ describe('Onboarding', () => {
   let fixture: ComponentFixture<Onboarding>;
   let onboardingService: {
     completeInitialVocabularyTest: ReturnType<typeof vi.fn>;
+    getInitialVocabularyTest: ReturnType<typeof vi.fn>;
+    parseInitialVocabularyTest: ReturnType<typeof vi.fn>;
   };
   let auth: { markOnboardingCompleted: ReturnType<typeof vi.fn> };
   let router: { navigateByUrl: ReturnType<typeof vi.fn> };
@@ -27,8 +29,15 @@ describe('Onboarding', () => {
 
   beforeEach(async () => {
     localStorage.removeItem('english-reading-theme');
+    sessionStorage.clear();
     onboardingService = {
       completeInitialVocabularyTest: vi.fn(() => of('<response/>')),
+      getInitialVocabularyTest: vi.fn(() => of('<response/>')),
+      parseInitialVocabularyTest: vi.fn(() => ({
+        testId: 'test-v2',
+        text: 'Part one.\n\nPart two.\n\nPart three.\n\nPart four.',
+        selectableWords: ['part', 'one', 'two', 'three', 'four'],
+      })),
     };
     auth = { markOnboardingCompleted: vi.fn() };
     router = { navigateByUrl: vi.fn(() => Promise.resolve(true)) };
@@ -64,17 +73,24 @@ describe('Onboarding', () => {
     component = fixture.componentInstance;
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    sessionStorage.clear();
+    vi.unstubAllGlobals();
+  });
 
   it('uses the global light theme and exposes the same persistent control', () => {
     fixture.detectChanges();
     expect(document.documentElement.dataset['theme']).toBe('light');
-    (fixture.nativeElement.querySelector('button[aria-label="Cambiar a modo oscuro"]') as HTMLButtonElement).click();
+    (
+      fixture.nativeElement.querySelector(
+        'button[aria-label="Cambiar a modo oscuro"]'
+      ) as HTMLButtonElement
+    ).click();
     expect(localStorage.getItem('english-reading-theme')).toBe('dark');
   });
 
-  it('uses NEW visually without classifying an untouched word', () => {
-    expect(component.getWordStatus('Untouched')).toBe('NEW');
+  it('renders unclassified words with null status and clean text without classifying an untouched word', () => {
+    expect(component.getWordStatus('Untouched')).toBeNull();
     expect(component.classifiedWordCount()).toBe(0);
     expect(component.explicitClassifications()).toEqual([]);
   });
@@ -89,11 +105,12 @@ describe('Onboarding', () => {
     ]);
   });
 
-  it('uses the shared Reader popover and autoplays one pronunciation when a word opens', () => {
+  it('uses the shared Reader popover, autoplays pronunciation, and auto-closes on status selection with focus restoration', () => {
     renderTest();
     const word = fixture.nativeElement.querySelector(
       'section.relative button'
     ) as HTMLButtonElement;
+    const focusSpy = vi.spyOn(word, 'focus');
 
     word.click();
     fixture.detectChanges();
@@ -107,7 +124,13 @@ describe('Onboarding', () => {
     expect(
       fixture.nativeElement.querySelectorAll('.reader-popover button[aria-pressed]')
     ).toHaveLength(4);
-    expect(fixture.nativeElement.textContent).toContain('Ver definiciones');
+
+    component.selectWordStatus('KNOWN');
+    fixture.detectChanges();
+
+    expect(component.getWordStatus('short')).toBe('KNOWN');
+    expect(fixture.nativeElement.querySelector('app-reader-word-popover')).toBeFalsy();
+    expect(focusSpy).toHaveBeenCalled();
   });
 
   it('replays pronunciation manually and closes the shared popover with Escape', () => {
@@ -116,7 +139,7 @@ describe('Onboarding', () => {
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector(
-      'button[aria-label="Escuchar pronunciación"]'
+      'button[aria-label="Play pronunciation"]'
     ) as HTMLButtonElement).click();
     expect(audioPlay).toHaveBeenCalledTimes(2);
 
@@ -125,35 +148,96 @@ describe('Onboarding', () => {
     expect(fixture.nativeElement.querySelector('app-reader-word-popover')).toBeFalsy();
   });
 
-  it.each([
-    ['none', 0],
-    ['one below the minimum', MINIMUM_ONBOARDING_CLASSIFICATIONS - 1],
-  ])('keeps Finalizar onboarding disabled with %s classified words', (_case, count) => {
-    renderTest();
-    classifyWords(count);
+  it('navigates through 4 sections without losing accumulated classifications', () => {
+    renderFourSectionTest();
+    expect(component.totalSections()).toBe(4);
+    expect(component.currentSectionIndex()).toBe(0);
+    expect(component.isFirstSection()).toBe(true);
+    expect(component.isLastSection()).toBe(false);
+
+    // Section 1: classify a word
+    component.setWordStatus('part', 'KNOWN');
+    expect(component.classifiedWordCount()).toBe(1);
+
+    // Navigate to section 2
+    component.nextSection();
+    fixture.detectChanges();
+    expect(component.currentSectionIndex()).toBe(1);
+    expect(component.isFirstSection()).toBe(false);
+    expect(component.isLastSection()).toBe(false);
+    expect(component.classifiedWordCount()).toBe(1);
+
+    // Section 2: classify another word
+    component.setWordStatus('two', 'LEARNING');
+    expect(component.classifiedWordCount()).toBe(2);
+
+    // Navigate to section 3
+    component.nextSection();
+    fixture.detectChanges();
+    expect(component.currentSectionIndex()).toBe(2);
+
+    // Navigate to section 4
+    component.nextSection();
+    fixture.detectChanges();
+    expect(component.currentSectionIndex()).toBe(3);
+    expect(component.isLastSection()).toBe(true);
+    expect(component.classifiedWordCount()).toBe(2);
+
+    // Navigate back to section 3
+    component.previousSection();
+    fixture.detectChanges();
+    expect(component.currentSectionIndex()).toBe(2);
+    expect(component.classifiedWordCount()).toBe(2);
+  });
+
+  it('does not allow finishing before the last section (Part 4) even with 10+ classified words', () => {
+    renderFourSectionTest();
+    classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS);
     fixture.detectChanges();
 
-    const button = finishButton();
-    expect(button.disabled).toBe(true);
-    expect(button.getAttribute('aria-describedby')).toBe(
-      'onboarding-classification-progress'
-    );
+    // Still in Part 1 (section 0)
+    expect(component.currentSectionIndex()).toBe(0);
+    expect(component.classifiedWordCount()).toBe(MINIMUM_ONBOARDING_CLASSIFICATIONS);
+    expect(component.canFinishTest()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.onboarding-finish-button')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.onboarding-next-button')).toBeTruthy();
+
     component.finishTest();
     expect(onboardingService.completeInitialVocabularyTest).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ['the minimum', MINIMUM_ONBOARDING_CLASSIFICATIONS],
-    ['more than the minimum', MINIMUM_ONBOARDING_CLASSIFICATIONS + 1],
-  ])('enables Finalizar onboarding with %s classified words', (_case, count) => {
-    renderTest();
-    classifyWords(count);
+  it('keeps Finalizar onboarding disabled on Part 4 when fewer than 10 words are classified', () => {
+    renderFourSectionTest();
+    component.goToSection(3);
+    classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS - 1);
     fixture.detectChanges();
 
-    expect(finishButton().disabled).toBe(false);
+    expect(component.isLastSection()).toBe(true);
+    expect(component.canFinishTest()).toBe(false);
+    const button = finishButton();
+    expect(button).toBeTruthy();
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-describedby')).toBe(
+      'onboarding-classification-progress'
+    );
+
+    component.finishTest();
+    expect(onboardingService.completeInitialVocabularyTest).not.toHaveBeenCalled();
+  });
+
+  it('enables Finalizar onboarding on Part 4 with at least 10 classified words', () => {
+    renderFourSectionTest();
+    component.goToSection(3);
+    classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS);
+    fixture.detectChanges();
+
+    expect(component.isLastSection()).toBe(true);
+    expect(component.canFinishTest()).toBe(true);
+    const button = finishButton();
+    expect(button.disabled).toBe(false);
     expect(
       fixture.nativeElement.querySelector('.onboarding-completion-guidance').textContent
-    ).toContain(`${count} palabras clasificadas`);
+    ).toContain(`${MINIMUM_ONBOARDING_CLASSIFICATIONS} de ${MINIMUM_ONBOARDING_CLASSIFICATIONS} palabras clasificadas`);
   });
 
   it.each(['NEW', 'LEARNING', 'KNOWN', 'IGNORED'] as const)(
@@ -189,12 +273,9 @@ describe('Onboarding', () => {
     expect(component.classifiedWordCount()).toBe(1);
   });
 
-  it('submits only explicit statuses, marks completion and navigates home', () => {
-    component.test.set({
-      testId: 'test-1',
-      text: 'Untouched',
-      selectableWords: ['untouched'],
-    });
+  it('submits only explicit statuses, marks completion, clears sessionStorage and navigates home', () => {
+    renderFourSectionTest();
+    component.goToSection(3);
     component.setWordStatus('new-word', 'NEW');
     component.setWordStatus('learning-word', 'LEARNING');
     component.setWordStatus('known-word', 'KNOWN');
@@ -204,19 +285,47 @@ describe('Onboarding', () => {
     component.finishTest();
 
     expect(onboardingService.completeInitialVocabularyTest).toHaveBeenCalledWith(
-      'test-1',
+      'test-v2',
       component.explicitClassifications()
     );
     expect(auth.markOnboardingCompleted).toHaveBeenCalledOnce();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
     expect(component.loading()).toBe(false);
+    expect(sessionStorage.getItem('onboarding_v2_test-v2')).toBeNull();
+  });
+
+  it('saves and restores onboarding state from sessionStorage', () => {
+    component.loadTest();
+    expect(component.test()?.testId).toBe('test-v2');
+
+    component.setWordStatus('part', 'KNOWN');
+    component.nextSection();
+    fixture.detectChanges();
+
+    expect(component.currentSectionIndex()).toBe(1);
+    const saved = JSON.parse(sessionStorage.getItem('onboarding_v2_test-v2')!);
+    expect(saved.sectionIndex).toBe(1);
+    expect(saved.classifications).toEqual([['part', 'KNOWN']]);
+
+    // Simulate page reload by loading test again
+    component.loadTest();
+    expect(component.currentSectionIndex()).toBe(1);
+    expect(component.getWordStatus('part')).toBe('KNOWN');
+  });
+
+  it('includes an accessible skip link to onboarding controls', () => {
+    renderTest();
+    const skipLink = fixture.nativeElement.querySelector('a[href="#onboarding-controls"]') as HTMLAnchorElement;
+    expect(skipLink).toBeTruthy();
+    expect(skipLink.textContent?.trim()).toBe('Saltar a los controles');
   });
 
   it('keeps the user on onboarding and exposes SOAP errors', () => {
     onboardingService.completeInitialVocabularyTest.mockReturnValue(
       throwError(() => new Error('SOAP error'))
     );
-    component.test.set({ testId: 'test-1', text: 'Word', selectableWords: [] });
+    renderFourSectionTest();
+    component.goToSection(3);
     classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS);
 
     component.finishTest();
@@ -243,7 +352,8 @@ describe('Onboarding', () => {
           })
       )
     );
-    renderTest();
+    renderFourSectionTest();
+    component.goToSection(3);
     classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS);
 
     component.finishTest();
@@ -262,7 +372,8 @@ describe('Onboarding', () => {
     onboardingService.completeInitialVocabularyTest.mockReturnValue(
       completion.asObservable()
     );
-    renderTest();
+    renderFourSectionTest();
+    component.goToSection(3);
     classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS);
     fixture.detectChanges();
 
@@ -273,11 +384,12 @@ describe('Onboarding', () => {
     expect(onboardingService.completeInitialVocabularyTest).toHaveBeenCalledOnce();
     expect(component.loading()).toBe(true);
     expect(finishButton().disabled).toBe(true);
-    expect(finishButton().textContent).toContain('Guardando');
+    expect(finishButton().textContent).toContain('Guardando...');
   });
 
-  it('uses personalization copy without inventing CEFR or comprehension results', () => {
-    renderTest();
+  it('uses personalization copy without inventing CEFR, scoring, or exam levels', () => {
+    renderFourSectionTest();
+    component.goToSection(3);
     classifyWords(MINIMUM_ONBOARDING_CLASSIFICATIONS);
     fixture.detectChanges();
 
@@ -285,10 +397,10 @@ describe('Onboarding', () => {
       '.onboarding-completion-guidance'
     ) as HTMLElement;
     expect(guidance.textContent).toContain('personalizar tus lecturas');
-    expect(guidance.textContent).not.toMatch(/CEFR|comprensi[oó]n|nivel/i);
+    expect(guidance.textContent).not.toMatch(/CEFR|comprensi[oó]n|nivel|examen/i);
   });
 
-  it('reacts visually for every status across repeated normalized words', () => {
+  it('reacts visually for every status, rendering unclassified words as clean text', () => {
     component.test.set({
       testId: 'test-1',
       text: 'Word word WORD.',
@@ -301,37 +413,76 @@ describe('Onboarding', () => {
         NodeListOf<HTMLButtonElement>
     );
     expect(words).toHaveLength(3);
-    expect(words.every((word) => word.className.includes('bg-[#29445a]'))).toBe(
+    // Unclassified: clean editorial text without blue background and without underline/dotted decorations
+    expect(words.every((word) => !word.className.includes('bg-[#29445a]'))).toBe(
       true
     );
-    expect(words.every((word) => !word.className.includes('bg-transparent'))).toBe(
+    expect(words.every((word) => !word.className.includes('underline'))).toBe(
       true
     );
-    expect(words.every((word) => !word.className.includes('decoration-dotted'))).toBe(
+    expect(words.every((word) => !word.className.includes('decoration'))).toBe(
+      true
+    );
+    expect(words.every((word) => word.className.includes('hover:bg-[var(--app-active)]'))).toBe(
       true
     );
     expect(component.wordStatuses().has('word')).toBe(false);
 
+    // Classify as explicit NEW
+    component.openWord('WORD', wordClick());
+    component.selectWordStatus('NEW');
+    fixture.detectChanges();
+    expect(component.getWordStatus('word')).toBe('NEW');
+    expect(words.every((word) => word.className.includes('bg-[#29445a]'))).toBe(
+      true
+    );
+
+    // Classify as KNOWN
     component.openWord('WORD', wordClick());
     component.selectWordStatus('KNOWN');
     fixture.detectChanges();
     expect(component.getWordStatus('word')).toBe('KNOWN');
-    expect(words.every((word) => !word.className.includes('bg-[#29445a]'))).toBe(
+    expect(words.every((word) => word.className.includes('text-[#6fce9a]'))).toBe(
       true
     );
-    expect(component.wordStatuses().has('word')).toBe(true);
 
+    // Classify as LEARNING
+    component.openWord('WORD', wordClick());
     component.selectWordStatus('LEARNING');
     fixture.detectChanges();
     expect(words.every((word) => word.className.includes('bg-[#4a3a22]'))).toBe(
       true
     );
 
+    // Classify as IGNORED: discreet gray, no line-through
+    component.openWord('WORD', wordClick());
     component.selectWordStatus('IGNORED');
     fixture.detectChanges();
     expect(words.every((word) => word.className.includes('text-[#70757b]'))).toBe(
       true
     );
+    expect(words.every((word) => word.className.includes('opacity-60'))).toBe(
+      true
+    );
+    expect(words.every((word) => !word.className.includes('line-through'))).toBe(
+      true
+    );
+  });
+
+  it('renders punctuation directly attached to the word without an inter-element whitespace', () => {
+    component.test.set({
+      testId: 'test-punc',
+      text: 'In autumn, the market.',
+      selectableWords: ['autumn', 'market'],
+    });
+    fixture.detectChanges();
+
+    const readingArea = fixture.nativeElement.querySelector('section.relative');
+    const textContent = readingArea.textContent;
+    expect(textContent).not.toContain('autumn ,');
+    expect(textContent).not.toContain('market .');
+    expect(textContent).toContain('autumn,');
+    expect(textContent).toContain('market.');
   });
 
   function renderTest(): void {
@@ -339,6 +490,15 @@ describe('Onboarding', () => {
       testId: 'test-1',
       text: 'A short onboarding text.',
       selectableWords: ['short'],
+    });
+    fixture.detectChanges();
+  }
+
+  function renderFourSectionTest(): void {
+    component.test.set({
+      testId: 'test-v2',
+      text: 'Paragraph one.\n\nParagraph two.\n\nParagraph three.\n\nParagraph four.',
+      selectableWords: ['paragraph', 'one', 'two', 'three', 'four', 'part'],
     });
     fixture.detectChanges();
   }

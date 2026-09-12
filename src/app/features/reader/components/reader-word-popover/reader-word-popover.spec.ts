@@ -41,16 +41,17 @@ describe('ReaderWordPopover', () => {
     expect(text).toContain('garden');
     expect(text).toContain('/ˈɡɑː.dən/');
     expect(text).toContain('jardín');
-    expect(text).toContain('Ver definiciones');
+    expect(text).toContain('STATUS');
+    expect(text).toContain('View definitions');
 
     const statuses = Array.from(
       fixture.nativeElement.querySelectorAll('button[aria-pressed]') as NodeListOf<HTMLButtonElement>
     );
     expect(statuses.map((button) => button.textContent?.trim())).toEqual([
-      'NEW',
-      'LEARNING',
-      'KNOWN',
-      'IGNORED',
+      'NEW TO ME',
+      'I WANT TO LEARN IT',
+      'I KNOW IT',
+      'NOT INTERESTED',
     ]);
     expect(statuses[1].getAttribute('aria-pressed')).toBe('true');
   });
@@ -65,10 +66,10 @@ describe('ReaderWordPopover', () => {
     fixture.componentInstance.definitionsToggled.subscribe(definitions);
     fixture.componentInstance.closed.subscribe(close);
 
-    (fixture.nativeElement.querySelector('button[aria-label="Escuchar pronunciación"]') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('button[aria-label="Play pronunciation"]') as HTMLButtonElement).click();
     (fixture.nativeElement.querySelectorAll('button[aria-pressed]')[2] as HTMLButtonElement).click();
     (fixture.nativeElement.querySelector('button[aria-expanded="false"]') as HTMLButtonElement).click();
-    (fixture.nativeElement.querySelector('button[aria-label="Cerrar popover"]') as HTMLButtonElement).click();
+    (fixture.nativeElement.querySelector('button[aria-label="Close popover"]') as HTMLButtonElement).click();
 
     expect(audio).toHaveBeenCalledWith('garden.mp3');
     expect(status).toHaveBeenCalledWith('KNOWN');
@@ -82,7 +83,7 @@ describe('ReaderWordPopover', () => {
 
     const popover = fixture.nativeElement.querySelector('.reader-popover') as HTMLElement;
     expect(popover.className).toContain('bg-[var(--app-surface-elevated)]');
-    expect(popover.getAttribute('aria-label')).toBe('Información y estado de palabra');
+    expect(popover.getAttribute('aria-label')).toBe('Word details and status');
   });
 
   function token(): ReaderToken {

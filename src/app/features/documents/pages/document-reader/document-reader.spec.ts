@@ -183,14 +183,14 @@ describe('DocumentReader', () => {
     const response=new Subject<string>(); reader.setVocabularyStatus.mockReturnValue(response);
     fixture.detectChanges();
     (fixture.nativeElement.querySelector('article button') as HTMLButtonElement).click(); fixture.detectChanges();
-    const learning=Array.from(fixture.nativeElement.querySelectorAll('button[aria-pressed]') as NodeListOf<HTMLButtonElement>).find((button)=>button.textContent?.trim()==='LEARNING')!;
+    const learning=Array.from(fixture.nativeElement.querySelectorAll('button[aria-pressed]') as NodeListOf<HTMLButtonElement>).find((button)=>button.textContent?.trim()==='I WANT TO LEARN IT')!;
     learning.click(); fixture.detectChanges();
     expect(reader.setVocabularyStatus).toHaveBeenCalledWith('Hello','en','LEARNING');
-    expect(component.savingStatus()).toBe(true); expect(fixture.nativeElement.textContent).toContain('Guardando...');
+    expect(component.savingStatus()).toBe(true); expect(fixture.nativeElement.textContent).toContain('Saving...');
     response.next('<saved/>'); fixture.detectChanges();
     expect(component.savingStatus()).toBe(false); expect(component.selectedToken()?.status).toBe('LEARNING');
-    expect(component.unit()?.tokens[0].status).toBe('LEARNING'); expect(fixture.nativeElement.textContent).not.toContain('Guardando...');
-    expect(fixture.nativeElement.querySelector('button[aria-pressed="true"]')?.textContent.trim()).toBe('LEARNING');
+    expect(component.unit()?.tokens[0].status).toBe('LEARNING'); expect(fixture.nativeElement.textContent).not.toContain('Saving...');
+    expect(fixture.nativeElement.querySelector('button[aria-pressed="true"]')?.textContent.trim()).toBe('I WANT TO LEARN IT');
   });
 
   it('recovers from mutation failure and clears stale popup when changing unit', () => {

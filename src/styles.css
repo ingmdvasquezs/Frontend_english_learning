@@ -9,7 +9,7 @@ html,body { margin:0; min-height:100%; background:var(--app-bg); color:var(--app
 a { color:inherit; }
 .app-page { background:var(--app-bg) !important; color:var(--app-text) !important; }
 .app-card { background:var(--app-surface) !important; border:1px solid var(--app-border); box-shadow:none !important; }
-.reader-popover { background:color-mix(in srgb,var(--app-surface-elevated) 96%,transparent) !important; color:var(--app-text); border:1px solid var(--app-border); }
+.reader-popover { background:var(--app-surface-elevated) !important; color:var(--app-text); border:1px solid var(--app-border); box-shadow:0 12px 32px rgba(0,0,0,0.24) !important; }
 .theme-toggle { position:fixed; z-index:60; top:1rem; right:1rem; padding:.55rem .8rem; border:1px solid var(--app-border); border-radius:999px; background:var(--app-surface); color:var(--app-text-secondary); font:600 .8rem/1 system-ui,sans-serif; cursor:pointer; }
 .theme-toggle:hover { color:var(--app-accent); border-color:var(--app-accent); }
 ::selection { background:var(--app-accent-soft); color:var(--app-text); }
