@@ -144,13 +144,19 @@ export class ReaderService {
     };
   }
 
-  getReadingComprehensionQuiz(readingId: string): Observable<ComprehensionQuiz> {
+  getReadingComprehensionQuiz(
+    readingId: string,
+    submissionId?: string
+  ): Observable<ComprehensionQuiz> {
+    const submissionIdXml = submissionId
+      ? `\n            <read:submissionId>${escapeXml(submissionId)}</read:submissionId>`
+      : '';
     const body = `
       <soapenv:Envelope xmlns:soapenv="${this.soapNamespace}" xmlns:read="${this.namespace}">
         <soapenv:Header/>
         <soapenv:Body>
           <read:getReadingComprehensionQuizRequest>
-            <read:readingId>${escapeXml(readingId)}</read:readingId>
+            <read:readingId>${escapeXml(readingId)}</read:readingId>${submissionIdXml}
           </read:getReadingComprehensionQuizRequest>
         </soapenv:Body>
       </soapenv:Envelope>
@@ -182,6 +188,7 @@ export class ReaderService {
             <read:readingId>${escapeXml(request.readingId)}</read:readingId>
             <read:submissionId>${escapeXml(request.submissionId)}</read:submissionId>
             ${answersXml}
+            <read:selectionVersion>${request.selectionVersion}</read:selectionVersion>
           </read:submitComprehensionAttemptRequest>
         </soapenv:Body>
       </soapenv:Envelope>
@@ -195,6 +202,7 @@ export class ReaderService {
     const xml = this.parseXml(responseXml);
     const readingId = this.getRequiredValue(xml, 'readingId');
     const available = this.getRequiredValue(xml, 'available') === 'true';
+    const selectionVersion = this.getOptionalInteger(xml, 'selectionVersion');
 
     const questionElements = this.getDirectElements(xml, 'questions');
 
@@ -224,6 +232,7 @@ export class ReaderService {
       readingId,
       available,
       questions,
+      selectionVersion,
     };
   }
 

@@ -65,8 +65,12 @@ export class Reader implements OnInit {
     findNarrationWordTokenIndex(this.narrationContent().ranges,this.narration.currentCharacterIndex())
   );
 
-  readonly comprehensionQuiz = signal<ComprehensionQuiz | null>(null);
+  readonly quizAvailable = signal<boolean>(false);
   readonly quizAvailabilityLoading = signal<boolean>(false);
+  readonly activeComprehensionQuiz = signal<ComprehensionQuiz | null>(null);
+  readonly quizLoading = signal<boolean>(false);
+  readonly quizLoadError = signal<string | null>(null);
+  readonly comprehensionQuiz = computed(() => this.activeComprehensionQuiz());
   readonly quizMode = signal<'COMPLETION' | 'QUIZ' | 'RESULT'>('COMPLETION');
   readonly selectedAnswers = signal<Record<string, string>>({});
   readonly currentSubmissionId = signal<string | null>(null);
@@ -75,7 +79,7 @@ export class Reader implements OnInit {
   readonly comprehensionSubmitError = signal<string | null>(null);
 
   readonly canSubmitQuiz = computed(() => {
-    const quiz = this.comprehensionQuiz();
+    const quiz = this.activeComprehensionQuiz();
     if (!quiz || quiz.questions.length === 0) return false;
     const answeredCount = Object.keys(this.selectedAnswers()).length;
     return answeredCount === quiz.questions.length && !this.submittingComprehension();
@@ -201,18 +205,32 @@ export class Reader implements OnInit {
   }
 
   openQuiz(): void {
-    this.currentSubmissionId.set(crypto.randomUUID());
+    const data = this.readerData();
+    if (!data || this.quizLoading()) return;
+    const submissionId = crypto.randomUUID();
+    this.currentSubmissionId.set(submissionId);
     this.selectedAnswers.set({});
     this.comprehensionResult.set(null);
     this.comprehensionSubmitError.set(null);
-    this.quizMode.set('QUIZ');
+    this.fetchAttemptQuiz(data.readingId, submissionId);
+  }
+
+  retryLoadQuiz(): void {
+    const data = this.readerData();
+    const submissionId = this.currentSubmissionId();
+    if (!data || !submissionId || this.quizLoading()) return;
+    this.fetchAttemptQuiz(data.readingId, submissionId);
   }
 
   cancelQuiz(): void {
     this.quizMode.set('COMPLETION');
+    this.activeComprehensionQuiz.set(null);
     this.selectedAnswers.set({});
     this.currentSubmissionId.set(null);
+    this.quizLoading.set(false);
+    this.quizLoadError.set(null);
     this.comprehensionSubmitError.set(null);
+    this.comprehensionResult.set(null);
   }
 
   selectAnswer(questionId: string, optionId: string): void {
@@ -223,8 +241,13 @@ export class Reader implements OnInit {
   }
 
   submitQuiz(): void {
-    const quiz = this.comprehensionQuiz();
+    const quiz = this.activeComprehensionQuiz();
     if (!quiz || !this.canSubmitQuiz() || this.submittingComprehension()) {
+      return;
+    }
+
+    const submissionId = this.currentSubmissionId();
+    if (!submissionId || quiz.selectionVersion === null || quiz.selectionVersion === undefined) {
       return;
     }
 
@@ -236,13 +259,11 @@ export class Reader implements OnInit {
       selectedOptionId: this.selectedAnswers()[q.questionId] ?? '',
     }));
 
-    const submissionId = this.currentSubmissionId() || crypto.randomUUID();
-    this.currentSubmissionId.set(submissionId);
-
     const request: SubmitComprehensionAttemptRequest = {
       readingId: quiz.readingId,
       submissionId,
       answers,
+      selectionVersion: quiz.selectionVersion,
     };
 
     this.readerService.submitComprehensionAttempt(request).subscribe({
@@ -261,11 +282,43 @@ export class Reader implements OnInit {
   }
 
   retryQuiz(): void {
-    this.currentSubmissionId.set(crypto.randomUUID());
+    const data = this.readerData();
+    if (!data || this.quizLoading()) return;
+    const newSubmissionId = crypto.randomUUID();
+    this.currentSubmissionId.set(newSubmissionId);
+    this.activeComprehensionQuiz.set(null);
     this.selectedAnswers.set({});
     this.comprehensionResult.set(null);
     this.comprehensionSubmitError.set(null);
-    this.quizMode.set('QUIZ');
+    this.quizMode.set('COMPLETION');
+    this.fetchAttemptQuiz(data.readingId, newSubmissionId);
+  }
+
+  private fetchAttemptQuiz(readingId: string, submissionId: string): void {
+    this.quizLoading.set(true);
+    this.quizLoadError.set(null);
+    this.readerService.getReadingComprehensionQuiz(readingId, submissionId).subscribe({
+      next: (quiz) => {
+        if (
+          quiz?.available === true &&
+          Array.isArray(quiz.questions) &&
+          quiz.questions.length === 3 &&
+          quiz.selectionVersion !== null &&
+          quiz.selectionVersion !== undefined
+        ) {
+          this.activeComprehensionQuiz.set(quiz);
+          this.quizMode.set('QUIZ');
+          this.quizLoading.set(false);
+        } else {
+          this.quizLoadError.set('No pudimos cargar las preguntas. Inténtalo de nuevo.');
+          this.quizLoading.set(false);
+        }
+      },
+      error: () => {
+        this.quizLoadError.set('No pudimos cargar las preguntas. Inténtalo de nuevo.');
+        this.quizLoading.set(false);
+      },
+    });
   }
 
   getQuestionTypeLabel(type: QuestionType): string {
@@ -287,7 +340,7 @@ export class Reader implements OnInit {
   }
 
   private loadComprehensionQuizIfAvailable(readingId: string): void {
-    if (this.quizAvailabilityLoading() || this.comprehensionQuiz() !== null) {
+    if (this.quizAvailabilityLoading() || this.quizAvailable()) {
       return;
     }
     const request$ = this.readerService.getReadingComprehensionQuiz?.(readingId);
@@ -297,15 +350,15 @@ export class Reader implements OnInit {
     this.quizAvailabilityLoading.set(true);
     request$.subscribe({
       next: (quiz) => {
-        if (quiz?.available && quiz.questions?.length > 0) {
-          this.comprehensionQuiz.set(quiz);
+        if (quiz?.available) {
+          this.quizAvailable.set(true);
         } else {
-          this.comprehensionQuiz.set(null);
+          this.quizAvailable.set(false);
         }
         this.quizAvailabilityLoading.set(false);
       },
       error: () => {
-        this.comprehensionQuiz.set(null);
+        this.quizAvailable.set(false);
         this.quizAvailabilityLoading.set(false);
       },
     });

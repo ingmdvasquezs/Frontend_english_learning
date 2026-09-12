@@ -221,21 +221,34 @@ describe('ReaderService', () => {
     expect(failed).toBe(true);
   });
 
-  it('generates an authenticated getReadingComprehensionQuiz request', () => {
+  it('generates an authenticated getReadingComprehensionQuiz request without submissionId', () => {
     service.getReadingComprehensionQuiz('reading&1').subscribe();
 
     const request = httpTesting.expectOne('/ws');
     expect(request.request.headers.get('Authorization')).toBe('Bearer token');
     expect(request.request.body).toContain('<read:getReadingComprehensionQuizRequest>');
     expect(request.request.body).toContain('<read:readingId>reading&amp;1</read:readingId>');
+    expect(request.request.body).not.toContain('<read:submissionId>');
     request.flush(quizAvailableResponse());
   });
 
-  it('parses available=true quiz with questions and options sorted by ordinal', () => {
+  it('generates an authenticated getReadingComprehensionQuiz request with submissionId', () => {
+    service.getReadingComprehensionQuiz('reading&1', 'uuid-attempt-1').subscribe();
+
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.body).toContain('<read:getReadingComprehensionQuizRequest>');
+    expect(request.request.body).toContain('<read:readingId>reading&amp;1</read:readingId>');
+    expect(request.request.body).toContain('<read:submissionId>uuid-attempt-1</read:submissionId>');
+    request.flush(versionedQuizResponse(1));
+  });
+
+  it('parses available=true legacy quiz with selectionVersion as null', () => {
     const quiz = service.parseReadingComprehensionQuiz(quizAvailableResponse());
 
     expect(quiz.readingId).toBe('reading-1');
     expect(quiz.available).toBe(true);
+    expect(quiz.selectionVersion).toBeNull();
     expect(quiz.questions.length).toBe(3);
 
     expect(quiz.questions[0]).toEqual({
@@ -253,9 +266,17 @@ describe('ReaderService', () => {
 
     expect(quiz.questions[1].questionType).toBe('INFERENCE');
     expect(quiz.questions[2].questionType).toBe('MAIN_IDEA');
-    // Pre-submit options do not have isCorrect or explanation
     expect((quiz.questions[0].options[0] as unknown as { isCorrect?: unknown }).isCorrect).toBeUndefined();
     expect((quiz.questions[0] as unknown as { explanation?: unknown }).explanation).toBeUndefined();
+  });
+
+  it('parses versioned quiz response with selectionVersion', () => {
+    const quiz = service.parseReadingComprehensionQuiz(versionedQuizResponse(1));
+
+    expect(quiz.readingId).toBe('reading-1');
+    expect(quiz.available).toBe(true);
+    expect(quiz.selectionVersion).toBe(1);
+    expect(quiz.questions.length).toBe(3);
   });
 
   it('parses available=false quiz', () => {
@@ -268,13 +289,15 @@ describe('ReaderService', () => {
     const quiz = service.parseReadingComprehensionQuiz(xml);
     expect(quiz.readingId).toBe('reading-1');
     expect(quiz.available).toBe(false);
+    expect(quiz.selectionVersion).toBeNull();
     expect(quiz.questions).toEqual([]);
   });
 
-  it('generates an authenticated submitComprehensionAttempt request with readingId, submissionId and answers', () => {
+  it('generates an authenticated submitComprehensionAttempt request with readingId, submissionId, answers and selectionVersion in XSD order', () => {
     service.submitComprehensionAttempt({
       readingId: 'reading&1',
       submissionId: 'sub-uuid-1',
+      selectionVersion: 1,
       answers: [
         { questionId: 'q-1', selectedOptionId: 'opt-1-1' },
         { questionId: 'q-2', selectedOptionId: 'opt-2-3' },
@@ -290,6 +313,31 @@ describe('ReaderService', () => {
     expect(request.request.body).toContain('<read:selectedOptionId>opt-1-1</read:selectedOptionId>');
     expect(request.request.body).toContain('<read:questionId>q-2</read:questionId>');
     expect(request.request.body).toContain('<read:selectedOptionId>opt-2-3</read:selectedOptionId>');
+    expect(request.request.body).toContain('<read:selectionVersion>1</read:selectionVersion>');
+
+    // Validate XSD sequence order: readingId -> submissionId -> answers -> selectionVersion
+    const body = request.request.body;
+    const readingIdIdx = body.indexOf('<read:readingId>');
+    const submissionIdIdx = body.indexOf('<read:submissionId>');
+    const answersIdx = body.indexOf('<read:answers>');
+    const versionIdx = body.indexOf('<read:selectionVersion>');
+    expect(readingIdIdx).toBeLessThan(submissionIdIdx);
+    expect(submissionIdIdx).toBeLessThan(answersIdx);
+    expect(answersIdx).toBeLessThan(versionIdx);
+
+    request.flush(submitAttemptResponse());
+  });
+
+  it('does not hardcode selectionVersion when submitting comprehension attempt', () => {
+    service.submitComprehensionAttempt({
+      readingId: 'reading-1',
+      submissionId: 'sub-uuid-custom',
+      selectionVersion: 2,
+      answers: [],
+    }).subscribe();
+
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.body).toContain('<read:selectionVersion>2</read:selectionVersion>');
     request.flush(submitAttemptResponse());
   });
 
@@ -348,6 +396,7 @@ describe('ReaderService', () => {
     service.submitComprehensionAttempt({
       readingId: 'reading-1',
       submissionId: 'uuid',
+      selectionVersion: 1,
       answers: [],
     }).subscribe({
       error: () => (failed = true),
@@ -437,6 +486,54 @@ describe('ReaderService', () => {
             <read:content>The value of lifelong learning.</read:content>
           </read:options>
         </read:questions>
+      </read:getReadingComprehensionQuizResponse>
+    `;
+  }
+
+  function versionedQuizResponse(version: number = 1): string {
+    return `
+      <read:getReadingComprehensionQuizResponse xmlns:read="http://soap.com/english-reading/readings">
+        <read:readingId>reading-1</read:readingId>
+        <read:available>true</read:available>
+        <read:questions>
+          <read:questionId>q-1</read:questionId>
+          <read:ordinal>1</read:ordinal>
+          <read:questionType>FACTUAL</read:questionType>
+          <read:prompt>What did the main character do?</read:prompt>
+          <read:options>
+            <read:optionId>opt-1-1</read:optionId>
+            <read:ordinal>1</read:ordinal>
+            <read:content>He walked to the library.</read:content>
+          </read:options>
+          <read:options>
+            <read:optionId>opt-1-2</read:optionId>
+            <read:ordinal>2</read:ordinal>
+            <read:content>He stayed home.</read:content>
+          </read:options>
+        </read:questions>
+        <read:questions>
+          <read:questionId>q-2</read:questionId>
+          <read:ordinal>2</read:ordinal>
+          <read:questionType>INFERENCE</read:questionType>
+          <read:prompt>Why was the character excited?</read:prompt>
+          <read:options>
+            <read:optionId>opt-2-1</read:optionId>
+            <read:ordinal>1</read:ordinal>
+            <read:content>Because it was a sunny day.</read:content>
+          </read:options>
+        </read:questions>
+        <read:questions>
+          <read:questionId>q-3</read:questionId>
+          <read:ordinal>3</read:ordinal>
+          <read:questionType>MAIN_IDEA</read:questionType>
+          <read:prompt>What is the central theme of the story?</read:prompt>
+          <read:options>
+            <read:optionId>opt-3-1</read:optionId>
+            <read:ordinal>1</read:ordinal>
+            <read:content>The value of lifelong learning.</read:content>
+          </read:options>
+        </read:questions>
+        <read:selectionVersion>${version}</read:selectionVersion>
       </read:getReadingComprehensionQuizResponse>
     `;
   }

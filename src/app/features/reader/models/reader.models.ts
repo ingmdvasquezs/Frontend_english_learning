@@ -48,6 +48,7 @@ export interface ComprehensionQuiz {
   readingId: string;
   available: boolean;
   questions: ComprehensionQuizQuestion[];
+  selectionVersion: number | null;
 }
 
 export interface ComprehensionAnswerInput {
@@ -59,6 +60,7 @@ export interface SubmitComprehensionAttemptRequest {
   readingId: string;
   submissionId: string;
   answers: ComprehensionAnswerInput[];
+  selectionVersion: number;
 }
 
 export interface ComprehensionQuestionResultOption {

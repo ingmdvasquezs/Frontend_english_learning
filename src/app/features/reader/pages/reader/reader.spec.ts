@@ -55,7 +55,7 @@ describe('Reader page', () => {
       updateReadingProgress: vi.fn(() => of('<response/>')),
       completeReading: vi.fn(() => completionResponse.asObservable()),
       parseCompleteReading: vi.fn(() => ({ readingId: 'reading-1', status: 'COMPLETED', startedAt: '2026-08-30T10:00:00Z', completedAt: '2026-08-30T10:10:00Z' })),
-      getReadingComprehensionQuiz: vi.fn(() => of({ readingId: 'reading-1', available: false, questions: [] })),
+      getReadingComprehensionQuiz: vi.fn(() => of({ readingId: 'reading-1', available: false, questions: [], selectionVersion: null })),
       submitComprehensionAttempt: vi.fn(),
     };
     dictionaryService = {
@@ -779,10 +779,11 @@ describe('Reader page', () => {
     } as unknown as MouseEvent;
   }
 
-  function mockQuiz(available = true): ComprehensionQuiz {
+  function mockQuiz(available = true, selectionVersion: number | null = null): ComprehensionQuiz {
     return {
       readingId: 'reading-1',
       available,
+      selectionVersion,
       questions: available
         ? [
             {
@@ -824,6 +825,10 @@ describe('Reader page', () => {
           ]
         : [],
     };
+  }
+
+  function mockVersionedQuiz(selectionVersion = 1): ComprehensionQuiz {
+    return mockQuiz(true, selectionVersion);
   }
 
   function mockAttemptResult(): ComprehensionAttemptResult {
@@ -888,7 +893,7 @@ describe('Reader page', () => {
     };
   }
 
-  describe('Comprehension Quiz (Phase 6B)', () => {
+  describe('Comprehension Quiz (Phase 7B)', () => {
     it('does not check comprehension quiz availability while reading is IN_PROGRESS', () => {
       fixture.detectChanges();
       loadResponse.next('<response/>');
@@ -898,7 +903,7 @@ describe('Reader page', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
     });
 
-    it('displays "Comprobar mi comprensión" CTA when reading completes and quiz is available', () => {
+    it('prefetches quiz availability without submissionId upon completion and shows CTA', () => {
       service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
       fixture.detectChanges();
       loadResponse.next('<response/>');
@@ -909,7 +914,22 @@ describe('Reader page', () => {
       fixture.detectChanges();
 
       expect(service.getReadingComprehensionQuiz).toHaveBeenCalledWith('reading-1');
+      expect(component.quizAvailable()).toBe(true);
+      expect(component.activeComprehensionQuiz()).toBeNull();
       expect(fixture.nativeElement.textContent).toContain('Comprobar mi comprensión');
+    });
+
+    it('does not use prefetch questions directly for active quiz', () => {
+      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      expect(component.activeComprehensionQuiz()).toBeNull();
+      expect(component.quizMode()).toBe('COMPLETION');
+      expect(fixture.nativeElement.querySelectorAll('fieldset').length).toBe(0);
     });
 
     it('keeps standard completion card when quiz available is false', () => {
@@ -942,8 +962,14 @@ describe('Reader page', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
     });
 
-    it('opens inline quiz and renders 3 questions upon clicking CTA', () => {
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+    it('generates UUID1, displays inline loading, and makes second GET with UUID1 upon clicking CTA', () => {
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockReturnValue('UUID1' as `${string}-${string}-${string}-${string}-${string}`);
+      const attemptQuizSubject = new Subject<ComprehensionQuiz>();
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return attemptQuizSubject.asObservable();
+      });
+
       fixture.detectChanges();
       loadResponse.next('<response/>');
       component.completeReading();
@@ -956,17 +982,29 @@ describe('Reader page', () => {
       cta.click();
       fixture.detectChanges();
 
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(component.quizLoading()).toBe(true);
+      expect(fixture.nativeElement.textContent).toContain('Cargando preguntas…');
+      expect(service.getReadingComprehensionQuiz).toHaveBeenLastCalledWith('reading-1', 'UUID1');
+
+      // Emit versioned quiz
+      attemptQuizSubject.next(mockVersionedQuiz(1));
+      fixture.detectChanges();
+
+      expect(component.quizLoading()).toBe(false);
+      expect(component.quizMode()).toBe('QUIZ');
+      expect(component.activeComprehensionQuiz()?.selectionVersion).toBe(1);
       expect(fixture.nativeElement.textContent).toContain('Comprueba tu comprensión');
-      expect(fixture.nativeElement.textContent).toContain('Responde las preguntas basadas en la lectura.');
-      const fieldsets = fixture.nativeElement.querySelectorAll('fieldset');
-      expect(fieldsets.length).toBe(3);
-      expect(fieldsets[0].textContent).toContain('Comprensión literal');
-      expect(fieldsets[1].textContent).toContain('Inferencia');
-      expect(fieldsets[2].textContent).toContain('Idea principal');
+      expect(fixture.nativeElement.querySelectorAll('fieldset').length).toBe(3);
+
+      uuidSpy.mockRestore();
     });
 
     it('renders 4 accessible radio options for each question', () => {
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       fixture.detectChanges();
       loadResponse.next('<response/>');
       component.completeReading();
@@ -977,14 +1015,78 @@ describe('Reader page', () => {
       fixture.detectChanges();
 
       const fieldsets = fixture.nativeElement.querySelectorAll('fieldset');
+      expect(fieldsets.length).toBe(3);
       fieldsets.forEach((fs: HTMLElement) => {
         const radios = fs.querySelectorAll('input[type="radio"]');
         expect(radios.length).toBe(4);
       });
     });
 
+    it('does not open quiz when response is missing selectionVersion', () => {
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockQuiz(true, null));
+      });
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      fixture.detectChanges();
+
+      expect(component.quizMode()).toBe('COMPLETION');
+      expect(component.activeComprehensionQuiz()).toBeNull();
+      expect(component.quizLoadError()).toBe('No pudimos cargar las preguntas. Inténtalo de nuevo.');
+      expect(fixture.nativeElement.textContent).toContain('No pudimos cargar las preguntas. Inténtalo de nuevo.');
+      expect(fixture.nativeElement.textContent).toContain('Reintentar');
+    });
+
+    it('displays error and allows retry with same UUID1 when attempt GET fails', () => {
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockReturnValue('UUID1' as `${string}-${string}-${string}-${string}-${string}`);
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return throwError(() => new Error('Network error'));
+      });
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      fixture.detectChanges();
+
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(component.quizMode()).toBe('COMPLETION');
+      expect(component.quizLoadError()).toBe('No pudimos cargar las preguntas. Inténtalo de nuevo.');
+
+      // Retry GET with same UUID1
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (subId === 'UUID1') return of(mockVersionedQuiz(1));
+        return of(mockQuiz(true));
+      });
+
+      const retryBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find(
+        (b: unknown) => (b as HTMLElement).textContent?.includes('Reintentar')
+      ) as HTMLButtonElement;
+      retryBtn.click();
+      fixture.detectChanges();
+
+      expect(service.getReadingComprehensionQuiz).toHaveBeenLastCalledWith('reading-1', 'UUID1');
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(component.quizMode()).toBe('QUIZ');
+      expect(component.activeComprehensionQuiz()?.selectionVersion).toBe(1);
+
+      uuidSpy.mockRestore();
+    });
+
     it('disables submit button while answers are incomplete and enables when all answered', () => {
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       fixture.detectChanges();
       loadResponse.next('<response/>');
       component.completeReading();
@@ -1006,9 +1108,12 @@ describe('Reader page', () => {
       expect(component.canSubmitQuiz()).toBe(true);
     });
 
-    it('sends correct submit payload with readingId, submissionId and ordered answers without local score computation', () => {
+    it('sends correct submit payload with UUID1 and selectionVersion received from server', () => {
       const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockReturnValue('mock-uuid-1234' as `${string}-${string}-${string}-${string}-${string}`);
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
 
       fixture.detectChanges();
@@ -1028,6 +1133,7 @@ describe('Reader page', () => {
       expect(service.submitComprehensionAttempt).toHaveBeenCalledWith({
         readingId: 'reading-1',
         submissionId: 'mock-uuid-1234',
+        selectionVersion: 1,
         answers: [
           { questionId: 'q-1', selectedOptionId: 'opt-1-1' },
           { questionId: 'q-2', selectedOptionId: 'opt-2-1' },
@@ -1038,7 +1144,10 @@ describe('Reader page', () => {
     });
 
     it('displays backend result, score, question feedback, and editorial explanations', () => {
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
 
       fixture.detectChanges();
@@ -1063,9 +1172,12 @@ describe('Reader page', () => {
       expect(fixture.nativeElement.textContent).toContain('Because of the new book.');
     });
 
-    it('preserves answers and submissionId on network failure and allows retry', () => {
+    it('preserves answers, UUID1, and selectionVersion on submit network failure and allows retry', () => {
       const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockReturnValue('mock-uuid-network' as `${string}-${string}-${string}-${string}-${string}`);
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       service.submitComprehensionAttempt.mockReturnValueOnce(throwError(() => new Error('Network error')));
 
       fixture.detectChanges();
@@ -1090,13 +1202,14 @@ describe('Reader page', () => {
       });
       expect(component.currentSubmissionId()).toBe('mock-uuid-network');
 
-      // Retry network submission: sends EXACTLY the same submissionId
+      // Retry network submission: sends EXACTLY the same submissionId and selectionVersion
       service.submitComprehensionAttempt.mockReturnValueOnce(of(mockAttemptResult()));
       component.submitQuiz();
 
       expect(service.submitComprehensionAttempt).toHaveBeenLastCalledWith({
         readingId: 'reading-1',
         submissionId: 'mock-uuid-network',
+        selectionVersion: 1,
         answers: [
           { questionId: 'q-1', selectedOptionId: 'opt-1-1' },
           { questionId: 'q-2', selectedOptionId: 'opt-2-1' },
@@ -1106,10 +1219,13 @@ describe('Reader page', () => {
       uuidSpy.mockRestore();
     });
 
-    it('generates a new submissionId, resets answers and reopens quiz on pedagogical retry', () => {
+    it('generates UUID2, requests a NEW versioned quiz with UUID2, and does not reuse previous quiz on pedagogical retry', () => {
       let counter = 1;
       const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockImplementation(() => `uuid-${counter++}` as `${string}-${string}-${string}-${string}-${string}`);
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
 
       fixture.detectChanges();
@@ -1126,21 +1242,40 @@ describe('Reader page', () => {
       component.selectAnswer('q-3', 'opt-3-1');
       component.submitQuiz();
       fixture.detectChanges();
+      expect(component.quizMode()).toBe('RESULT');
 
       // Click "Intentar de nuevo"
+      const secondAttemptQuiz = {
+        ...mockVersionedQuiz(1),
+        questions: [
+          { ...mockVersionedQuiz(1).questions[0], prompt: 'New question prompt 1' },
+          { ...mockVersionedQuiz(1).questions[1], prompt: 'New question prompt 2' },
+          { ...mockVersionedQuiz(1).questions[2], prompt: 'New question prompt 3' },
+        ],
+      };
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (subId === 'uuid-2') return of(secondAttemptQuiz);
+        return of(mockVersionedQuiz(1));
+      });
+
       component.retryQuiz();
       fixture.detectChanges();
 
-      expect(component.quizMode()).toBe('QUIZ');
       expect(component.currentSubmissionId()).toBe('uuid-2');
+      expect(service.getReadingComprehensionQuiz).toHaveBeenLastCalledWith('reading-1', 'uuid-2');
+      expect(component.quizMode()).toBe('QUIZ');
       expect(component.selectedAnswers()).toEqual({});
       expect(component.comprehensionResult()).toBeNull();
+      expect(component.activeComprehensionQuiz()?.questions[0].prompt).toBe('New question prompt 1');
 
       uuidSpy.mockRestore();
     });
 
-    it('returns to completion view when canceling quiz', () => {
-      service.getReadingComprehensionQuiz.mockReturnValue(of(mockQuiz(true)));
+    it('returns to completion view and clears attempt state when canceling quiz', () => {
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
       fixture.detectChanges();
       loadResponse.next('<response/>');
       component.completeReading();
@@ -1155,8 +1290,113 @@ describe('Reader page', () => {
       fixture.detectChanges();
 
       expect(component.quizMode()).toBe('COMPLETION');
+      expect(component.activeComprehensionQuiz()).toBeNull();
+      expect(component.currentSubmissionId()).toBeNull();
+      expect(component.selectedAnswers()).toEqual({});
+      expect(component.quizAvailable()).toBe(true);
       expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
       expect(fixture.nativeElement.textContent).toContain('Comprobar mi comprensión');
+    });
+
+    it('generates a new submissionId when reopening quiz after cancel', () => {
+      let counter = 1;
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockImplementation(() => `uuid-${counter++}` as `${string}-${string}-${string}-${string}-${string}`);
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      component.openQuiz();
+      expect(component.currentSubmissionId()).toBe('uuid-1');
+
+      component.cancelQuiz();
+      expect(component.currentSubmissionId()).toBeNull();
+
+      component.openQuiz();
+      expect(component.currentSubmissionId()).toBe('uuid-2');
+      expect(service.getReadingComprehensionQuiz).toHaveBeenLastCalledWith('reading-1', 'uuid-2');
+
+      uuidSpy.mockRestore();
+    });
+
+    it('follows exact UUID sequence: UUID1 on open, GET retry, submit retry; UUID2 on pedagogical retry; UUID3 on cancel + reopen', () => {
+      const generatedUuids: string[] = ['UUID1', 'UUID2', 'UUID3'];
+      let uuidIndex = 0;
+      const uuidSpy = vi.spyOn(crypto, 'randomUUID').mockImplementation(() => {
+        return generatedUuids[uuidIndex++] as `${string}-${string}-${string}-${string}-${string}`;
+      });
+
+      // 1. Initial prefetch
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
+      service.submitComprehensionAttempt.mockReturnValue(of(mockAttemptResult()));
+
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      component.completeReading();
+      completionResponse.next('<complete/>');
+      fixture.detectChanges();
+
+      // Open -> consumes UUID1
+      service.getReadingComprehensionQuiz.mockImplementationOnce((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return throwError(() => new Error('GET error'));
+      });
+      component.openQuiz();
+      fixture.detectChanges();
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(uuidIndex).toBe(1);
+
+      // GET retry -> keeps UUID1 (no new randomUUID call)
+      service.getReadingComprehensionQuiz.mockImplementation((_rId: string, subId?: string) => {
+        if (!subId) return of(mockQuiz(true));
+        return of(mockVersionedQuiz(1));
+      });
+      component.retryLoadQuiz();
+      fixture.detectChanges();
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(uuidIndex).toBe(1);
+
+      // Submit retry -> keeps UUID1 (no new randomUUID call)
+      service.submitComprehensionAttempt.mockReturnValueOnce(throwError(() => new Error('Submit network error')));
+      component.selectAnswer('q-1', 'opt-1-1');
+      component.selectAnswer('q-2', 'opt-2-1');
+      component.selectAnswer('q-3', 'opt-3-1');
+      component.submitQuiz();
+      fixture.detectChanges();
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(uuidIndex).toBe(1);
+
+      // Successful submit
+      service.submitComprehensionAttempt.mockReturnValueOnce(of(mockAttemptResult()));
+      component.submitQuiz();
+      fixture.detectChanges();
+      expect(component.quizMode()).toBe('RESULT');
+      expect(component.currentSubmissionId()).toBe('UUID1');
+      expect(uuidIndex).toBe(1);
+
+      // Pedagogical retry -> consumes UUID2
+      component.retryQuiz();
+      fixture.detectChanges();
+      expect(component.currentSubmissionId()).toBe('UUID2');
+      expect(uuidIndex).toBe(2);
+
+      // Cancel + reopen -> consumes UUID3
+      component.cancelQuiz();
+      expect(component.currentSubmissionId()).toBeNull();
+      component.openQuiz();
+      fixture.detectChanges();
+      expect(component.currentSubmissionId()).toBe('UUID3');
+      expect(uuidIndex).toBe(3);
+
+      uuidSpy.mockRestore();
     });
 
     it('loads comprehension quiz when Reader is initially opened with COMPLETED status', () => {
@@ -1179,7 +1419,8 @@ describe('Reader page', () => {
       loadResponse.next('<response/>');
       fixture.detectChanges();
 
-      expect(component.comprehensionQuiz()).toBeNull();
+      expect(component.activeComprehensionQuiz()).toBeNull();
+      expect(component.quizAvailable()).toBe(false);
       expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
       expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
     });
