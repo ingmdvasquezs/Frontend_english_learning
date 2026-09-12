@@ -9,6 +9,7 @@ import {
   wordCountLabel,
 } from '../../../../shared/utils/reading-metrics';
 import { coverUrl } from '../../utils/cover-url';
+import { recommendationReasonCopy } from '../../utils/recommendation-reason';
 import { ProfileService } from '../../../profile/services/profile';
 import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
 import { HomeReadingCard } from '../../components/home-reading-card/home-reading-card';
@@ -81,7 +82,11 @@ export class Home implements OnInit {
   readonly userTextCoverUrl = userTextCoverUrl;
   readonly featuredRecommendationCard = computed(() => {
     const reading = this.recommendations()[0];
-    return reading ? toVocabularyCard(reading) : null;
+    if (!reading) return null;
+    return {
+      ...toVocabularyCard(reading),
+      reasonLabel: recommendationReasonCopy(reading.reasonCode),
+    };
   });
   readonly recommendationCards = computed(() =>
     this.recommendations().slice(1).map(toVocabularyCard)

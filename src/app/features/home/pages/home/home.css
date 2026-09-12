@@ -10,8 +10,10 @@
 .featured-cover { grid-area:cover; height:9.5rem; }
 .featured-cta { grid-area:cta; padding:.75rem 0 1.25rem; color:var(--app-text); }
 .featured-title { overflow-wrap:anywhere; font-size:clamp(1.75rem,2.7vw,2.35rem) !important; letter-spacing:-.02em; }
+.featured-reason { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; margin-top:.5rem !important; color:var(--app-muted); font-size:.875rem; line-height:1.4; }
 .featured-summary { margin-top:.75rem !important; }
 .featured-metrics-reveal { padding:1.4rem 0; }
+.featured-reason-reveal { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; margin-bottom:.5rem; color:var(--app-muted); font-size:.8125rem; line-height:1.35; }
 .cover-fallback { position:relative; display:grid; place-items:end start; width:100%; height:100%; overflow:hidden; padding:1rem; color:var(--app-muted); background:var(--app-active); }
 .cover-fallback::before { content:''; position:absolute; inset:1rem; border-top:1px solid var(--app-border); border-bottom:1px solid var(--app-border); }
 .cover-fallback span { position:relative; font:600 .68rem/1 system-ui,sans-serif; letter-spacing:.1em; text-transform:uppercase; }

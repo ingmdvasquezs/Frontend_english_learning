@@ -25,22 +25,23 @@
 .cover-fallback::before { content:''; position:absolute; inset:1rem; border-top:1px solid var(--app-border); border-bottom:1px solid var(--app-border); }
 .cover-fallback span { position:relative; font:600 .68rem/1 system-ui,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
 
-.recommendation-card-body { position:relative; display:flex; height:13.75rem; flex-direction:column; padding:1rem 0 0; }
+.recommendation-card-body { position:relative; display:flex; min-height:11.5rem; flex:1; flex-direction:column; padding:.85rem 0 0; }
 .reading-card-metadata { display:flex; align-items:center; justify-content:space-between; gap:.75rem; color:var(--app-muted); font-size:.75rem; font-weight:600; letter-spacing:.08em; line-height:1rem; text-transform:uppercase; }
 .reading-card-metadata span:first-child { color:var(--app-accent); }
 .reading-card-metadata span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.reading-card-title { display:-webkit-box; min-height:4.125rem; margin-top:1rem; overflow:hidden; overflow-wrap:anywhere; font-family:Georgia,'Times New Roman',serif; font-size:1.375rem; font-weight:400; line-height:1.05; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
-.reading-card-progress { min-height:1.25rem; margin-top:.5rem; color:var(--app-accent); font-size:.8125rem; font-weight:600; line-height:1.25rem; }
+.reading-card-title { display:-webkit-box; min-height:4.125rem; margin-top:.65rem; overflow:hidden; overflow-wrap:anywhere; font-family:Georgia,'Times New Roman',serif; font-size:1.375rem; font-weight:400; line-height:1.05; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
+.reading-card-progress { min-height:1.25rem; margin-top:.35rem; color:var(--app-accent); font-size:.8125rem; font-weight:600; line-height:1.25rem; }
 .reading-card-progress-completed { color:var(--app-success); }
 .reading-card-progress-empty,.reading-card-secondary-metric-empty { visibility:hidden; }
 .reading-card-summary { margin-top:auto; }
-.reading-card-primary-metric { min-height:2.8rem; color:var(--app-success); font-size:1.125rem; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
-.reading-card-secondary-metric { min-height:1.05rem; margin-top:.2rem; color:var(--app-muted); font-size:.75rem; line-height:1.4; overflow-wrap:anywhere; }
-.reading-card-cta { margin-top:.75rem; color:var(--app-muted); font-size:.8125rem; font-weight:600; line-height:1.25rem; }
+.reading-card-primary-metric { min-height:1.55rem; color:var(--app-success); font-size:1.125rem; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
+.reading-card-secondary-metric { min-height:1.05rem; margin-top:.15rem; color:var(--app-muted); font-size:.75rem; line-height:1.4; overflow-wrap:anywhere; }
+.reading-card-cta { margin-top:.6rem; color:var(--app-muted); font-size:.8125rem; font-weight:600; line-height:1.25rem; }
 
-.recommendation-metrics-reveal { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:1rem 0; color:var(--app-text); background:color-mix(in srgb,var(--app-bg) 97%,transparent); opacity:0; pointer-events:none; transform:translateY(.25rem); transition:opacity .16s ease,transform .16s ease; }
-.reading-card-reveal-details { margin-top:.75rem; font-size:.8125rem; line-height:1.25rem; }
-.reading-card-reveal-cta { margin-top:1rem; color:var(--app-text); }
+.recommendation-metrics-reveal { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:.65rem 0; color:var(--app-text); background:color-mix(in srgb,var(--app-bg) 97%,transparent); opacity:0; pointer-events:none; transform:translateY(.25rem); transition:opacity .16s ease,transform .16s ease; }
+.reading-card-reason-reveal { display:-webkit-box; margin-bottom:.4rem; overflow:hidden; overflow-wrap:anywhere; color:var(--app-muted); font-size:.75rem; line-height:1.35; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+.reading-card-reveal-details { margin-top:.45rem; font-size:.8125rem; line-height:1.25rem; }
+.reading-card-reveal-cta { margin-top:.65rem; color:var(--app-text); }
 .recommendation-card:hover .recommendation-metrics-reveal,.recommendation-card:focus-visible .recommendation-metrics-reveal,.recommendation-card:focus-within .recommendation-metrics-reveal { opacity:1; transform:translateY(0); }
 
 @media (min-width:912px) and (max-width:1279px) { :host { flex-basis:calc((100% - 2.8rem)/3); } }

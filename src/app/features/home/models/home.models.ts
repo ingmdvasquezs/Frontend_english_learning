@@ -2,6 +2,14 @@ import { ReadingProgressStatus } from '../../../shared/models/reading-progress-s
 
 export type EditorialLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
 
+export type RecommendationReasonCode =
+  | 'CONTINUE_READING'
+  | 'DISCOVERY'
+  | 'HIGH_VOCABULARY_MATCH'
+  | 'PRACTICE_VOCABULARY'
+  | 'BALANCED_CHALLENGE'
+  | 'MORE_CHALLENGING';
+
 export interface RecommendedPlatformReading {
   readingId: string;
   title: string;
@@ -19,6 +27,7 @@ export interface RecommendedPlatformReading {
   classificationConfidencePercentage: number;
   progressStatus: ReadingProgressStatus | null;
   coverKey: string | null;
+  reasonCode?: RecommendationReasonCode | null;
 }
 
 export interface PlatformReadingRecommendationsPage {

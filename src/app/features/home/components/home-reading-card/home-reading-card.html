@@ -34,7 +34,9 @@
     }
 
     <div class="reading-card-summary">
-      <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
+      @if (!isDiscovery()) {
+        <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
+      }
       <p
         class="reading-card-secondary-metric"
         [class.reading-card-secondary-metric-empty]="!secondaryMetric()"
@@ -44,6 +46,9 @@
     </div>
 
     <div class="recommendation-metrics-reveal">
+      @if (reasonLabel(); as reason) {
+        <p class="reading-card-reason-reveal">{{ reason }}</p>
+      }
       <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
       @if (secondaryMetric(); as secondary) {
         <p class="reading-card-secondary-metric">{{ secondary }}</p>

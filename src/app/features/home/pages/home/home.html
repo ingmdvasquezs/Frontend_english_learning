@@ -18,8 +18,16 @@
             <p id="featured-recommendation-heading" class="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--app-accent)]">Recomendada para ti</p>
             <h2 class="featured-title mt-2 max-w-3xl font-serif text-[30px] font-normal leading-tight md:text-[34px]">{{ reading.title }}</h2>
             <p class="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">{{ reading.editorialLevel }} · {{ reading.category }}</p>
-            <p class="featured-summary mt-4 text-[19px] font-semibold text-[var(--app-success)]">{{ featured.vocabularyFitLabel }}</p>
+            @if (featured.reasonLabel; as reason) {
+              <p class="featured-reason">{{ reason }}</p>
+            }
+            @if (reading.reasonCode !== 'DISCOVERY') {
+              <p class="featured-summary mt-4 text-[19px] font-semibold text-[var(--app-success)]">{{ featured.vocabularyFitLabel }}</p>
+            }
             <div class="recommendation-metrics-reveal featured-metrics-reveal">
+              @if (featured.reasonLabel; as reason) {
+                <p class="featured-reason-reveal">{{ reason }}</p>
+              }
               <p class="text-[19px] font-semibold text-[var(--app-success)]">{{ featured.vocabularyFitLabel }}</p>
               <div class="mt-3 space-y-1 text-[14px] leading-5">
                 <p>{{ featured.knownLabel }}</p>

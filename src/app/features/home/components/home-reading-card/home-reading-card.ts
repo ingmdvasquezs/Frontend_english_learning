@@ -2,6 +2,7 @@ import { Component, computed, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RecommendedPlatformReading } from '../../models/home.models';
 import { coverUrl } from '../../utils/cover-url';
+import { recommendationReasonCopy } from '../../utils/recommendation-reason';
 
 @Component({
   selector: 'app-home-reading-card',
@@ -17,6 +18,10 @@ export class HomeReadingCard {
 
   readonly imageFailed = signal(false);
   readonly imageUrl = computed(() => coverUrl(this.reading().coverKey));
+  readonly reasonLabel = computed(() =>
+    recommendationReasonCopy(this.reading().reasonCode)
+  );
+  readonly isDiscovery = computed(() => this.reading().reasonCode === 'DISCOVERY');
   readonly progressLabel = computed(() => {
     const status = this.reading().progressStatus;
     if (status === 'COMPLETED') return '✓ Leída';

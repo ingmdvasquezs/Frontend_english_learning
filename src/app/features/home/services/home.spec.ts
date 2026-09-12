@@ -102,6 +102,7 @@ describe('HomeService', () => {
       classificationConfidencePercentage: 42.5,
       progressStatus: null,
       coverKey: null,
+      reasonCode: null,
     });
   });
 
@@ -189,7 +190,32 @@ describe('HomeService', () => {
       explicitNewWords: 9, ignoredWords: 7, unclassifiedWords: 14,
       vocabularyFitPercentage: 78, classificationConfidencePercentage: 93.5,
       progressStatus: 'IN_PROGRESS', coverKey: 'collection-cover',
+      reasonCode: null,
     });
+  });
+
+  it('parses reasonCode when present and handles unknown codes gracefully', () => {
+    const withReason = service.parseRecommendations(
+      pageXml(
+        readingXml('rec-reason', false).replace(
+          '</read:readings>',
+          '<read:reasonCode>HIGH_VOCABULARY_MATCH</read:reasonCode></read:readings>'
+        ),
+        1
+      )
+    );
+    expect(withReason.readings[0].reasonCode).toBe('HIGH_VOCABULARY_MATCH');
+
+    const withUnknownReason = service.parseRecommendations(
+      pageXml(
+        readingXml('rec-unknown', false).replace(
+          '</read:readings>',
+          '<read:reasonCode>NON_EXISTENT_CODE</read:reasonCode></read:readings>'
+        ),
+        1
+      )
+    );
+    expect(withUnknownReason.readings[0].reasonCode).toBeNull();
   });
 
   function pageXml(readings: string, totalElements = 0): string {

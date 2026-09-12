@@ -134,6 +134,149 @@ describe('Home', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Ver más');
   });
 
+  it('renders the friendly explanation on the featured card when reasonCode is present', () => {
+    homeService.parseRecommendations.mockReturnValue(
+      recommendationsPage([
+        recommendedReading({
+          readingId: 'featured-rec',
+          title: 'Featured Story',
+          reasonCode: 'BALANCED_CHALLENGE',
+        }),
+      ])
+    );
+    fixture.detectChanges();
+    recommendationResponse.next('<response/>');
+    fixture.detectChanges();
+
+    const featuredReason = fixture.nativeElement.querySelector('.featured-reason');
+    expect(featuredReason).toBeTruthy();
+    expect(featuredReason.textContent).toContain(
+      'Combina vocabulario familiar con nuevas palabras por descubrir.'
+    );
+    expect(fixture.nativeElement.querySelector('.featured-summary')?.textContent).toContain(
+      'Compatibilidad 90%'
+    );
+    expect(fixture.nativeElement.textContent).not.toContain('BALANCED_CHALLENGE');
+  });
+
+  it('keeps reason visible on the featured card for DISCOVERY but hides prominent compatibility in base state', () => {
+    homeService.parseRecommendations.mockReturnValue(
+      recommendationsPage([
+        recommendedReading({
+          readingId: 'featured-discovery',
+          title: 'Discovery Story',
+          reasonCode: 'DISCOVERY',
+          vocabularyFitPercentage: 31,
+        }),
+      ])
+    );
+    fixture.detectChanges();
+    recommendationResponse.next('<response/>');
+    fixture.detectChanges();
+
+    const featured = fixture.nativeElement.querySelector('.featured-recommendation');
+    expect(featured.querySelector('.featured-reason')?.textContent).toContain(
+      'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
+    );
+    // Compatibility is hidden in resting base state
+    expect(featured.querySelector('.featured-summary')).toBeNull();
+
+    // Compatibility remains accessible in reveal as secondary data
+    const reveal = featured.querySelector('.featured-metrics-reveal');
+    expect(reveal).toBeTruthy();
+    expect(reveal.querySelector('.featured-reason-reveal')?.textContent).toContain(
+      'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
+    );
+    expect(reveal.textContent).toContain('Compatibilidad 31%');
+    expect(featured.textContent).not.toContain('DISCOVERY');
+  });
+
+  it('does not render a reason slot on the featured card when reasonCode is null but keeps compatibility', () => {
+    homeService.parseRecommendations.mockReturnValue(
+      recommendationsPage([
+        recommendedReading({
+          readingId: 'featured-rec-no-reason',
+          title: 'Story Without Reason',
+          reasonCode: null,
+        }),
+      ])
+    );
+    fixture.detectChanges();
+    recommendationResponse.next('<response/>');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.featured-reason')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.featured-summary')?.textContent).toContain(
+      'Compatibilidad 90%'
+    );
+  });
+
+  it('does NOT render reason in base state on rail cards, but renders it exclusively in reveal', () => {
+    homeService.parseRecommendations.mockReturnValue(
+      recommendationsPage([
+        recommendedReading({ readingId: 'featured-1', reasonCode: null }),
+        recommendedReading({
+          readingId: 'rail-1',
+          title: 'Rail Story',
+          reasonCode: 'MORE_CHALLENGING',
+        }),
+      ])
+    );
+    fixture.detectChanges();
+    recommendationResponse.next('<response/>');
+    fixture.detectChanges();
+
+    const railCard = fixture.nativeElement.querySelector('app-home-reading-card');
+    expect(railCard).toBeTruthy();
+    // No reason in resting base state
+    expect(railCard.querySelector('.reading-card-reason')).toBeNull();
+    // Compatibility remains in base state for non-DISCOVERY
+    expect(railCard.querySelector('.reading-card-summary .reading-card-primary-metric')?.textContent).toContain(
+      'Compatibilidad 90%'
+    );
+    // Reveal contains friendly reason and no raw code
+    const revealReason = railCard.querySelector('.reading-card-reason-reveal');
+    expect(revealReason).toBeTruthy();
+    expect(revealReason.textContent).toContain(
+      'Esta lectura ofrece un reto de vocabulario un poco mayor.'
+    );
+    expect(railCard.textContent).not.toContain('MORE_CHALLENGING');
+  });
+
+  it('hides compatibility in base state on rail cards for DISCOVERY while keeping it in reveal', () => {
+    homeService.parseRecommendations.mockReturnValue(
+      recommendationsPage([
+        recommendedReading({ readingId: 'featured-1', reasonCode: null }),
+        recommendedReading({
+          readingId: 'rail-discovery',
+          title: 'Discovery Rail Story',
+          reasonCode: 'DISCOVERY',
+          vocabularyFitPercentage: 31,
+        }),
+      ])
+    );
+    fixture.detectChanges();
+    recommendationResponse.next('<response/>');
+    fixture.detectChanges();
+
+    const railCard = fixture.nativeElement.querySelector('app-home-reading-card');
+    expect(railCard).toBeTruthy();
+    // Neither reason nor compatibility in resting state
+    expect(railCard.querySelector('.reading-card-reason')).toBeNull();
+    expect(railCard.querySelector('.reading-card-summary .reading-card-primary-metric')).toBeNull();
+
+    // Reveal contains both reason and compatibility
+    const reveal = railCard.querySelector('.recommendation-metrics-reveal');
+    expect(reveal).toBeTruthy();
+    expect(reveal.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
+      'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
+    );
+    expect(reveal.querySelector('.reading-card-primary-metric')?.textContent).toContain(
+      'Compatibilidad 31%'
+    );
+    expect(railCard.textContent).not.toContain('DISCOVERY');
+  });
+
   it('renders the recommendation empty state without a personal-reading empty state', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([]));
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
@@ -970,7 +1113,9 @@ describe('Home', () => {
     return { page: 0, size: 3, totalElements: readings.length, readings };
   }
 
-  function recommendedReading(): RecommendedPlatformReading {
+  function recommendedReading(
+    overrides: Partial<RecommendedPlatformReading> = {}
+  ): RecommendedPlatformReading {
     return {
       readingId: 'platform-1',
       title: 'Recommended story',
@@ -988,6 +1133,8 @@ describe('Home', () => {
       classificationConfidencePercentage: 42.5,
       progressStatus: null,
       coverKey: null,
+      reasonCode: null,
+      ...overrides,
     };
   }
 });

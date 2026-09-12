@@ -12,6 +12,7 @@ import {
 } from '../models/home.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
 import { escapeXml } from '../../../shared/utils/xml-utils';
+import { parseRecommendationReasonCode } from '../utils/recommendation-reason';
 
 @Injectable({ providedIn: 'root' })
 export class HomeService {
@@ -157,6 +158,9 @@ export class HomeService {
         this.getOptionalValue(element, 'progressStatus')
       ),
       coverKey: this.getOptionalValue(element, 'coverKey'),
+      reasonCode: parseRecommendationReasonCode(
+        this.getOptionalValue(element, 'reasonCode')
+      ),
     };
   }
 
