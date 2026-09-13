@@ -413,8 +413,17 @@ describe('Onboarding', () => {
         NodeListOf<HTMLButtonElement>
     );
     expect(words).toHaveLength(3);
-    // Unclassified: clean editorial text without blue background and without underline/dotted decorations
-    expect(words.every((word) => !word.className.includes('bg-[#29445a]'))).toBe(
+    // Unclassified: clean editorial text without background chips and without underline/dotted decorations
+    expect(words.every((word) => !word.className.includes('bg-[var(--word-new-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => !word.className.includes('bg-[var(--word-learning-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => !word.className.includes('bg-[var(--word-known-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => !word.className.includes('bg-[var(--word-ignored-bg)]'))).toBe(
       true
     );
     expect(words.every((word) => !word.className.includes('underline'))).toBe(
@@ -433,16 +442,22 @@ describe('Onboarding', () => {
     component.selectWordStatus('NEW');
     fixture.detectChanges();
     expect(component.getWordStatus('word')).toBe('NEW');
-    expect(words.every((word) => word.className.includes('bg-[#29445a]'))).toBe(
+    expect(words.every((word) => word.className.includes('bg-[var(--word-new-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => word.className.includes('text-[var(--word-new-text)]'))).toBe(
       true
     );
 
-    // Classify as KNOWN
+    // Classify as KNOWN (consistent chip geometry with bg-[var(--word-known-bg)])
     component.openWord('WORD', wordClick());
     component.selectWordStatus('KNOWN');
     fixture.detectChanges();
     expect(component.getWordStatus('word')).toBe('KNOWN');
-    expect(words.every((word) => word.className.includes('text-[#6fce9a]'))).toBe(
+    expect(words.every((word) => word.className.includes('bg-[var(--word-known-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => word.className.includes('text-[var(--word-known-text)]'))).toBe(
       true
     );
 
@@ -450,15 +465,21 @@ describe('Onboarding', () => {
     component.openWord('WORD', wordClick());
     component.selectWordStatus('LEARNING');
     fixture.detectChanges();
-    expect(words.every((word) => word.className.includes('bg-[#4a3a22]'))).toBe(
+    expect(words.every((word) => word.className.includes('bg-[var(--word-learning-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => word.className.includes('text-[var(--word-learning-text)]'))).toBe(
       true
     );
 
-    // Classify as IGNORED: discreet gray, no line-through
+    // Classify as IGNORED: discreet gray chip, no line-through
     component.openWord('WORD', wordClick());
     component.selectWordStatus('IGNORED');
     fixture.detectChanges();
-    expect(words.every((word) => word.className.includes('text-[#70757b]'))).toBe(
+    expect(words.every((word) => word.className.includes('bg-[var(--word-ignored-bg)]'))).toBe(
+      true
+    );
+    expect(words.every((word) => word.className.includes('text-[var(--word-ignored-text)]'))).toBe(
       true
     );
     expect(words.every((word) => word.className.includes('opacity-60'))).toBe(
@@ -467,6 +488,57 @@ describe('Onboarding', () => {
     expect(words.every((word) => !word.className.includes('line-through'))).toBe(
       true
     );
+  });
+
+  it('renders legend swatches that faithfully match the token pill visual system', () => {
+    component.test.set({
+      testId: 'test-legend',
+      text: 'Sample word for legend.',
+      selectableWords: ['word'],
+    });
+    fixture.detectChanges();
+
+    const legendSpans = Array.from(
+      fixture.nativeElement.querySelectorAll('div.mt-10 > span') as NodeListOf<HTMLSpanElement>
+    );
+    expect(legendSpans).toHaveLength(5);
+
+    const [unclassified, newWord, learning, known, ignored] = legendSpans;
+
+    // 1. Sin clasificar
+    expect(unclassified.textContent).toContain('Sin clasificar');
+    const unclassSwatch = unclassified.querySelector('span');
+    expect(unclassSwatch?.className).toContain('bg-transparent');
+    expect(unclassSwatch?.className).toContain('border-[var(--app-border)]');
+    expect(unclassSwatch?.className).toContain('rounded-[3px]');
+
+    // 2. ES NUEVA PARA MÍ
+    expect(newWord.textContent).toContain('ES NUEVA PARA MÍ');
+    const newSwatch = newWord.querySelector('span');
+    expect(newSwatch?.className).toContain('bg-[var(--word-new-bg)]');
+    expect(newSwatch?.className).toContain('border-[var(--word-new-text)]/30');
+    expect(newSwatch?.className).toContain('rounded-[3px]');
+
+    // 3. QUIERO APRENDERLA
+    expect(learning.textContent).toContain('QUIERO APRENDERLA');
+    const learningSwatch = learning.querySelector('span');
+    expect(learningSwatch?.className).toContain('bg-[var(--word-learning-bg)]');
+    expect(learningSwatch?.className).toContain('border-[var(--word-learning-text)]/30');
+    expect(learningSwatch?.className).toContain('rounded-[3px]');
+
+    // 4. YA LA CONOZCO
+    expect(known.textContent).toContain('YA LA CONOZCO');
+    const knownSwatch = known.querySelector('span');
+    expect(knownSwatch?.className).toContain('bg-[var(--word-known-bg)]');
+    expect(knownSwatch?.className).toContain('border-[var(--word-known-text)]/30');
+    expect(knownSwatch?.className).toContain('rounded-[3px]');
+
+    // 5. NO ME INTERESA
+    expect(ignored.textContent).toContain('NO ME INTERESA');
+    const ignoredSwatch = ignored.querySelector('span');
+    expect(ignoredSwatch?.className).toContain('bg-[var(--word-ignored-bg)]');
+    expect(ignoredSwatch?.className).toContain('border-[var(--word-ignored-text)]/30');
+    expect(ignoredSwatch?.className).toContain('rounded-[3px]');
   });
 
   it('renders punctuation directly attached to the word without an inter-element whitespace', () => {

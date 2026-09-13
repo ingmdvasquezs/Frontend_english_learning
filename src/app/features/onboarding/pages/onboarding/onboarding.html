@@ -226,27 +226,35 @@
                     getWordStatus(part.word) === null
                   "
 
-                  [class.bg-[#29445a]]="
+                  [class.bg-[var(--word-new-bg)]]="
                     getWordStatus(part.word) === 'NEW'
                   "
 
-                  [class.text-[#7cc0f5]]="
+                  [class.text-[var(--word-new-text)]]="
                     getWordStatus(part.word) === 'NEW'
                   "
 
-                  [class.bg-[#4a3a22]]="
+                  [class.bg-[var(--word-learning-bg)]]="
                     getWordStatus(part.word) === 'LEARNING'
                   "
 
-                  [class.text-[#e8ab5c]]="
+                  [class.text-[var(--word-learning-text)]]="
                     getWordStatus(part.word) === 'LEARNING'
                   "
 
-                  [class.text-[#6fce9a]]="
+                  [class.bg-[var(--word-known-bg)]]="
                     getWordStatus(part.word) === 'KNOWN'
                   "
 
-                  [class.text-[#70757b]]="
+                  [class.text-[var(--word-known-text)]]="
+                    getWordStatus(part.word) === 'KNOWN'
+                  "
+
+                  [class.bg-[var(--word-ignored-bg)]]="
+                    getWordStatus(part.word) === 'IGNORED'
+                  "
+
+                  [class.text-[var(--word-ignored-text)]]="
                     getWordStatus(part.word) === 'IGNORED'
                   "
 
@@ -309,8 +317,9 @@
 
         <span class="flex items-center gap-2">
           <span
-            class="h-2 w-2
-                   rounded-full
+            class="h-3.5 w-4
+                   shrink-0
+                   rounded-[3px]
                    border border-[var(--app-border)]
                    bg-transparent"
           ></span>
@@ -319,36 +328,44 @@
 
         <span class="flex items-center gap-2 font-medium">
           <span
-            class="h-2 w-2
-                   rounded-full
-                   bg-[#7cc0f5]"
+            class="h-3.5 w-4
+                   shrink-0
+                   rounded-[3px]
+                   border border-[var(--word-new-text)]/30
+                   bg-[var(--word-new-bg)]"
           ></span>
           <span class="uppercase">ES NUEVA PARA MÍ</span>
         </span>
 
         <span class="flex items-center gap-2 font-medium">
           <span
-            class="h-2 w-2
-                   rounded-full
-                   bg-[#e8ab5c]"
+            class="h-3.5 w-4
+                   shrink-0
+                   rounded-[3px]
+                   border border-[var(--word-learning-text)]/30
+                   bg-[var(--word-learning-bg)]"
           ></span>
           <span class="uppercase">QUIERO APRENDERLA</span>
         </span>
 
         <span class="flex items-center gap-2 font-medium">
           <span
-            class="h-2 w-2
-                   rounded-full
-                   bg-[#6fce9a]"
+            class="h-3.5 w-4
+                   shrink-0
+                   rounded-[3px]
+                   border border-[var(--word-known-text)]/30
+                   bg-[var(--word-known-bg)]"
           ></span>
           <span class="uppercase">YA LA CONOZCO</span>
         </span>
 
         <span class="flex items-center gap-2 font-medium">
           <span
-            class="h-2 w-2
-                   rounded-full
-                   bg-[#5c6167]"
+            class="h-3.5 w-4
+                   shrink-0
+                   rounded-[3px]
+                   border border-[var(--word-ignored-text)]/30
+                   bg-[var(--word-ignored-bg)]"
           ></span>
           <span class="uppercase">NO ME INTERESA</span>
         </span>
