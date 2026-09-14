@@ -123,7 +123,7 @@ describe('Home', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Compatibilidad 90%'
     );
-    expect(fixture.nativeElement.querySelector('.featured-metrics-reveal')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.recommendation-metrics-reveal')).toBeTruthy();
     expect(fixture.nativeElement.textContent).not.toContain('My own reading');
     expect(fixture.nativeElement.textContent).not.toContain('2026-08-29T12:00:00Z');
     expect(
@@ -134,12 +134,12 @@ describe('Home', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Ver más');
   });
 
-  it('renders the friendly explanation on the featured card when reasonCode is present', () => {
+  it('renders the friendly explanation on recommendation cards in reveal when reasonCode is present', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
         recommendedReading({
-          readingId: 'featured-rec',
-          title: 'Featured Story',
+          readingId: 'rec-reason-1',
+          title: 'Reason Story',
           reasonCode: 'BALANCED_CHALLENGE',
         }),
       ])
@@ -148,22 +148,23 @@ describe('Home', () => {
     recommendationResponse.next('<response/>');
     fixture.detectChanges();
 
-    const featuredReason = fixture.nativeElement.querySelector('.featured-reason');
-    expect(featuredReason).toBeTruthy();
-    expect(featuredReason.textContent).toContain(
+    const card = fixture.nativeElement.querySelector('app-home-reading-card');
+    expect(card).toBeTruthy();
+    expect(card.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
       'Combina vocabulario familiar con nuevas palabras por descubrir.'
     );
-    expect(fixture.nativeElement.querySelector('.featured-summary')?.textContent).toContain(
+    expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(
       'Compatibilidad 90%'
     );
-    expect(fixture.nativeElement.textContent).not.toContain('BALANCED_CHALLENGE');
+    expect(card.textContent).not.toContain('BALANCED_CHALLENGE');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
 
-  it('keeps reason visible on the featured card for DISCOVERY but hides prominent compatibility in base state', () => {
+  it('hides compatibility in base state on recommendation cards for DISCOVERY but keeps it in reveal', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
         recommendedReading({
-          readingId: 'featured-discovery',
+          readingId: 'rec-discovery-1',
           title: 'Discovery Story',
           reasonCode: 'DISCOVERY',
           vocabularyFitPercentage: 31,
@@ -174,28 +175,27 @@ describe('Home', () => {
     recommendationResponse.next('<response/>');
     fixture.detectChanges();
 
-    const featured = fixture.nativeElement.querySelector('.featured-recommendation');
-    expect(featured.querySelector('.featured-reason')?.textContent).toContain(
-      'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
-    );
-    // Compatibility is hidden in resting base state
-    expect(featured.querySelector('.featured-summary')).toBeNull();
+    const card = fixture.nativeElement.querySelector('app-home-reading-card');
+    expect(card).toBeTruthy();
+    // In base state, neither reason nor primary compatibility metric
+    expect(card.querySelector('.reading-card-summary .reading-card-primary-metric')).toBeNull();
 
-    // Compatibility remains accessible in reveal as secondary data
-    const reveal = featured.querySelector('.featured-metrics-reveal');
+    // In reveal state, friendly reason and compatibility are present
+    const reveal = card.querySelector('.recommendation-metrics-reveal');
     expect(reveal).toBeTruthy();
-    expect(reveal.querySelector('.featured-reason-reveal')?.textContent).toContain(
+    expect(reveal.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
       'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
     );
-    expect(reveal.textContent).toContain('Compatibilidad 31%');
-    expect(featured.textContent).not.toContain('DISCOVERY');
+    expect(reveal.querySelector('.reading-card-primary-metric')?.textContent).toContain('Compatibilidad 31%');
+    expect(card.textContent).not.toContain('DISCOVERY');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
 
-  it('does not render a reason slot on the featured card when reasonCode is null but keeps compatibility', () => {
+  it('does not render a reason in reveal when reasonCode is null on recommendation cards', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
         recommendedReading({
-          readingId: 'featured-rec-no-reason',
+          readingId: 'rec-no-reason',
           title: 'Story Without Reason',
           reasonCode: null,
         }),
@@ -205,16 +205,18 @@ describe('Home', () => {
     recommendationResponse.next('<response/>');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.featured-reason')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.featured-summary')?.textContent).toContain(
+    const card = fixture.nativeElement.querySelector('app-home-reading-card');
+    expect(card).toBeTruthy();
+    expect(card.querySelector('.reading-card-reason-reveal')).toBeNull();
+    expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(
       'Compatibilidad 90%'
     );
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
 
   it('does NOT render reason in base state on rail cards, but renders it exclusively in reveal', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
-        recommendedReading({ readingId: 'featured-1', reasonCode: null }),
         recommendedReading({
           readingId: 'rail-1',
           title: 'Rail Story',
@@ -246,7 +248,6 @@ describe('Home', () => {
   it('hides compatibility in base state on rail cards for DISCOVERY while keeping it in reveal', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
-        recommendedReading({ readingId: 'featured-1', reasonCode: null }),
         recommendedReading({
           readingId: 'rail-discovery',
           title: 'Discovery Rail Story',
@@ -438,6 +439,143 @@ describe('Home', () => {
     expect(componentText()).toContain('Persisted platform');
   });
 
+  it('renders Continue Reading BEFORE Recommendations when IN_PROGRESS items exist', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([
+      recommendedReading({ readingId: 'rec-1', title: 'Recommended Novel' }),
+    ]));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('in-prog-1', 'PLATFORM', 'In Progress Story'),
+    ]));
+    fixture.detectChanges();
+    recommendationResponse.next('r');
+    continueReadingResponse.next('c');
+    fixture.detectChanges();
+
+    const continueHeading = fixture.nativeElement.querySelector('#continue-reading-heading') as HTMLElement;
+    const recommendationsHeading = fixture.nativeElement.querySelector('#recommendations-heading') as HTMLElement;
+    expect(continueHeading).toBeTruthy();
+    expect(recommendationsHeading).toBeTruthy();
+    expect(recommendationsHeading.textContent).toContain('Recomendadas para ti');
+    expect(componentText()).not.toContain('Más recomendaciones para ti');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
+
+    // Continue section precedes Recommendations section in DOM tree
+    expect(continueHeading.compareDocumentPosition(recommendationsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const sections = Array.from(fixture.nativeElement.querySelectorAll('main > section') as NodeListOf<HTMLElement>);
+    const sectionLabels = sections.map((s) => s.getAttribute('aria-labelledby'));
+    expect(sectionLabels[0]).toBe('continue-reading-heading');
+    expect(sectionLabels[1]).toBe('recommendations-heading');
+  });
+
+  it('renders Continue Reading section with error message BEFORE Recommendations when continue reading fails', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([
+      recommendedReading({ readingId: 'rec-1', title: 'Recommended Novel' }),
+    ]));
+    fixture.detectChanges();
+    recommendationResponse.next('r');
+    continueReadingResponse.error(new Error('Network error'));
+    fixture.detectChanges();
+
+    const continueHeading = fixture.nativeElement.querySelector('#continue-reading-heading') as HTMLElement;
+    const recommendationsHeading = fixture.nativeElement.querySelector('#recommendations-heading') as HTMLElement;
+    expect(continueHeading).toBeTruthy();
+    expect(recommendationsHeading).toBeTruthy();
+    expect(recommendationsHeading.textContent).toContain('Recomendadas para ti');
+    expect(componentText()).toContain('No se pudieron cargar las lecturas en progreso');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
+
+    expect(continueHeading.compareDocumentPosition(recommendationsHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const sections = Array.from(fixture.nativeElement.querySelectorAll('main > section') as NodeListOf<HTMLElement>);
+    const sectionLabels = sections.map((s) => s.getAttribute('aria-labelledby'));
+    expect(sectionLabels[0]).toBe('continue-reading-heading');
+    expect(sectionLabels[1]).toBe('recommendations-heading');
+  });
+
+  it('does not render Continue Reading section when continue list is empty (CASO A)', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([
+      recommendedReading({ readingId: 'rec-1', title: 'Recommended Novel' }),
+    ]));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([]));
+    fixture.detectChanges();
+    recommendationResponse.next('r');
+    continueReadingResponse.next('c');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#continue-reading-heading')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.continue-reading-carousel')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
+    const recommendationsHeading = fixture.nativeElement.querySelector('#recommendations-heading') as HTMLElement;
+    expect(recommendationsHeading.textContent).toContain('Recomendadas para ti');
+    expect(componentText()).not.toContain('Más recomendaciones para ti');
+  });
+
+  it('renders Continue Reading and empty recommendations fallback when recommendations are empty (CASO C)', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([]));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('in-prog-1', 'PLATFORM', 'In Progress Story'),
+    ]));
+    fixture.detectChanges();
+    recommendationResponse.next('r');
+    continueReadingResponse.next('c');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#continue-reading-heading')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.continue-reading-carousel')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
+    expect(componentText()).toContain('No hay recomendaciones disponibles en este momento.');
+  });
+
+  it('hides Continue Reading and renders empty recommendations fallback when both are empty (CASO D)', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([]));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([]));
+    fixture.detectChanges();
+    recommendationResponse.next('r');
+    continueReadingResponse.next('c');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('#continue-reading-heading')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
+    expect(componentText()).toContain('No hay recomendaciones disponibles en este momento.');
+  });
+
+  it('handles disjoint Continue Reading and Recommendations without re-ranking or filtering backend order', () => {
+    const recs = [
+      recommendedReading({ readingId: 'platform-10', title: 'Rank 1 Book', reasonCode: 'BALANCED_CHALLENGE' }),
+      recommendedReading({ readingId: 'platform-20', title: 'Rank 2 Book', reasonCode: 'PRACTICE_VOCABULARY' }),
+      recommendedReading({ readingId: 'platform-30', title: 'Rank 3 Book', reasonCode: 'HIGH_VOCABULARY_MATCH' }),
+    ];
+    const inProgress = [
+      continueReadingItem('prog-user-1', 'USER', 'User Reading in Progress'),
+      continueReadingItem('prog-plat-2', 'PLATFORM', 'Platform Reading in Progress'),
+    ];
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage(recs));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage(inProgress));
+    fixture.detectChanges();
+    recommendationResponse.next('r');
+    continueReadingResponse.next('c');
+    fixture.detectChanges();
+
+    // Continue Reading cards
+    const continueCards = Array.from(
+      fixture.nativeElement.querySelectorAll('.continue-reading-card') as NodeListOf<HTMLAnchorElement>
+    );
+    expect(continueCards.map((c) => c.getAttribute('href'))).toEqual(['/reading/prog-user-1', '/reading/prog-plat-2']);
+
+    // Recommendations rail strictly preserves ALL backend recommendations starting from rank 0
+    const railLinks = Array.from(
+      fixture.nativeElement.querySelectorAll('.recommendations-carousel .recommendation-card') as NodeListOf<HTMLAnchorElement>
+    );
+    expect(railLinks.map((l) => l.getAttribute('href'))).toEqual([
+      '/reading/platform-10',
+      '/reading/platform-20',
+      '/reading/platform-30',
+    ]);
+    expect(railLinks[0].textContent).toContain('Rank 1 Book');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
+  });
+
   it('isolates a continue-reading failure from recommendations and collections', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage());
     homeService.parseCollections.mockReturnValue([]);
@@ -485,71 +623,47 @@ describe('Home', () => {
     expect(carousel).toBeTruthy();
     expect(carousel.getAttribute('role')).toBe('region');
     expect(carousel.getAttribute('tabindex')).toBe('0');
-    expect(carousel.querySelectorAll('.recommendation-card')).toHaveLength(1);
+    expect(carousel.querySelectorAll('.recommendation-card')).toHaveLength(2);
     expect(fixture.nativeElement.querySelector('.grid .recommendation-card')).toBeFalsy();
     expect(componentText()).not.toContain('Ver más');
   });
 
-  it('uses backend rank one as featured and keeps the remaining rail order', () => {
+  it('renders all backend recommendations in carousel starting from rank one in exact order', () => {
     const readings = recommendationPage(0, 5, 5).readings;
     homeService.parseRecommendations.mockReturnValue(recommendationsPage(readings));
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
     fixture.detectChanges(); recommendationResponse.next('ranked'); userReadingsResponse.next('users'); fixture.detectChanges();
 
-    const featured = fixture.nativeElement.querySelector('.featured-recommendation') as HTMLAnchorElement;
     const railLinks = Array.from(
       fixture.nativeElement.querySelectorAll('.recommendations-carousel .recommendation-card') as NodeListOf<HTMLAnchorElement>
     );
-    expect(featured.getAttribute('href')).toBe('/reading/platform-0');
-    expect(featured.textContent).toContain('Story 0');
     expect(railLinks.map((link) => link.getAttribute('href'))).toEqual([
-      '/reading/platform-1', '/reading/platform-2', '/reading/platform-3', '/reading/platform-4',
+      '/reading/platform-0', '/reading/platform-1', '/reading/platform-2', '/reading/platform-3', '/reading/platform-4',
     ]);
-    expect(railLinks.some((link) => link.getAttribute('href') === '/reading/platform-0')).toBe(false);
+    expect(railLinks[0].textContent).toContain('Story 0');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
 
-  it('keeps the featured cover in a controlled responsive wrapper', () => {
-    homeService.parseRecommendations.mockReturnValue(recommendationsPage([{
-      ...recommendedReading(),
-      coverKey: 'a-language-for-empty-rooms',
-    }]));
-    libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
-    fixture.detectChanges(); recommendationResponse.next('featured'); userReadingsResponse.next('users'); fixture.detectChanges();
-
-    const featured = fixture.nativeElement.querySelector('.featured-recommendation') as HTMLElement;
-    const cover = featured.querySelector('.featured-cover') as HTMLElement;
-    const image = cover.querySelector('img') as HTMLImageElement;
-    expect(cover).toBeTruthy();
-    expect(cover.classList.contains('aspect-video')).toBe(false);
-    expect(image.classList.contains('object-cover')).toBe(true);
-    expect(Array.from(featured.children).map((element) => element.classList[0])).toEqual([
-      'featured-content',
-      'featured-cover',
-      'featured-cta',
-    ]);
-  });
-
-  it('uses the shared vocabulary-card values in the featured normal and reveal states', () => {
+  it('uses the shared vocabulary-card values in normal and reveal states for recommendation cards', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([recommendedReading()]));
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
     fixture.detectChanges(); recommendationResponse.next('featured'); userReadingsResponse.next('users'); fixture.detectChanges();
 
-    const featured = fixture.nativeElement.querySelector('.featured-recommendation') as HTMLAnchorElement;
-    const summary = featured.querySelector('.featured-summary') as HTMLElement;
-    const reveal = featured.querySelector('.featured-metrics-reveal') as HTMLElement;
-    const cta = featured.querySelector('.featured-cta') as HTMLElement;
+    const card = fixture.nativeElement.querySelector('.recommendation-card') as HTMLAnchorElement;
+    const primaryMetric = card.querySelector('.reading-card-primary-metric') as HTMLElement;
+    const reveal = card.querySelector('.recommendation-metrics-reveal') as HTMLElement;
+    const cta = card.querySelector('.reading-card-cta') as HTMLElement;
 
-    expect(featured.getAttribute('href')).toBe('/reading/platform-1');
-    expect(summary.textContent).toContain('Compatibilidad 90%');
+    expect(card.getAttribute('href')).toBe('/reading/platform-1');
+    expect(primaryMetric.textContent).toContain('Compatibilidad 90%');
     expect(reveal.textContent).toContain('Compatibilidad 90%');
-    expect(featured.textContent).not.toContain('% de vocabulario conocido');
+    expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(reveal.textContent).toContain('12 palabras conocidas');
     expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
     expect(reveal.textContent).toContain('8 palabras por aprender');
     expect(cta.textContent).toContain('Abrir lectura');
-    expect(featured.textContent?.match(/Recommended story/g)).toHaveLength(1);
-    expect(featured.querySelector('.featured-content')).toBeTruthy();
-    expect(featured.querySelector('.featured-cover')).toBeTruthy();
+    expect(card.textContent?.match(/Recommended story/g)).toHaveLength(1);
+    expect(card.querySelector('.reading-card-cover')).toBeTruthy();
   });
 
   it.each([
@@ -558,7 +672,7 @@ describe('Home', () => {
     [null, 'Compatibilidad no disponible'],
     [undefined, 'Compatibilidad no disponible'],
     ['invalid', 'Compatibilidad no disponible'],
-  ])('formats featured vocabulary fit %s through the shared helper', (value, expected) => {
+  ])('formats vocabulary fit %s through the shared helper on recommendation cards', (value, expected) => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([{
       ...recommendedReading(),
       vocabularyFitPercentage: value,
@@ -567,29 +681,31 @@ describe('Home', () => {
     recommendationResponse.next('featured');
     fixture.detectChanges();
 
-    const featured = fixture.nativeElement.querySelector('.featured-recommendation') as HTMLElement;
-    expect(featured.querySelector('.featured-summary')?.textContent).toContain(expected);
-    expect(featured.querySelector('.featured-metrics-reveal')?.textContent).toContain(expected);
-    expect(featured.textContent).not.toContain('% de vocabulario conocido');
-    expect(featured.textContent).not.toContain('NaN');
-    expect(featured.textContent).toContain('Recommended story');
-    expect(featured.textContent).toContain('A1');
-    expect(featured.textContent).toContain('Daily Life');
-    expect(featured.textContent).toContain('Abrir lectura');
-    expect(featured.querySelector('.featured-cover')).toBeTruthy();
+    const card = fixture.nativeElement.querySelector('.recommendation-card') as HTMLElement;
+    expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(expected);
+    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain(expected);
+    expect(card.textContent).not.toContain('% de vocabulario conocido');
+    expect(card.textContent).not.toContain('NaN');
+    expect(card.textContent).toContain('Recommended story');
+    expect(card.textContent).toContain('A1');
+    expect(card.textContent).toContain('Daily Life');
+    expect(card.textContent).toContain('Abrir lectura');
+    expect(card.querySelector('.reading-card-cover')).toBeTruthy();
   });
 
-  it('renders no featured for zero recommendations and only featured for one', () => {
+  it('renders no carousel for zero recommendations and renders carousel with one card for one recommendation', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([]));
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
     fixture.detectChanges(); recommendationResponse.next('empty'); userReadingsResponse.next('users'); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.recommendations-carousel')).toBeFalsy();
+    expect(componentText()).toContain('No hay recomendaciones disponibles en este momento.');
 
     fixture.componentInstance.recommendations.set([recommendedReading()]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.recommendations-carousel')).toBeFalsy();
-    expect(componentText()).toContain('No hay más recomendaciones');
+    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.recommendations-carousel')).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('.recommendations-carousel app-home-reading-card')).toHaveLength(1);
   });
 
   it('loads only backend collections in display order with page zero and size eight', () => {
@@ -721,7 +837,7 @@ describe('Home', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage());
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
     fixture.detectChanges(); recommendationResponse.next('recommendations'); userReadingsResponse.next('users'); collectionsResponse.error(new Error('collections')); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.recommendations-carousel')).toBeTruthy();
     expect(componentText()).toContain('Recommended story');
   });
 
@@ -761,7 +877,7 @@ describe('Home', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage());
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
     fixture.detectChanges(); recommendationResponse.next('recommendations'); userReadingsResponse.next('users'); collectionsResponse.next('collections'); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.recommendations-carousel')).toBeTruthy();
     expect(componentText()).toContain('No se pudieron cargar estas lecturas');
     expect(componentText()).toContain('Reintentar');
   });
@@ -793,7 +909,6 @@ describe('Home', () => {
 
   it('shows vocabulary fit as the primary metric and vocabulary counts in the reveal', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([
-      recommendedReading(),
       { ...recommendedReading(), readingId: 'platform-2', title: 'Second story' },
     ]));
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
@@ -816,7 +931,6 @@ describe('Home', () => {
 
   it('shows a coherent zero-learning line in the shared reveal', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([
-      recommendedReading(),
       { ...recommendedReading(), readingId: 'platform-2', learningWords: 0 },
     ]));
     fixture.detectChanges(); recommendationResponse.next('page-0'); fixture.detectChanges();
@@ -830,7 +944,6 @@ describe('Home', () => {
 
   it('keeps legacy null fit data readable without rendering an invalid percentage', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([
-      recommendedReading(),
       {
         ...recommendedReading(),
         readingId: 'platform-2',
@@ -891,7 +1004,7 @@ describe('Home', () => {
     expect(fixture.componentInstance.recommendations().map((reading) => reading.readingId)).toEqual(
       Array.from({ length: 20 }, (_, index) => `platform-${index}`)
     );
-    expect(carousel.querySelectorAll('.recommendation-card')).toHaveLength(19);
+    expect(carousel.querySelectorAll('.recommendation-card')).toHaveLength(20);
     setCarouselGeometry(carousel, 1800, 400, 2200);
     carousel.dispatchEvent(new Event('scroll'));
     expect(homeService.recommendPlatformReadings).toHaveBeenCalledTimes(2);

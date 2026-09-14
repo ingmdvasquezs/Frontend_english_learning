@@ -10,50 +10,10 @@
       </p>
     </header>
 
-    @if (!recommendationsLoading() && !recommendationsError() && featuredRecommendationCard(); as featured) {
-      @let reading = featured.reading;
-      <section class="mb-8" aria-labelledby="featured-recommendation-heading">
-        <a [routerLink]="['/reading', reading.readingId]" class="featured-recommendation app-card grid overflow-hidden rounded-xl bg-[var(--app-surface)] transition hover:bg-[var(--app-surface-elevated)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]">
-          <div class="featured-content flex min-h-0 flex-col justify-center overflow-hidden">
-            <p id="featured-recommendation-heading" class="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--app-accent)]">Recomendada para ti</p>
-            <h2 class="featured-title mt-2 max-w-3xl font-serif text-[30px] font-normal leading-tight md:text-[34px]">{{ reading.title }}</h2>
-            <p class="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--app-muted)]">{{ reading.editorialLevel }} · {{ reading.category }}</p>
-            @if (featured.reasonLabel; as reason) {
-              <p class="featured-reason">{{ reason }}</p>
-            }
-            @if (reading.reasonCode !== 'DISCOVERY') {
-              <p class="featured-summary mt-4 text-[19px] font-semibold text-[var(--app-success)]">{{ featured.vocabularyFitLabel }}</p>
-            }
-            <div class="recommendation-metrics-reveal featured-metrics-reveal">
-              @if (featured.reasonLabel; as reason) {
-                <p class="featured-reason-reveal">{{ reason }}</p>
-              }
-              <p class="text-[19px] font-semibold text-[var(--app-success)]">{{ featured.vocabularyFitLabel }}</p>
-              <div class="mt-3 space-y-1 text-[14px] leading-5">
-                <p>{{ featured.knownLabel }}</p>
-                <p>{{ featured.learningLabel }}</p>
-                <p>{{ featured.wordsToLearnLabel }}</p>
-              </div>
-            </div>
-          </div>
-          <div class="featured-cover reading-cover min-h-0 w-full overflow-hidden">
-            @if (coverUrl(reading.coverKey); as url) {
-              @if (!failedCoverIds().has(reading.readingId)) {
-                <img [src]="url" [alt]="'Portada de ' + reading.title" width="1672" height="941" loading="lazy" class="h-full w-full object-cover" (error)="markCoverFailed(reading.readingId)" />
-              } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
-            } @else { <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div> }
-          </div>
-          <p class="featured-cta text-[14px] font-semibold">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar lectura →' : 'Abrir lectura →' }}</p>
-        </a>
-      </section>
-    }
-
-    @if (continueReadingLoading() || continueReadingError() || continueReadingCards().length > 0) {
+    @if (continueReadingError() || continueReadingCards().length > 0) {
       <section class="mb-8" aria-labelledby="continue-reading-heading">
-      <h2 id="continue-reading-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">Continuar leyendo</h2>
-        @if (continueReadingLoading()) {
-          <p class="mt-5 text-[14px] text-[var(--app-muted)]">Cargando lecturas en progreso...</p>
-        } @else if (continueReadingError()) {
+        <h2 id="continue-reading-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">Continuar leyendo</h2>
+        @if (continueReadingError()) {
           <p class="mt-5 text-[14px] text-red-300">{{ continueReadingError() }}</p>
         } @else {
         <div class="rail-shell mt-5">
@@ -96,7 +56,7 @@
     }
 
     <section aria-labelledby="recommendations-heading">
-      <h2 id="recommendations-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">Más recomendaciones para ti</h2>
+      <h2 id="recommendations-heading" class="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--app-muted)]">Recomendadas para ti</h2>
 
       <div class="mt-6" aria-live="polite">
         @if (recommendationsLoading()) {
@@ -108,8 +68,6 @@
           </div>
         } @else if (recommendations().length === 0) {
           <p class="py-8 text-[var(--app-muted)]">No hay recomendaciones disponibles en este momento.</p>
-        } @else if (recommendationCards().length === 0) {
-          <p class="py-4 text-[var(--app-muted)]">No hay más recomendaciones disponibles en este momento.</p>
         } @else {
           <div class="rail-shell">
             @if (recommendationsHasOverflow() && !recommendationsAtStart()) {
