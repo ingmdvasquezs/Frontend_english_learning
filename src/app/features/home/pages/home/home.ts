@@ -1,5 +1,6 @@
-import { Component, ElementRef, HostListener, OnInit, QueryList, ViewChild, ViewChildren, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, DestroyRef, ElementRef, HostListener, OnInit, QueryList, ViewChild, ViewChildren, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ContinueReadingPage, ReadingCollection, RecommendedPlatformReading } from '../../models/home.models';
 import { HomeService } from '../../services/home';
 import {
@@ -13,6 +14,11 @@ import { ProfileService } from '../../../profile/services/profile';
 import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
 import { HomeReadingCard } from '../../components/home-reading-card/home-reading-card';
 
+import { EditorialHero } from '../../components/editorial-hero/editorial-hero';
+import { EditorialUniverse } from '../../components/editorial-universe/editorial-universe';
+import { EditorialHeroSlide } from '../../models/editorial-hero.models';
+import { resolveRecommendationPreview } from '../../data/recommendation-editorial-preview.data';
+
 export { calculateKnownPercentage, calculateWordsToLearn, wordCountLabel };
 
 interface CollectionState {
@@ -25,7 +31,7 @@ interface CollectionState {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, HomeReadingCard],
+  imports: [RouterLink, HomeReadingCard, EditorialHero, EditorialUniverse],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -57,6 +63,8 @@ export class Home implements OnInit {
   readonly collectionPageSize = 8;
   private readonly homeService = inject(HomeService);
   private readonly profileService = inject(ProfileService);
+  private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly greeting = computed(() => {
     const profile = this.profileService.profile();
@@ -65,6 +73,31 @@ export class Home implements OnInit {
     const visibleName = alias || firstName;
     return visibleName ? `Hola, ${visibleName} 👋` : 'Hola 👋';
   });
+
+  readonly heroSlides = computed<EditorialHeroSlide[]>(() => [
+    {
+      id: 'villa-de-leyva',
+      eyebrow: this.greeting(),
+      title: 'Aprende inglés con historias que realmente quieras leer.',
+      description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
+      secondaryNote: '¿Qué te gustaría leer hoy?',
+      ctaLabel: 'Encontrar una historia',
+      ctaTarget: '#recommendations-heading',
+      location: 'Villa de Leyva, Colombia',
+      quote: 'Different stories. A more open you.',
+      imageAlt: 'Paisaje colonial y montañoso de Villa de Leyva',
+      imageUrl: coverUrl('the-camera-on-platform-three') ?? undefined,
+    },
+  ]);
+
+  onHeroCtaClick(slide: EditorialHeroSlide): void {
+    if (typeof document !== 'undefined') {
+      const el = document.querySelector(slide.ctaTarget);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
 
   readonly recommendations = signal<RecommendedPlatformReading[]>([]);
   readonly recommendationsPageNumber = signal(0);
@@ -80,7 +113,23 @@ export class Home implements OnInit {
   readonly failedCoverIds = signal<ReadonlySet<string>>(new Set());
   readonly userTextCoverUrl = userTextCoverUrl;
   readonly recommendationCards = computed(() =>
-    this.recommendations().map(toVocabularyCard)
+    this.recommendations().map((reading, index) => {
+      const card = toVocabularyCard(reading);
+      const preview = resolveRecommendationPreview(reading.readingId, reading.coverKey, index);
+      const isDiscovery = reading.reasonCode === 'DISCOVERY';
+      const fit = card.vocabularyFitPercentage;
+      return {
+        ...card,
+        description: reading.description ?? preview ?? null,
+        fitLabel: fit === null ? null : `${fit}% vocab fit`,
+        compatibilityLabel: fit === null ? null : `Compatibility ${fit}%`,
+        revealMetricsEn: [
+          card.knownWordsLabelEn,
+          card.learningWordsLabelEn,
+          card.wordsToLearnLabelEn,
+        ],
+      };
+    })
   );
   readonly continueReadingPage = signal<ContinueReadingPage | null>(null);
   readonly continueReadingLoading = signal(true);
@@ -95,13 +144,20 @@ export class Home implements OnInit {
   readonly continueReadingCards = computed(() => {
     const cards = (this.continueReadingPage()?.readings ?? [])
       .filter((reading) => reading.progressStatus === 'IN_PROGRESS')
-      .map((reading) => ({
-        ...reading,
-        context:
-          reading.origin === 'USER'
-            ? 'Tu lectura'
-            : [reading.editorialLevel, reading.category].filter(Boolean).join(' · ') || 'Platform',
-      }));
+      .map((reading) => {
+        return {
+          ...reading,
+          context:
+            reading.origin === 'USER'
+              ? 'Tu lectura'
+              : [reading.editorialLevel, reading.category].filter(Boolean).join(' · ') || 'Platform',
+          description: reading.description ?? null,
+          progressPercentage:
+            typeof reading.progressPercentage === 'number' && Number.isFinite(reading.progressPercentage)
+              ? reading.progressPercentage
+              : null,
+        };
+      });
     return cards.filter(
       (card, index) =>
         cards.findIndex((candidate) => candidate.readingId === card.readingId) === index
@@ -111,10 +167,25 @@ export class Home implements OnInit {
   readonly recommendationsLoading = signal(false);
   readonly recommendationsError = signal<string | null>(null);
 
+  scrollToExplore(): void {
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById('explore-stories-heading');
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
   ngOnInit(): void {
     this.loadRecommendations();
     this.loadContinueReading();
     this.loadCollections();
+    this.activatedRoute.fragment.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((fragment) => {
+      if (fragment) {
+        setTimeout(() => {
+          const el = typeof document !== 'undefined' ? document.getElementById(fragment) : null;
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+      }
+    });
   }
 
   @HostListener('window:resize')
@@ -290,7 +361,20 @@ export class Home implements OnInit {
   }
 
   collectionCards(collectionKey: string) {
-    return this.collectionContent(collectionKey).readings.map(toVocabularyCard);
+    return this.collectionContent(collectionKey).readings.map((reading) => {
+      const card = toVocabularyCard(reading);
+      const fit = card.vocabularyFitPercentage;
+      return {
+        ...card,
+        fitLabel: fit === null ? null : `${fit}% vocab fit`,
+        compatibilityLabel: fit === null ? null : `Compatibility ${fit}%`,
+        revealMetricsEn: [
+          card.knownWordsLabelEn,
+          card.learningWordsLabelEn,
+          card.wordsToLearnLabelEn,
+        ],
+      };
+    });
   }
 
   loadCollections(): void {

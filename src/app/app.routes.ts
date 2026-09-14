@@ -55,11 +55,13 @@ export const routes: Routes = [
       },
       {
         path: 'reading/:readingId',
+        data: { immersive: true },
         loadComponent: () =>
           import('./features/reader/pages/reader/reader').then((m) => m.Reader),
       },
       {
         path: 'documents/:documentId/read',
+        data: { immersive: true },
         loadComponent: () =>
           import('./features/documents/pages/document-reader/document-reader').then((m) => m.DocumentReader),
       },

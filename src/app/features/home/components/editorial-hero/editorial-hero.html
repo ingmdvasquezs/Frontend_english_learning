@@ -1,0 +1,88 @@
+@if (currentSlide(); as slide) {
+  <section class="editorial-hero app-card" aria-label="Campañas editoriales destacadas">
+    <div class="editorial-hero-background" aria-hidden="true">
+      <div class="hero-atmosphere-gradient"></div>
+      @if (slide.imageUrl) {
+        <div class="hero-bg-img" [style.backgroundImage]="'url(' + slide.imageUrl + ')'"></div>
+      }
+    </div>
+
+    <div class="editorial-hero-content">
+      <div class="editorial-hero-main">
+        @if (slide.eyebrow) {
+          <p class="hero-eyebrow">{{ slide.eyebrow }}</p>
+        }
+        <h1 class="hero-title">{{ slide.title }}</h1>
+        <p class="hero-description">{{ slide.description }}</p>
+        @if (slide.secondaryNote) {
+          <p class="hero-secondary-note">{{ slide.secondaryNote }}</p>
+        }
+
+        <div class="hero-actions">
+          <button
+            type="button"
+            class="hero-primary-cta"
+            (click)="onCtaClick(slide)"
+          >
+            {{ slide.ctaLabel }}
+            <span aria-hidden="true">→</span>
+          </button>
+          <button
+            type="button"
+            class="hero-secondary-cta"
+            (click)="onCtaClick(slide)"
+          >
+            <span aria-hidden="true" class="play-icon">▶</span>
+            Cómo funciona
+          </button>
+        </div>
+      </div>
+
+      <div class="editorial-hero-aside">
+        @if (slide.quote) {
+          <blockquote class="hero-quote">
+            “{{ slide.quote }}”
+          </blockquote>
+        }
+        @if (slide.location) {
+          <div class="hero-location-tag">
+            <span aria-hidden="true">📍</span> {{ slide.location }}
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (slides().length > 1) {
+      <div class="hero-controls" role="group" aria-label="Controles del banner editorial">
+        <button
+          type="button"
+          class="hero-control-arrow"
+          (click)="previousSlide()"
+          aria-label="Campaña anterior"
+        >
+          ‹
+        </button>
+        <div class="hero-dots">
+          @for (item of slides(); track item.id; let idx = $index) {
+            <button
+              type="button"
+              class="hero-dot"
+              [class.hero-dot-active]="idx === activeIndex()"
+              [attr.aria-current]="idx === activeIndex() ? 'true' : null"
+              [attr.aria-label]="'Ir a ' + item.title"
+              (click)="goToSlide(idx)"
+            ></button>
+          }
+        </div>
+        <button
+          type="button"
+          class="hero-control-arrow"
+          (click)="nextSlide()"
+          aria-label="Siguiente campaña"
+        >
+          ›
+        </button>
+      </div>
+    }
+  </section>
+}

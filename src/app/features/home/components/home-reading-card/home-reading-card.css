@@ -1,50 +1,388 @@
+/* ================================================
+   HomeReadingCard — Composición horizontal editorial V7.3
+   Ancho controlado (340px–365px · ~360px) · Altura 232px
+   Cover 36%–38% · Fit bar real alineada · Reveal translúcido
+   ================================================ */
+
 :host {
   display: block;
-  flex: 0 0 clamp(16.5rem, calc((100% - 4.2rem) / 4), 20rem);
+  flex: 0 0 clamp(345px, 22.5vw, 365px);
   min-width: 0;
   scroll-snap-align: start;
+  --fit-discovery-color: #b58129;
+}
+
+:host-context([data-theme='dark']) {
+  --fit-discovery-color: #d99b38;
 }
 
 .recommendation-card {
+  position: relative;
   display: flex;
-  height: 100%;
-  flex-direction: column;
-  overflow: hidden;
-  border: 0 !important;
-  border-radius: 0;
+  flex-direction: row;
+  align-items: stretch;
+  height: 232px;
+  min-height: 228px;
+  max-height: 238px;
+  padding: 0.5rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface) !important;
   color: var(--app-text);
-  background: transparent !important;
+  text-decoration: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.recommendation-card:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
-.reading-card-cover { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: .2rem; background: var(--app-active); }
-.reading-card-cover img { width: 100%; height: 100%; object-fit: cover; }
-.recommendation-card:hover .reading-card-cover { outline: 1px solid var(--app-accent); outline-offset: 3px; }
+.recommendation-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--app-accent);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
 
-.cover-fallback { position:relative; display:grid; place-items:end start; width:100%; height:100%; overflow:hidden; padding:1rem; color:var(--app-muted); background:var(--app-active); }
-.cover-fallback::before { content:''; position:absolute; inset:1rem; border-top:1px solid var(--app-border); border-bottom:1px solid var(--app-border); }
-.cover-fallback span { position:relative; font:600 .68rem/1 system-ui,sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+.recommendation-card:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
 
-.recommendation-card-body { position:relative; display:flex; min-height:11.5rem; flex:1; flex-direction:column; padding:.85rem 0 0; }
-.reading-card-metadata { display:flex; align-items:center; justify-content:space-between; gap:.75rem; color:var(--app-muted); font-size:.75rem; font-weight:600; letter-spacing:.08em; line-height:1rem; text-transform:uppercase; }
-.reading-card-metadata span:first-child { color:var(--app-accent); }
-.reading-card-metadata span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.reading-card-title { display:-webkit-box; min-height:4.125rem; margin-top:.65rem; overflow:hidden; overflow-wrap:anywhere; font-family:Georgia,'Times New Roman',serif; font-size:1.375rem; font-weight:400; line-height:1.05; -webkit-box-orient:vertical; -webkit-line-clamp:3; }
-.reading-card-progress { min-height:1.25rem; margin-top:.35rem; color:var(--app-accent); font-size:.8125rem; font-weight:600; line-height:1.25rem; }
-.reading-card-progress-completed { color:var(--app-success); }
-.reading-card-progress-empty,.reading-card-secondary-metric-empty { visibility:hidden; }
-.reading-card-summary { margin-top:auto; }
-.reading-card-primary-metric { min-height:1.55rem; color:var(--app-success); font-size:1.125rem; font-weight:600; line-height:1.35; overflow-wrap:anywhere; }
-.reading-card-secondary-metric { min-height:1.05rem; margin-top:.15rem; color:var(--app-muted); font-size:.75rem; line-height:1.4; overflow-wrap:anywhere; }
-.reading-card-cta { margin-top:.6rem; color:var(--app-muted); font-size:.8125rem; font-weight:600; line-height:1.25rem; }
+/* Cover — lateral izquierda más dominante (36%–38%) */
+.reading-card-cover {
+  position: relative;
+  flex: 0 0 37.5%;
+  min-width: 122px;
+  max-width: 136px;
+  height: 100%;
+  border-radius: 0.55rem;
+  overflow: hidden;
+  background: var(--app-active);
+  flex-shrink: 0;
+}
 
-.recommendation-metrics-reveal { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:.65rem 0; color:var(--app-text); background:color-mix(in srgb,var(--app-bg) 97%,transparent); opacity:0; pointer-events:none; transform:translateY(.25rem); transition:opacity .16s ease,transform .16s ease; }
-.reading-card-reason-reveal { display:-webkit-box; margin-bottom:.4rem; overflow:hidden; overflow-wrap:anywhere; color:var(--app-muted); font-size:.75rem; line-height:1.35; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
-.reading-card-reveal-details { margin-top:.45rem; font-size:.8125rem; line-height:1.25rem; }
-.reading-card-reveal-cta { margin-top:.65rem; color:var(--app-text); }
-.recommendation-card:hover .recommendation-metrics-reveal,.recommendation-card:focus-visible .recommendation-metrics-reveal,.recommendation-card:focus-within .recommendation-metrics-reveal { opacity:1; transform:translateY(0); }
+.reading-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
 
-@media (min-width:912px) and (max-width:1279px) { :host { flex-basis:calc((100% - 2.8rem)/3); } }
-@media (min-width:640px) and (max-width:911px) { :host { flex-basis:calc((100% - 1.4rem)/2); } }
-@media (max-width:639px) { :host { flex-basis:86%; } }
-@media (hover:none) { .recommendation-metrics-reveal { display:none; } }
+.cover-fallback {
+  position: relative;
+  display: grid;
+  place-items: end start;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  padding: 0.75rem;
+  color: var(--app-muted);
+  background: var(--app-active);
+}
+.cover-fallback::before {
+  content: '';
+  position: absolute;
+  inset: 0.65rem;
+  border-top: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+}
+.cover-fallback span {
+  position: relative;
+  font: 600 0.6rem/1 system-ui, sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Body — contenido lateral derecho */
+.recommendation-card-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0.55rem 0.35rem 0.65rem;
+  border-radius: 0 0.55rem 0.55rem 0;
+  overflow: hidden;
+}
+
+/* Header row: metadata + bookmark */
+.reading-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+  flex-shrink: 0;
+}
+
+.reading-card-metadata {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  line-height: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.reading-card-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.12rem 0.4rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, #437055 14%, transparent);
+  color: #437055;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.reading-card-category {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--app-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reading-card-bookmark {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--app-muted);
+  opacity: 0.55;
+}
+
+/* Título editorial — serif con presencia (1.08rem), máx 2 líneas */
+.reading-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.08rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--app-text);
+  margin: 0 0 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Descripción breve — visible en resting state, 2-3 líneas */
+.reading-card-desc {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--app-muted);
+  margin: 0 0 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Progreso */
+.reading-card-progress {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  margin: 0 0 0.2rem;
+  flex-shrink: 0;
+}
+.reading-card-progress-completed {
+  color: var(--app-success, #437055);
+}
+.reading-card-progress-empty {
+  visibility: hidden;
+  height: 0;
+  line-height: 0;
+  margin: 0;
+  font-size: 0;
+}
+
+/* Footer / Summary: indicador vocab fit + secondaryMetric derecha + CTA secundario */
+.reading-card-summary {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.reading-card-metrics-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 1.1rem;
+}
+
+.reading-card-primary-metric {
+  color: #437055;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+  white-space: nowrap;
+  overflow-wrap: anywhere;
+}
+
+.reading-card-fit-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  color: #437055;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.reading-card-fit-indicator.reading-card-fit-normal,
+.reading-card-fit-indicator.reading-card-fit-green {
+  color: #437055;
+}
+
+.reading-card-fit-indicator.reading-card-fit-discovery,
+.reading-card-fit-indicator.reading-card-fit-amber,
+.reading-card-fit-indicator.vocab-fit-indicator--discovery {
+  color: var(--fit-discovery-color, #b58129);
+}
+
+.reading-card-fit-indicator.vocab-fit-indicator--unknown {
+  color: var(--app-muted);
+}
+
+.fit-signal-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  color: currentColor;
+  width: 13px;
+  height: 11px;
+}
+
+.reading-card-secondary-metric {
+  color: var(--app-muted);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  margin: 0;
+  overflow-wrap: anywhere;
+  margin-left: auto;
+}
+
+.reading-card-secondary-metric-empty {
+  display: none;
+}
+
+.reading-card-cta {
+  align-self: flex-end;
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: var(--app-muted);
+  white-space: nowrap;
+  transition: color 0.16s ease;
+}
+
+.recommendation-card:hover .reading-card-cta {
+  color: var(--app-accent);
+}
+
+/* Reveal overlay — translúcido con micro-blur, sobre el contenido derecho */
+.recommendation-metrics-reveal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.75rem 0.85rem;
+  border-radius: inherit;
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-surface) 84%, transparent);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  border-left: 1px solid color-mix(in srgb, var(--app-border) 50%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 5;
+}
+
+.reading-card-reason-reveal {
+  display: -webkit-box;
+  margin-bottom: 0.35rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.recommendation-metrics-reveal .reading-card-primary-metric {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #437055;
+  margin-bottom: 0.15rem;
+}
+
+.recommendation-metrics-reveal .reading-card-primary-metric.reading-card-fit-discovery,
+.recommendation-metrics-reveal .reading-card-primary-metric.reading-card-fit-amber {
+  color: var(--fit-discovery-color, #b58129);
+}
+
+.recommendation-metrics-reveal .reading-card-secondary-metric {
+  font-size: 0.7rem;
+  color: var(--app-muted);
+  margin-bottom: 0.25rem;
+}
+
+.reading-card-reveal-details {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.reading-card-reveal-details p {
+  margin: 0;
+}
+
+.reading-card-reveal-cta {
+  margin-top: 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.recommendation-card:hover .recommendation-metrics-reveal,
+.recommendation-card:focus-visible .recommendation-metrics-reveal,
+.recommendation-card:focus-within .recommendation-metrics-reveal {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Breakpoints responsivos */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  :host {
+    flex: 0 0 clamp(310px, 27vw, 340px);
+  }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  :host {
+    flex: 0 0 clamp(290px, 39vw, 320px);
+  }
+}
+@media (max-width: 639px) {
+  :host {
+    flex: 0 0 min(88vw, 330px);
+  }
+}

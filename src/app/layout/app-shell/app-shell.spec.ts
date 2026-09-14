@@ -41,4 +41,31 @@ describe('AppShell', () => {
     profileSignal.set({ ...profileSignal(), alias:'AdaNew' }); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('AdaNew');
   });
+
+  it('displays the ERP branding and editorial tagline in the sidebar', async () => {
+    const profile = { profile: signal({ name:'Test', alias:null, age:null, nativeLanguage:null, learningLanguage:'en', email:'t@t.com' }), loadProfile:vi.fn(), clearProfile:vi.fn() };
+    await TestBed.configureTestingModule({ imports:[AppShell], providers:[provideRouter([]),{provide:Auth,useValue:{logout:vi.fn()}},{provide:ProfileService,useValue:profile}] }).compileComponents();
+    const fixture = TestBed.createComponent(AppShell); fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('.brand-name')?.textContent?.trim()).toBe('ERP');
+    expect(root.querySelector('.brand-tagline')).toBeTruthy();
+  });
+
+  it('renders the Explorar navigation link', async () => {
+    const profile = { profile: signal({ name:'Test', alias:null, age:null, nativeLanguage:null, learningLanguage:'en', email:'t@t.com' }), loadProfile:vi.fn(), clearProfile:vi.fn() };
+    await TestBed.configureTestingModule({ imports:[AppShell], providers:[provideRouter([{path:'home',component:EmptyPage}]),{provide:Auth,useValue:{logout:vi.fn()}},{provide:ProfileService,useValue:profile}] }).compileComponents();
+    const fixture = TestBed.createComponent(AppShell); fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const exploreLink = root.querySelector('.nav-explore-link');
+    expect(exploreLink).toBeTruthy();
+    expect(exploreLink?.textContent).toContain('Explorar');
+  });
+
+  it('starts in non-immersive mode by default', async () => {
+    const profile = { profile: signal({ name:'Test', alias:null, age:null, nativeLanguage:null, learningLanguage:'en', email:'t@t.com' }), loadProfile:vi.fn(), clearProfile:vi.fn() };
+    await TestBed.configureTestingModule({ imports:[AppShell], providers:[provideRouter([]),{provide:Auth,useValue:{logout:vi.fn()}},{provide:ProfileService,useValue:profile}] }).compileComponents();
+    const fixture = TestBed.createComponent(AppShell); fixture.detectChanges();
+    expect(fixture.componentInstance.isImmersive()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.shell-immersive')).toBeFalsy();
+  });
 });

@@ -1,5 +1,6 @@
 @let item = reading();
 <a [routerLink]="['/reading', item.readingId]" class="recommendation-card app-card">
+  <!-- Cover lateral izquierda -->
   <div class="reading-card-cover">
     @if (imageUrl(); as url) {
       @if (!imageFailed()) {
@@ -12,50 +13,97 @@
           (error)="markImageFailed()"
         />
       } @else {
-        <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+        <div class="cover-fallback" aria-hidden="true"><span>ERP</span></div>
       }
     } @else {
-      <div class="cover-fallback" aria-hidden="true"><span>English Reading</span></div>
+      <div class="cover-fallback" aria-hidden="true"><span>ERP</span></div>
     }
   </div>
 
+  <!-- Contenido lateral derecho -->
   <div class="recommendation-card-body">
-    <div class="reading-card-metadata">
-      <span>{{ item.editorialLevel }}</span>
-      <span>{{ item.category }}</span>
+    <!-- Header: badge CEFR + Categoría + bookmark -->
+    <div class="reading-card-header">
+      <div class="reading-card-metadata">
+        <span class="reading-card-badge">{{ item.editorialLevel }}</span>
+        <span class="reading-card-category">{{ item.category }}</span>
+      </div>
+      <span class="reading-card-bookmark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      </span>
     </div>
 
+    <!-- Título editorial -->
     <h3 class="reading-card-title">{{ item.title }}</h3>
 
+    <!-- Descripción breve editorial opcional -->
+    @if (resolvedDescription(); as desc) {
+      <p class="reading-card-desc">{{ desc }}</p>
+    }
+
+    <!-- Estado de progreso (siempre presente en DOM para consistencia de selectores) -->
     @if (progressLabel(); as progress) {
       <p class="reading-card-progress" [class.reading-card-progress-completed]="item.progressStatus === 'COMPLETED'">{{ progress }}</p>
     } @else {
       <p class="reading-card-progress reading-card-progress-empty" aria-hidden="true">&nbsp;</p>
     }
 
+    <!-- Footer: indicador de vocab fit / primary metric + CTA — wrapper .reading-card-summary -->
     <div class="reading-card-summary">
-      @if (!isDiscovery()) {
-        <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
-      }
-      <p
-        class="reading-card-secondary-metric"
-        [class.reading-card-secondary-metric-empty]="!secondaryMetric()"
-        [attr.aria-hidden]="secondaryMetric() ? null : 'true'"
-      >{{ secondaryMetric() }}</p>
-      <p class="reading-card-cta">{{ ctaLabel() }}</p>
+      <div class="reading-card-metrics-row">
+        @if (displayPrimaryMetric(); as primary) {
+          <span
+            class="reading-card-primary-metric vocab-fit-indicator"
+            [class.vocab-fit-indicator--discovery]="hasFitIndicator() && isDiscovery()"
+            [class.vocab-fit-indicator--mature]="hasFitIndicator() && isMature()"
+            [class.vocab-fit-indicator--unknown]="hasFitIndicator() && isUnknown()"
+            [class.reading-card-fit-indicator]="hasFitIndicator()"
+            [class.reading-card-fit-discovery]="hasFitIndicator() && isDiscovery()"
+            [class.reading-card-fit-amber]="hasFitIndicator() && isDiscovery()"
+            [class.reading-card-fit-normal]="hasFitIndicator() && isMature()"
+            [class.reading-card-fit-green]="hasFitIndicator() && isMature()"
+            [attr.aria-label]="hasFitIndicator() ? fitAriaLabel() : null"
+            [attr.title]="hasFitIndicator() ? fitAriaLabel() : null"
+          >
+            @if (hasFitIndicator()) {
+              <svg class="fit-signal-icon" viewBox="0 0 14 12" width="13" height="11" fill="currentColor" aria-hidden="true">
+                <rect x="0.5" y="7" width="3" height="5" rx="1" />
+                <rect x="5.5" y="3.5" width="3" height="8.5" rx="1" />
+                <rect x="10.5" y="0" width="3" height="12" rx="1" />
+              </svg>
+            }
+            <span>{{ primary }}</span>
+          </span>
+        }
+        <span
+          class="reading-card-secondary-metric"
+          [class.reading-card-secondary-metric-empty]="!secondaryMetric()"
+          [attr.aria-hidden]="secondaryMetric() ? null : 'true'"
+        >{{ secondaryMetric() }}</span>
+      </div>
+      <span class="reading-card-cta">{{ ctaLabel() }}</span>
     </div>
 
+    <!-- Reveal overlay: aparece en hover/focus — preserva todos los datos del Recommendation Engine -->
     <div class="recommendation-metrics-reveal">
       @if (reasonLabel(); as reason) {
         <p class="reading-card-reason-reveal">{{ reason }}</p>
       }
-      <p class="reading-card-primary-metric">{{ primaryMetric() }}</p>
+      @if (resolvedRevealCompatibility(); as compat) {
+        <p
+          class="reading-card-primary-metric"
+          [class.reading-card-fit-discovery]="isDiscovery()"
+          [class.reading-card-fit-amber]="isDiscovery()"
+          [class.reading-card-fit-normal]="isMature()"
+          [class.reading-card-fit-green]="isMature()"
+        >{{ compat }}</p>
+      }
       @if (secondaryMetric(); as secondary) {
         <p class="reading-card-secondary-metric">{{ secondary }}</p>
       }
-      @if (revealMetrics().length) {
+      @if (resolvedRevealMetrics().length) {
         <div class="reading-card-reveal-details">
-          @for (metric of revealMetrics(); track metric) {
+          @for (metric of resolvedRevealMetrics(); track metric) {
             <p>{{ metric }}</p>
           }
         </div>

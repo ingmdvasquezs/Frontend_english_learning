@@ -1,0 +1,28 @@
+@if (resolvedPercentage() !== null) {
+  <span
+    class="vocab-fit-indicator reading-card-primary-metric reading-card-fit-indicator"
+    [class.vocab-fit-indicator--discovery]="tone() === 'discovery'"
+    [class.vocab-fit-indicator--mature]="tone() === 'mature'"
+    [class.vocab-fit-indicator--unknown]="tone() === 'unknown'"
+    [class.reading-card-fit-discovery]="tone() === 'discovery'"
+    [class.reading-card-fit-amber]="tone() === 'discovery'"
+    [class.reading-card-fit-normal]="tone() === 'mature'"
+    [class.reading-card-fit-green]="tone() === 'mature'"
+    [attr.aria-label]="computedAriaLabel()"
+    [attr.title]="computedAriaLabel()"
+  >
+    <svg
+      class="fit-signal-icon"
+      viewBox="0 0 14 12"
+      width="13"
+      height="11"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <rect x="0.5" y="7" width="3" height="5" rx="1" />
+      <rect x="5.5" y="3.5" width="3" height="8.5" rx="1" />
+      <rect x="10.5" y="0" width="3" height="12" rx="1" />
+    </svg>
+    <span>{{ fitText() }}</span>
+  </span>
+}

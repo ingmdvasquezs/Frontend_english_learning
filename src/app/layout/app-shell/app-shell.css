@@ -1,11 +1,17 @@
 :host { display:block; }
+
+/* ── Shell Grid ── */
 .app-shell { min-height:100vh; background:var(--app-bg); color:var(--app-text); }
+
+/* ── Sidebar (Desktop ≥ 1024px: vertical fixed left bar) ── */
 .sidebar { position:sticky; top:0; z-index:30; display:flex; align-items:center; width:100%; height:4.5rem; padding:0 clamp(1.25rem,3vw,3rem); background:var(--app-bg); border-bottom:1px solid var(--app-border); box-shadow:0 1px 2px rgb(0 0 0/.03); }
-.sidebar-top { display:flex; align-items:center; min-width:12rem; }
-.brand { color:var(--app-text); font:400 1.05rem Georgia,'Times New Roman',serif; letter-spacing:.08em; text-decoration:none; }
+.sidebar-top { display:flex; align-items:center; min-width:0; }
+.brand { display:flex; flex-direction:column; color:var(--app-text); font:400 1.05rem Georgia,'Times New Roman',serif; letter-spacing:.08em; text-decoration:none; }
+.brand-name { font-size:1.05rem; }
+.brand-tagline { display:none; }
 .nav-links { display:flex; align-items:center; gap:1.6rem; margin-left:clamp(1rem,4vw,4rem); }
-.nav-links a,.sidebar-action { display:flex; align-items:center; gap:.55rem; min-height:2.75rem; padding:.35rem 0; border:0; border-radius:0; color:var(--app-muted); background:transparent; text-decoration:none; transition:color .16s ease; }
-.nav-links a:hover,.sidebar-action:hover,.nav-links a.active { color:var(--app-text); }
+.nav-links a,.sidebar-action,.nav-explore-link { display:flex; align-items:center; gap:.55rem; min-height:2.75rem; padding:.35rem 0; border:0; border-radius:0; color:var(--app-muted); background:transparent; text-decoration:none; cursor:pointer; transition:color .16s ease; font:inherit; text-align:left; }
+.nav-links a:hover,.sidebar-action:hover,.nav-links a.active,.nav-explore-link:hover { color:var(--app-text); }
 .nav-links a.active { box-shadow:inset 0 -2px var(--app-accent); }
 svg { width:1.1rem; height:1.1rem; flex:none; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
 .sidebar-footer { position:relative; display:flex; align-items:center; gap:1.25rem; margin-left:auto; }
@@ -20,15 +26,44 @@ svg { width:1.1rem; height:1.1rem; flex:none; fill:none; stroke:currentColor; st
 .shell-content { min-height:100vh; padding-top:0; }
 .mobile-bar,.mobile-close,.drawer-backdrop { display:none; }
 :where(a,button):focus-visible { outline:2px solid var(--app-accent); outline-offset:3px; }
-@media (max-width:767px) {
+
+/* ── Desktop ≥ 1024: Vertical sidebar ── */
+@media (min-width:1024px) {
+  .app-shell { display:flex; }
+  .sidebar { position:fixed; inset:0 auto 0 0; width:14rem; height:100vh; padding:1.75rem 1.2rem 1.25rem; display:flex; flex-direction:column; align-items:stretch; border-bottom:0; border-right:1px solid var(--app-border); background:var(--app-sidebar); box-shadow:none; overflow-y:auto; }
+  .sidebar-top { min-height:auto; margin-bottom:1rem; }
+  .brand-name { font-family:Georgia,'Times New Roman',serif; font-size:1.35rem; font-weight:700; letter-spacing:0.06em; color:var(--app-text); }
+  .brand-tagline { display:block; font-size:0.68rem; font-weight:500; color:var(--app-muted); letter-spacing:0.02em; margin-top:0.25rem; font-family:Inter,ui-sans-serif,system-ui,sans-serif; }
+  .nav-links { display:grid; gap:.25rem; margin:1.5rem 0 0; }
+  .nav-links a,.nav-explore-link { width:100%; padding:.65rem .85rem; border-radius:.75rem; font-size:.9rem; font-weight:500; color:var(--app-muted); transition:background .16s ease, color .16s ease; }
+  .nav-links a:hover,.nav-explore-link:hover { background:color-mix(in srgb, var(--app-border) 40%, transparent); color:var(--app-text); }
+  .nav-links a.active { background:color-mix(in srgb, var(--app-border) 55%, var(--app-sidebar)); color:var(--app-text); font-weight:600; box-shadow:none; }
+  .sidebar-editorial-illustration { margin-top:auto; padding:1.5rem 0.25rem 0.75rem; opacity:0.85; border-top:1px solid color-mix(in srgb, var(--app-border) 60%, transparent); }
+  .landscape-svg { width:100%; height:auto; max-height:4.5rem; }
+  .sidebar-editorial-quote { font-family:Georgia,'Times New Roman',serif; font-style:italic; font-size:.78rem; line-height:1.35; color:var(--app-muted); margin-top:.45rem; }
+  .sidebar-footer { display:grid; gap:.2rem; margin:0; padding-top:.75rem; border-top:1px solid var(--app-border); }
+  .sidebar-action { width:100%; padding:.5rem .75rem; border-radius:.6rem; font-size:.84rem; }
+  .sidebar-action:hover { background:var(--app-active); }
+  .user-menu { left:0; right:auto; top:auto; bottom:3.5rem; width:12rem; }
+  .shell-content { margin-left:14rem; width:calc(100% - 14rem); flex:1; min-width:0; }
+  .mobile-bar { display:none; }
+
+  /* Immersive mode: hide sidebar, full-width content */
+  .shell-immersive .sidebar { display:none; }
+  .shell-immersive .shell-content { margin-left:0; width:100%; }
+}
+
+/* ── Tablet + Mobile < 1024: Header bar + Drawer ── */
+@media (max-width:1023px) {
   .mobile-bar { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:.8rem; height:3.5rem; padding:0 1rem; background:var(--app-bg); border-bottom:1px solid var(--app-border); box-shadow:0 1px 2px rgb(0 0 0/.03); }
   .icon-button { display:grid; place-items:center; width:2.5rem; height:2.5rem; color:var(--app-text); }
   .sidebar { position:fixed; inset:0 auto 0 0; width:min(18rem,86vw); height:auto; padding:1.25rem; display:flex; align-items:stretch; flex-direction:column; transform:translateX(-102%); background:var(--app-sidebar); border-right:1px solid var(--app-border); border-bottom:0; transition:transform .2s ease; box-shadow:8px 0 24px rgb(0 0 0/.18); }
   .sidebar.drawer-open { transform:translateX(0); }
   .sidebar-top { justify-content:space-between; min-width:0; min-height:2.5rem; }
+  .brand-tagline { display:none; }
   .mobile-close { display:grid; }
   .nav-links { display:grid; gap:.25rem; margin:2.5rem 0 0; }
-  .nav-links a,.sidebar-action { width:100%; padding:.65rem .35rem; }
+  .nav-links a,.sidebar-action,.nav-explore-link { width:100%; padding:.65rem .35rem; }
   .nav-links a.active { box-shadow:inset 2px 0 var(--app-accent); padding-left:.75rem; }
   .sidebar-footer { display:grid; gap:.25rem; margin:auto 0 0; padding-top:1rem; border-top:1px solid var(--app-border); }
   .user-menu { left:0; right:0; top:auto; bottom:3rem; width:auto; }

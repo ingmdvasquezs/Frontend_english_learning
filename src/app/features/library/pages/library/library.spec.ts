@@ -93,7 +93,7 @@ describe('Library', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('A short story');
-    expect(fixture.nativeElement.textContent).toContain('Compatibilidad 56%');
+    expect(fixture.nativeElement.textContent).toContain('56% vocab fit');
     expect(fixture.nativeElement.textContent).not.toContain('% de vocabulario conocido');
     expect(fixture.nativeElement.textContent).toContain('10 palabras por aprender');
     expect(fixture.nativeElement.textContent).toContain('En progreso');
@@ -130,7 +130,7 @@ describe('Library', () => {
     expect(reveal.textContent).toContain('5 palabras conocidas');
     expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
     expect(reveal.textContent).toContain('10 palabras por aprender');
-    expect(reveal.textContent).toContain('Compatibilidad 56%');
+    expect(reveal.textContent).toContain('56% vocab fit');
     expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(card.querySelector('[role="progressbar"]')).toBeFalsy();
     expect(card.querySelector('button')).toBeFalsy();
@@ -138,7 +138,7 @@ describe('Library', () => {
   });
 
   it.each([
-    [0, 'Compatibilidad 0%'],
+    [0, '0% vocab fit'],
     [null, 'Compatibilidad no disponible'],
   ] as const)('renders TEXT vocabulary fit %s without falling back to known coverage', (vocabularyFitPercentage, expected) => {
     service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[{
@@ -155,6 +155,106 @@ describe('Library', () => {
     expect(card.querySelector('.library-card-metrics')?.textContent).toContain('1 palabra conocida');
     expect(card.querySelector('.library-card-metrics')?.textContent).toContain('0 palabras que estás aprendiendo');
     expect(card.querySelector('.library-card-metrics')?.textContent).toContain('1 palabra por aprender');
+  });
+
+  it('resolves Library User TEXT fit to amber when confidence < 40 even with low fit (13%)', () => {
+    service.parseUserReadings.mockReturnValue({
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      readings: [{
+        readingId: 'lib-amber',
+        title: 'Amber Library Story',
+        language: 'en',
+        createdAt: null,
+        uniqueWords: 50,
+        knownWords: 5,
+        learningWords: 2,
+        explicitNewWords: 3,
+        ignoredWords: 0,
+        unclassifiedWords: 40,
+        vocabularyFitPercentage: 13,
+        classificationConfidencePercentage: 20,
+        progressStatus: null,
+      }],
+    });
+    fixture.detectChanges();
+    response.next('x');
+    fixture.detectChanges();
+
+    const metric = fixture.nativeElement.querySelector('.library-fit-metric') as HTMLElement;
+    expect(metric).toBeTruthy();
+    expect(metric.textContent).toContain('13% vocab fit');
+    expect(metric.classList.contains('library-fit-discovery')).toBe(true);
+    expect(metric.classList.contains('library-fit-mature')).toBe(false);
+    expect(metric.getAttribute('aria-label')).toBe('Vocabulary fit estimate — limited evidence');
+  });
+
+  it('resolves Library User TEXT fit to green when confidence >= 40 even with low fit (13%)', () => {
+    service.parseUserReadings.mockReturnValue({
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      readings: [{
+        readingId: 'lib-green',
+        title: 'Green Library Story',
+        language: 'en',
+        createdAt: null,
+        uniqueWords: 50,
+        knownWords: 5,
+        learningWords: 2,
+        explicitNewWords: 3,
+        ignoredWords: 0,
+        unclassifiedWords: 40,
+        vocabularyFitPercentage: 13,
+        classificationConfidencePercentage: 85,
+        progressStatus: null,
+      }],
+    });
+    fixture.detectChanges();
+    response.next('x');
+    fixture.detectChanges();
+
+    const metric = fixture.nativeElement.querySelector('.library-fit-metric') as HTMLElement;
+    expect(metric).toBeTruthy();
+    expect(metric.textContent).toContain('13% vocab fit');
+    expect(metric.classList.contains('library-fit-mature')).toBe(true);
+    expect(metric.classList.contains('library-fit-discovery')).toBe(false);
+    expect(metric.getAttribute('aria-label')).toBe('Vocabulary fit');
+  });
+
+  it('resolves Library User TEXT fit to unknown when confidence is null (not green, neutral)', () => {
+    service.parseUserReadings.mockReturnValue({
+      page: 0,
+      size: 20,
+      totalElements: 1,
+      readings: [{
+        readingId: 'lib-unknown',
+        title: 'Unknown Library Story',
+        language: 'en',
+        createdAt: null,
+        uniqueWords: 50,
+        knownWords: 25,
+        learningWords: 0,
+        explicitNewWords: 0,
+        ignoredWords: 0,
+        unclassifiedWords: 25,
+        vocabularyFitPercentage: 50,
+        classificationConfidencePercentage: null,
+        progressStatus: null,
+      }],
+    });
+    fixture.detectChanges();
+    response.next('x');
+    fixture.detectChanges();
+
+    const metric = fixture.nativeElement.querySelector('.library-fit-metric') as HTMLElement;
+    expect(metric).toBeTruthy();
+    expect(metric.textContent).toContain('50% vocab fit');
+    expect(metric.classList.contains('library-fit-unknown')).toBe(true);
+    expect(metric.classList.contains('library-fit-mature')).toBe(false);
+    expect(metric.classList.contains('library-fit-discovery')).toBe(false);
+    expect(metric.getAttribute('aria-label')).toBe('Vocabulary fit — evidence unavailable');
   });
 
   it('uses a safe fallback when the local cover fails', () => {

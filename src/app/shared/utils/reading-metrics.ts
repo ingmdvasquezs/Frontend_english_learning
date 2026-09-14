@@ -7,7 +7,65 @@ export interface VocabularyCounts {
   unclassifiedWords: number;
 }
 
-interface VocabularyFit {
+export type VocabularyFitTone = 'discovery' | 'mature' | 'unknown';
+
+export interface VocabularyFitEvidence {
+  reasonCode?: string | null;
+  classificationConfidencePercentage?: number | null;
+}
+
+/**
+ * Official backend threshold from RecommendationReasonEvaluator.
+ * Refers to CLASSIFICATION CONFIDENCE, NOT vocabulary fit percentage.
+ */
+export const CONFIDENCE_MATURE_THRESHOLD = 40;
+
+/**
+ * Resolves the semantic tone for vocabulary fit indicators.
+ * - 'discovery' (amber): limited evidence / discovery mode / confidence < 40%
+ * - 'mature' (green): sufficient evidence / mature personalization / confidence >= 40%
+ * - 'unknown' (neutral/muted): neither reasonCode nor confidence is available
+ *
+ * Priority order:
+ * 1. reasonCode present:
+ *    'DISCOVERY' => 'discovery'
+ *    any mature reason => 'mature'
+ * 2. reasonCode absent + confidence is finite number:
+ *    confidence < 40 => 'discovery'
+ *    confidence >= 40 => 'mature'
+ * 3. No signal => 'unknown'
+ *
+ * NOTE: Does NOT use vocabularyFitPercentage to determine tone.
+ */
+export function resolveVocabularyFitTone(
+  evidence?: VocabularyFitEvidence | null
+): VocabularyFitTone {
+  if (!evidence) return 'unknown';
+
+  if (typeof evidence.reasonCode === 'string' && evidence.reasonCode.trim() !== '') {
+    return evidence.reasonCode === 'DISCOVERY' ? 'discovery' : 'mature';
+  }
+
+  const confidence = evidence.classificationConfidencePercentage;
+  if (typeof confidence === 'number' && Number.isFinite(confidence)) {
+    return confidence < CONFIDENCE_MATURE_THRESHOLD ? 'discovery' : 'mature';
+  }
+
+  return 'unknown';
+}
+
+export function vocabularyFitAriaLabel(tone: VocabularyFitTone): string {
+  switch (tone) {
+    case 'discovery':
+      return 'Vocabulary fit estimate — limited evidence';
+    case 'mature':
+      return 'Vocabulary fit';
+    case 'unknown':
+      return 'Vocabulary fit — evidence unavailable';
+  }
+}
+
+interface VocabularyFit extends VocabularyFitEvidence {
   vocabularyFitPercentage?: number | null;
 }
 
@@ -61,7 +119,18 @@ export function toVocabularyCard<T extends VocabularyCounts & VocabularyFit>(rea
     vocabularyFitPercentage,
     vocabularyFitLabel: vocabularyFitPercentage === null
       ? 'Compatibilidad no disponible'
-      : `Compatibilidad ${vocabularyFitPercentage}%`,
+      : `${vocabularyFitPercentage}% vocab fit`,
+    vocabularyFitLabelEn: vocabularyFitPercentage === null
+      ? null
+      : `${vocabularyFitPercentage}% vocab fit`,
+    compatibilityLabelEn: vocabularyFitPercentage === null
+      ? null
+      : `Compatibility ${vocabularyFitPercentage}%`,
+    knownWordsLabelEn: `${knownWords} Known words`,
+    learningWordsLabelEn: `${learningWords} Learning words`,
+    wordsToLearnLabelEn: `${wordsToLearn} Words to learn`,
+    fitTone: resolveVocabularyFitTone(reading),
+    fitAriaLabel: vocabularyFitAriaLabel(resolveVocabularyFitTone(reading)),
   };
 }
 

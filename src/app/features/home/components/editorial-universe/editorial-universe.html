@@ -1,0 +1,82 @@
+<div class="colombia-universe" aria-label="Universo temático Colombia">
+  <!-- Banner Destacado Colombia -->
+  <div class="colombia-featured-banner">
+    <div class="colombia-banner-backdrop" aria-hidden="true"></div>
+    <div class="colombia-banner-content">
+      <div class="colombia-banner-main">
+        <span class="colombia-eyebrow">Universo destacado</span>
+        <h3 class="colombia-title">{{ universe.name }}</h3>
+        <p class="colombia-subtitle">{{ universe.subtitle }}</p>
+        <button type="button" class="colombia-cta" (click)="onExploreColombia()">
+          Explorar Colombia <span aria-hidden="true">→</span>
+        </button>
+      </div>
+      <div class="colombia-banner-aside">
+        <blockquote class="colombia-quote">
+          “{{ universe.quote }}”
+        </blockquote>
+      </div>
+    </div>
+  </div>
+
+  <!-- Píldoras temáticas / Subtemas -->
+  <div class="topic-pills-bar" role="toolbar" aria-label="Subtemas de Colombia">
+    @for (topic of universe.topics; track topic.id) {
+      <button
+        type="button"
+        class="topic-pill"
+        [class.topic-pill-active]="selectedTopicId() === topic.id"
+        (click)="selectTopic(topic.id)"
+      >
+        @if (topic.icon) {
+          <span class="topic-icon" aria-hidden="true">{{ topic.icon }}</span>
+        }
+        <span class="topic-name">{{ topic.name }}</span>
+      </button>
+    }
+  </div>
+
+  @if (previewNotice(); as notice) {
+    <div class="preview-notice-toast" role="status" aria-live="polite">
+      <span>{{ notice }}</span>
+      <button type="button" class="notice-dismiss" (click)="dismissNotice()" aria-label="Cerrar aviso">✕</button>
+    </div>
+  }
+
+  <!-- Grilla de historias de Colombia -->
+  <div class="colombia-stories-container">
+    <h4 class="colombia-stories-heading">Historias de Colombia</h4>
+    <div class="colombia-stories-grid">
+      @for (story of filteredStories(); track story.id) {
+        <article class="colombia-story-card" (click)="onStoryClick(story)">
+          <!-- Cover lateral izquierda -->
+          <div
+            class="story-cover-wrap"
+            [style.backgroundImage]="coverUrl(story.coverKey) ? 'url(' + coverUrl(story.coverKey) + ')' : null"
+          >
+            @if (!story.coverKey) {
+              <div class="colombia-cover-fallback" aria-hidden="true"><span>Colombia</span></div>
+            }
+          </div>
+          <!-- Contenido lateral derecho -->
+          <div class="story-content">
+            <div class="story-header">
+              <div class="story-meta">
+                <span class="story-level-badge">{{ story.editorialLevel }}</span>
+                <span class="story-topic">{{ story.topicName }}</span>
+              </div>
+              <span class="story-bookmark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </span>
+            </div>
+            <h5 class="story-title">{{ story.title }}</h5>
+            <p class="story-summary">{{ story.summary }}</p>
+            <div class="story-footer">
+              <span class="story-badge-preview">{{ story.statusBadge }}</span>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  </div>
+</div>

@@ -115,12 +115,30 @@
                   <h2 class="library-card-title mt-2 font-serif text-[24px] font-normal leading-tight">{{ reading.title }}</h2>
                   <div class="library-detail-stage">
                     <div class="library-card-summary flex h-full flex-col">
-                      <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.vocabularyFitLabel }}</p>
+                      <p
+                        class="library-fit-metric text-[17px] font-semibold"
+                        [class.library-fit-mature]="card.fitTone === 'mature'"
+                        [class.library-fit-discovery]="card.fitTone === 'discovery'"
+                        [class.library-fit-unknown]="card.fitTone === 'unknown'"
+                        [class.text-[var(--app-success)]]="card.fitTone === 'mature'"
+                        [class.text-[#b58129]]="card.fitTone === 'discovery'"
+                        [class.text-[var(--app-muted)]]="card.fitTone === 'unknown'"
+                        [attr.aria-label]="card.fitAriaLabel"
+                      >{{ card.vocabularyFitLabel }}</p>
                       <p class="library-progress-line mt-3 text-[13px] text-[var(--app-muted)]"><span class="font-semibold" [class.library-status-complete]="reading.progressStatus === 'COMPLETED'" [class.library-status-active]="reading.progressStatus === 'IN_PROGRESS'">{{ reading.progressStatus === 'COMPLETED' ? 'Leída' : reading.progressStatus === 'IN_PROGRESS' ? 'En progreso' : 'Sin empezar' }}</span>@if (reading.createdAt) { <span aria-hidden="true"> · </span><span>Añadida {{ reading.createdAt | date:'d MMM y' }}</span> }</p>
                       <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →' }}</p>
                     </div>
                     <div class="library-card-metrics flex h-full flex-col" aria-hidden="true">
-                      <p class="text-[17px] font-semibold text-[var(--app-success)]">{{ card.vocabularyFitLabel }}</p>
+                      <p
+                        class="library-fit-metric text-[17px] font-semibold"
+                        [class.library-fit-mature]="card.fitTone === 'mature'"
+                        [class.library-fit-discovery]="card.fitTone === 'discovery'"
+                        [class.library-fit-unknown]="card.fitTone === 'unknown'"
+                        [class.text-[var(--app-success)]]="card.fitTone === 'mature'"
+                        [class.text-[#b58129]]="card.fitTone === 'discovery'"
+                        [class.text-[var(--app-muted)]]="card.fitTone === 'unknown'"
+                        [attr.aria-label]="card.fitAriaLabel"
+                      >{{ card.vocabularyFitLabel }}</p>
                       <div class="mt-3 space-y-1 text-[13px] leading-5 text-[var(--app-text-secondary)]"><p>{{ card.knownLabel }}</p><p>{{ card.learningLabel }}</p><p>{{ card.wordsToLearnLabel }}</p></div>
                       <p class="mt-auto pt-4 text-[14px] font-semibold text-[var(--app-text)]">{{ reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →' }}</p>
                     </div>

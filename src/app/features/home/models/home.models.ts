@@ -28,6 +28,7 @@ export interface RecommendedPlatformReading {
   progressStatus: ReadingProgressStatus | null;
   coverKey: string | null;
   reasonCode?: RecommendationReasonCode | null;
+  description?: string | null;
 }
 
 export interface PlatformReadingRecommendationsPage {
@@ -63,6 +64,10 @@ export interface ContinueReadingItem {
   editorialLevel: EditorialLevel | null;
   category: string | null;
   startedAt: string;
+  /** Porcentaje de progreso (0–100). Opcional — sólo se muestra si el backend lo entrega. */
+  progressPercentage?: number | null;
+  /** Descripción o extracto breve. Opcional — para preview editorial o cuando backend lo soporte. */
+  description?: string | null;
 }
 
 export interface ContinueReadingPage {

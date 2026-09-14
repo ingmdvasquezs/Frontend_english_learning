@@ -121,7 +121,7 @@ describe('Home', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Recommended story');
     expect(fixture.nativeElement.textContent).toContain(
-      'Compatibilidad 90%'
+      '90% vocab fit'
     );
     expect(fixture.nativeElement.querySelector('.recommendation-metrics-reveal')).toBeTruthy();
     expect(fixture.nativeElement.textContent).not.toContain('My own reading');
@@ -154,13 +154,13 @@ describe('Home', () => {
       'Combina vocabulario familiar con nuevas palabras por descubrir.'
     );
     expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(
-      'Compatibilidad 90%'
+      '90% vocab fit'
     );
     expect(card.textContent).not.toContain('BALANCED_CHALLENGE');
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
 
-  it('hides compatibility in base state on recommendation cards for DISCOVERY but keeps it in reveal', () => {
+  it('renders fit indicator in base state in amber for DISCOVERY while keeping reason in reveal', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
         recommendedReading({
@@ -177,16 +177,23 @@ describe('Home', () => {
 
     const card = fixture.nativeElement.querySelector('app-home-reading-card');
     expect(card).toBeTruthy();
-    // In base state, neither reason nor primary compatibility metric
-    expect(card.querySelector('.reading-card-summary .reading-card-primary-metric')).toBeNull();
+    // In base state, reason is omitted and fit indicator is rendered with amber discovery classes
+    expect(card.querySelector('.reading-card-reason')).toBeNull();
+    const fitIndicator = card.querySelector('.reading-card-summary .reading-card-fit-indicator');
+    expect(fitIndicator).toBeTruthy();
+    expect(fitIndicator?.textContent).toContain('31% vocab fit');
+    expect(fitIndicator?.classList.contains('reading-card-fit-discovery')).toBe(true);
+    expect(fitIndicator?.classList.contains('reading-card-fit-amber')).toBe(true);
+    expect(card.querySelector('.reading-card-discovery-indicator')).toBeNull();
+    expect(fitIndicator?.textContent).not.toContain('Discover');
 
-    // In reveal state, friendly reason and compatibility are present
+    // In reveal state, friendly reason is present
     const reveal = card.querySelector('.recommendation-metrics-reveal');
     expect(reveal).toBeTruthy();
     expect(reveal.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
       'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
     );
-    expect(reveal.querySelector('.reading-card-primary-metric')?.textContent).toContain('Compatibilidad 31%');
+    expect(reveal.textContent).toContain('Compatibility 31%');
     expect(card.textContent).not.toContain('DISCOVERY');
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
@@ -209,7 +216,7 @@ describe('Home', () => {
     expect(card).toBeTruthy();
     expect(card.querySelector('.reading-card-reason-reveal')).toBeNull();
     expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(
-      'Compatibilidad 90%'
+      '90% vocab fit'
     );
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
@@ -232,9 +239,9 @@ describe('Home', () => {
     expect(railCard).toBeTruthy();
     // No reason in resting base state
     expect(railCard.querySelector('.reading-card-reason')).toBeNull();
-    // Compatibility remains in base state for non-DISCOVERY
+    // Fit indicator remains in base state for non-DISCOVERY
     expect(railCard.querySelector('.reading-card-summary .reading-card-primary-metric')?.textContent).toContain(
-      'Compatibilidad 90%'
+      '90% vocab fit'
     );
     // Reveal contains friendly reason and no raw code
     const revealReason = railCard.querySelector('.reading-card-reason-reveal');
@@ -245,7 +252,7 @@ describe('Home', () => {
     expect(railCard.textContent).not.toContain('MORE_CHALLENGING');
   });
 
-  it('hides compatibility in base state on rail cards for DISCOVERY while keeping it in reveal', () => {
+  it('renders fit indicator in base state on rail cards for DISCOVERY in amber while keeping reason in reveal', () => {
     homeService.parseRecommendations.mockReturnValue(
       recommendationsPage([
         recommendedReading({
@@ -262,19 +269,23 @@ describe('Home', () => {
 
     const railCard = fixture.nativeElement.querySelector('app-home-reading-card');
     expect(railCard).toBeTruthy();
-    // Neither reason nor compatibility in resting state
+    // In resting state, reason is omitted and fit indicator is rendered with amber discovery classes
     expect(railCard.querySelector('.reading-card-reason')).toBeNull();
-    expect(railCard.querySelector('.reading-card-summary .reading-card-primary-metric')).toBeNull();
+    const fitIndicator = railCard.querySelector('.reading-card-summary .reading-card-fit-indicator');
+    expect(fitIndicator).toBeTruthy();
+    expect(fitIndicator?.textContent).toContain('31% vocab fit');
+    expect(fitIndicator?.classList.contains('reading-card-fit-discovery')).toBe(true);
+    expect(fitIndicator?.classList.contains('reading-card-fit-amber')).toBe(true);
+    expect(railCard.querySelector('.reading-card-discovery-indicator')).toBeNull();
+    expect(fitIndicator?.textContent).not.toContain('Discover');
 
-    // Reveal contains both reason and compatibility
+    // Reveal contains reason
     const reveal = railCard.querySelector('.recommendation-metrics-reveal');
     expect(reveal).toBeTruthy();
     expect(reveal.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
       'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
     );
-    expect(reveal.querySelector('.reading-card-primary-metric')?.textContent).toContain(
-      'Compatibilidad 31%'
-    );
+    expect(reveal.textContent).toContain('Compatibility 31%');
     expect(railCard.textContent).not.toContain('DISCOVERY');
   });
 
@@ -365,7 +376,8 @@ describe('Home', () => {
     recommendationResponse.next('<response/>');
     continueReadingResponse.next('<response/>');
     fixture.detectChanges();
-    expect(componentText().match(/Continuar →/g)?.length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('.continue-reading-card')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('.continue-reading-cta-pill')).toHaveLength(2);
     expect(componentText()).toContain('Tu lectura');
     expect(componentText()).toContain('A1 · Daily Life');
     expect(componentText()).toContain('En progreso');
@@ -608,7 +620,161 @@ describe('Home', () => {
     ]));
     fixture.detectChanges(); recommendationResponse.next('x'); continueReadingResponse.next('x'); fixture.detectChanges();
     expect(componentText()).not.toContain('Continuar leyendo');
-    expect(componentText()).toContain('Releer →');
+    expect(componentText()).toContain('Re-read →');
+  });
+
+  it('renders amber fit indicator for DISCOVERY recommendations in resting state even with 0% vocab fit', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([
+      recommendedReading({ readingId: 'discovery-1', reasonCode: 'DISCOVERY', vocabularyFitPercentage: 0 }),
+    ]));
+    fixture.detectChanges(); recommendationResponse.next('r'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('.recommendations-carousel app-home-reading-card');
+    expect(card).toBeTruthy();
+    const fitIndicator = card.querySelector('.reading-card-fit-indicator');
+    expect(fitIndicator).toBeTruthy();
+    expect(fitIndicator?.textContent).toContain('0% vocab fit');
+    expect(fitIndicator?.classList.contains('reading-card-fit-discovery')).toBe(true);
+    expect(fitIndicator?.classList.contains('reading-card-fit-amber')).toBe(true);
+    expect(card.querySelector('.reading-card-discovery-indicator')).toBeNull();
+    expect(card.textContent).not.toContain('Discover');
+  });
+
+  it('renders collection cards with signal icon and real vocab fit without showing Discover', () => {
+    const colReadings = [collectionReading('col-1')];
+    homeService.parseCollections.mockReturnValue([collection('nature', 'Nature & Places', 1)]);
+    homeService.parseCollectionReadings.mockReturnValue(collectionPage(colReadings));
+    const collectionReadingsSub = new Subject<string>();
+    homeService.listCollectionReadings.mockReturnValue(collectionReadingsSub.asObservable());
+
+    fixture.detectChanges();
+    collectionsResponse.next('cols');
+    fixture.detectChanges();
+    collectionReadingsSub.next('reads');
+    fixture.detectChanges();
+
+    const collectionCard = fixture.nativeElement.querySelector('.collection-card');
+    expect(collectionCard).toBeTruthy();
+    expect(collectionCard.querySelector('.reading-card-fit-indicator')?.textContent).toContain('90% vocab fit');
+    expect(collectionCard.querySelector('.reading-card-discovery-indicator')).toBeNull();
+    expect(collectionCard.textContent).not.toContain('Discover');
+  });
+
+  // ---- V6.1 Continue Reading Card Tests ----
+
+  it('renders continue-reading card with context metadata, serif title, and cta-pill', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-v6', 'PLATFORM', 'The Camera on Platform Three'),
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-v6"]') as HTMLElement;
+    expect(card).toBeTruthy();
+    expect(card.querySelector('.continue-reading-context')?.textContent).toContain('A1 · Daily Life');
+    expect(card.querySelector('.continue-reading-title')?.textContent).toContain('The Camera on Platform Three');
+    expect(card.querySelector('.continue-reading-status')?.textContent).toContain('En progreso');
+    expect(card.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
+  });
+
+  it('renders short description when description exists (A)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      {
+        ...continueReadingItem('cr-desc', 'PLATFORM', 'Story with Description'),
+        description: 'A reflective story about language and connection.',
+      },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-desc"]') as HTMLElement;
+    expect(card.querySelector('.continue-reading-desc')?.textContent).toBe(
+      'A reflective story about language and connection.'
+    );
+  });
+
+  it('omits description slot cleanly when description does not exist (B)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-no-desc', 'PLATFORM', 'Story without Description'),
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-no-desc"]') as HTMLElement;
+    expect(card.querySelector('.continue-reading-desc')).toBeNull();
+  });
+
+  it('renders progress bar and fill when progressPercentage exists (C & D)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      { ...continueReadingItem('cr-pct', 'PLATFORM', 'Story with percentage'), progressPercentage: 62 },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-pct"]') as HTMLElement;
+    const progressWrap = card.querySelector('.continue-reading-progress-wrap');
+    const progressFill = card.querySelector('.continue-reading-progress-fill') as HTMLElement;
+    expect(progressWrap).toBeTruthy();
+    expect(progressFill).toBeTruthy();
+    expect(progressFill.style.width).toBe('62%');
+  });
+
+  it('renders "62% completado" when progressPercentage is 62 and replaces "En progreso" (E)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      { ...continueReadingItem('cr-pct-62', 'PLATFORM', 'Story 62%'), progressPercentage: 62 },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-pct-62"]') as HTMLElement;
+    expect(card.querySelector('.continue-reading-progress-text')?.textContent).toContain('62% completado');
+    expect(card.textContent).not.toContain('En progreso');
+  });
+
+  it('renders "En progreso" in footer when progressPercentage is absent or null (F)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-in-prog', 'PLATFORM', 'Story in Progress'),
+      { ...continueReadingItem('cr-null-pct', 'PLATFORM', 'Story null percentage'), progressPercentage: null },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card1 = fixture.nativeElement.querySelector('a[href="/reading/cr-in-prog"]') as HTMLElement;
+    const card2 = fixture.nativeElement.querySelector('a[href="/reading/cr-null-pct"]') as HTMLElement;
+    expect(card1.querySelector('.continue-reading-status')?.textContent).toContain('En progreso');
+    expect(card1.querySelector('.continue-reading-progress-text')).toBeNull();
+    expect(card1.querySelector('.continue-reading-progress-wrap')).toBeNull();
+    expect(card2.querySelector('.continue-reading-status')?.textContent).toContain('En progreso');
+    expect(card2.querySelector('.continue-reading-progress-wrap')).toBeNull();
+  });
+
+  it('always renders CTA "Continuar" pill regardless of progress percentage presence (G)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-cta-1', 'PLATFORM', 'Card without pct'),
+      { ...continueReadingItem('cr-cta-2', 'PLATFORM', 'Card with pct'), progressPercentage: 38 },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card1 = fixture.nativeElement.querySelector('a[href="/reading/cr-cta-1"]') as HTMLElement;
+    const card2 = fixture.nativeElement.querySelector('a[href="/reading/cr-cta-2"]') as HTMLElement;
+    expect(card1.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
+    expect(card2.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
+  });
+
+  it('shows "Ver todo" in continue reading section heading row', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-vertodo', 'PLATFORM', 'Some story'),
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector('#continue-reading-heading')?.closest('section') as HTMLElement;
+    expect(section.querySelector('.section-more-link')?.textContent).toContain('Ver todo');
+    expect(section.querySelector('.section-more-link')?.textContent).not.toContain('See all');
+  });
+
+  it('renders USER context label "Tu lectura" and shows continue reading pill CTA', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-user', 'USER', 'Mi propio texto'),
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-user"]') as HTMLElement;
+    expect(card.querySelector('.continue-reading-context')?.textContent).toContain('Tu lectura');
+    expect(card.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
   });
 
   it('renders recommendations in one native horizontal carousel', () => {
@@ -655,24 +821,22 @@ describe('Home', () => {
     const cta = card.querySelector('.reading-card-cta') as HTMLElement;
 
     expect(card.getAttribute('href')).toBe('/reading/platform-1');
-    expect(primaryMetric.textContent).toContain('Compatibilidad 90%');
-    expect(reveal.textContent).toContain('Compatibilidad 90%');
+    expect(primaryMetric.textContent).toContain('90% vocab fit');
+    expect(reveal.textContent).toContain('Compatibility 90%');
     expect(card.textContent).not.toContain('% de vocabulario conocido');
-    expect(reveal.textContent).toContain('12 palabras conocidas');
-    expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
-    expect(reveal.textContent).toContain('8 palabras por aprender');
-    expect(cta.textContent).toContain('Abrir lectura');
+    expect(reveal.textContent).toContain('12 Known words');
+    expect(reveal.textContent).toContain('2 Learning words');
+    expect(reveal.textContent).toContain('8 Words to learn');
+    expect(cta.textContent).toContain('Open reading');
     expect(card.textContent?.match(/Recommended story/g)).toHaveLength(1);
     expect(card.querySelector('.reading-card-cover')).toBeTruthy();
   });
 
   it.each([
-    [31.4, 'Compatibilidad 31%'],
-    [0, 'Compatibilidad 0%'],
-    [null, 'Compatibilidad no disponible'],
-    [undefined, 'Compatibilidad no disponible'],
-    ['invalid', 'Compatibilidad no disponible'],
-  ])('formats vocabulary fit %s through the shared helper on recommendation cards', (value, expected) => {
+    [31.4, '31% vocab fit', 'Compatibility 31%'],
+    [76, '76% vocab fit', 'Compatibility 76%'],
+    [0, '0% vocab fit', 'Compatibility 0%'],
+  ])('formats vocabulary fit %s through the shared helper on recommendation cards', (value, expectedResting, expectedReveal) => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([{
       ...recommendedReading(),
       vocabularyFitPercentage: value,
@@ -682,14 +846,14 @@ describe('Home', () => {
     fixture.detectChanges();
 
     const card = fixture.nativeElement.querySelector('.recommendation-card') as HTMLElement;
-    expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(expected);
-    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain(expected);
+    expect(card.querySelector('.reading-card-primary-metric')?.textContent).toContain(expectedResting);
+    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain(expectedReveal);
     expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(card.textContent).not.toContain('NaN');
     expect(card.textContent).toContain('Recommended story');
     expect(card.textContent).toContain('A1');
     expect(card.textContent).toContain('Daily Life');
-    expect(card.textContent).toContain('Abrir lectura');
+    expect(card.textContent).toContain('Open reading');
     expect(card.querySelector('.reading-card-cover')).toBeTruthy();
   });
 
@@ -732,7 +896,7 @@ describe('Home', () => {
     expect(sections).toHaveLength(1);
     expect(sections[0].textContent).toContain('Science, Technology & Ideas');
     expect(sections[0].querySelector('a[href="/reading/science-1"]')).toBeTruthy();
-    expect(sections[0].textContent).toContain('Compatibilidad 90%');
+    expect(sections[0].textContent).toContain('90% vocab fit');
     expect(componentText()).not.toContain('Mysteries & Imagination');
     expect(componentText()).not.toContain('todavía no tiene lecturas');
   });
@@ -785,15 +949,15 @@ describe('Home', () => {
     const summary = card.querySelector('.reading-card-summary') as HTMLElement;
     expect(body.children[0].textContent).toContain('B1');
     expect(body.children[0].textContent).toContain('Science');
-    expect(summary.textContent).toContain('Compatibilidad 90%');
+    expect(summary.textContent).toContain('90% vocab fit');
     expect(summary.textContent).not.toContain('% de vocabulario conocido');
-    expect(summary.textContent).toContain('Continuar lectura');
+    expect(summary.textContent).toContain('Continue reading');
     expect(reveal.classList.contains('recommendation-metrics-reveal')).toBe(true);
-    expect(reveal.textContent).toContain('Compatibilidad 90%');
-    expect(reveal.textContent).toContain('12 palabras conocidas');
-    expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
-    expect(reveal.textContent).toContain('8 palabras por aprender');
-    expect(reveal.textContent).toContain('Continuar lectura');
+    expect(reveal.textContent).toContain('Compatibility 90%');
+    expect(reveal.textContent).toContain('12 Known words');
+    expect(reveal.textContent).toContain('2 Learning words');
+    expect(reveal.textContent).toContain('8 Words to learn');
+    expect(reveal.textContent).toContain('Continue reading');
     expect(reveal.textContent).not.toContain('A deliberately long collection reading title');
     expect(card.textContent?.match(/A deliberately long collection reading title that remains stable/g)).toHaveLength(1);
     expect(card.querySelector('.reading-card-title')).toBeTruthy();
@@ -917,14 +1081,14 @@ describe('Home', () => {
     const reveal = card.querySelector('.recommendation-metrics-reveal') as HTMLElement;
     const normalBody = card.querySelector('.recommendation-card-body') as HTMLElement;
 
-    expect(normalBody.textContent).toContain('Compatibilidad 90%');
+    expect(normalBody.textContent).toContain('90% vocab fit');
     expect(normalBody.textContent).not.toContain('52% de vocabulario conocido');
     expect(normalBody.querySelector('.reading-card-summary')?.textContent).not.toContain('12 conocidas');
-    expect(normalBody.textContent).toContain('Abrir lectura');
+    expect(normalBody.textContent).toContain('Open reading');
     expect(reveal).toBeTruthy();
-    expect(reveal.textContent).toContain('12 palabras conocidas');
-    expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
-    expect(reveal.textContent).toContain('8 palabras por aprender');
+    expect(reveal.textContent).toContain('12 Known words');
+    expect(reveal.textContent).toContain('2 Learning words');
+    expect(reveal.textContent).toContain('8 Words to learn');
     expect(reveal.textContent).not.toContain('Confianza');
     expect(card.getAttribute('href')).toBe('/reading/platform-2');
   });
@@ -938,8 +1102,8 @@ describe('Home', () => {
     const card = fixture.nativeElement.querySelector(
       '.recommendations-carousel .recommendation-card'
     ) as HTMLElement;
-    expect(card.querySelector('.reading-card-summary')?.textContent).toContain('Compatibilidad 90%');
-    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain('0 palabras que estás aprendiendo');
+    expect(card.querySelector('.reading-card-summary')?.textContent).toContain('90% vocab fit');
+    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain('0 Learning words');
   });
 
   it('keeps legacy null fit data readable without rendering an invalid percentage', () => {
@@ -956,8 +1120,8 @@ describe('Home', () => {
     const card = fixture.nativeElement.querySelector(
       '.recommendations-carousel .recommendation-card'
     ) as HTMLElement;
-    expect(card.querySelector('.reading-card-summary')?.textContent).toContain('Compatibilidad no disponible');
-    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain('0 palabras que estás aprendiendo');
+    expect(card.querySelector('.reading-card-fit-indicator')).toBeNull();
+    expect(card.querySelector('.recommendation-metrics-reveal')?.textContent).toContain('0 Learning words');
     expect(card.textContent).not.toContain('NaN');
   });
 
@@ -972,7 +1136,7 @@ describe('Home', () => {
     const summary = fixture.nativeElement.querySelector(
       '.recommendations-carousel .reading-card-primary-metric'
     ) as HTMLElement;
-    expect(summary.textContent).toBe('Compatibilidad 90%');
+    expect(summary.textContent).toContain('90% vocab fit');
     expect(summary.classList.contains('reading-card-primary-metric')).toBe(true);
     expect(summary.className).not.toContain('text-[#');
     expect(getComputedStyle(summary).overflowWrap).toBe('anywhere');
@@ -1098,8 +1262,61 @@ describe('Home', () => {
     expect(fixture.nativeElement.querySelectorAll('.cover-fallback')).toHaveLength(1);
     image.dispatchEvent(new Event('error')); fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.cover-fallback')).toHaveLength(2);
-    expect(componentText()).toContain('Compatibilidad 90%');
-    expect(componentText()).toContain('Abrir lectura');
+    expect(componentText()).toContain('90% vocab fit');
+    expect(componentText()).toContain('Open reading');
+  });
+
+  it('renders Continue Reading with fallback "En progreso" and CTA without inventing fake progress or description', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([]));
+    libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-real-1', 'PLATFORM', 'In-Progress Story Without Progress Data', {
+        progressPercentage: null,
+        description: null,
+      }),
+    ]));
+    fixture.detectChanges();
+    recommendationResponse.next('ok');
+    continueReadingResponse.next('ok');
+    fixture.detectChanges();
+
+    const continueSection = fixture.nativeElement.querySelector('section[aria-labelledby="continue-reading-heading"]');
+    expect(continueSection).toBeTruthy();
+    expect(continueSection.textContent).toContain('In-Progress Story Without Progress Data');
+    expect(continueSection.textContent).toContain('En progreso');
+    expect(continueSection.textContent).toContain('Continuar');
+
+    // Confirm NO fake percentage (not 62%, 38%, 27%) and NO fake description
+    expect(continueSection.textContent).not.toContain('% completado');
+    expect(continueSection.textContent).not.toContain('62%');
+    expect(continueSection.textContent).not.toContain('38%');
+    expect(continueSection.textContent).not.toContain('27%');
+    expect(continueSection.querySelector('.continue-reading-progress-track')).toBeNull();
+    expect(continueSection.querySelector('.continue-reading-desc')).toBeNull();
+  });
+
+  it('renders Continue Reading progress bar and description when delivered by backend', () => {
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage([]));
+    libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-real-2', 'PLATFORM', 'Story With Real Progress Data', {
+        progressPercentage: 45,
+        description: 'Authentic backend description.',
+      }),
+    ]));
+    fixture.detectChanges();
+    recommendationResponse.next('ok');
+    continueReadingResponse.next('ok');
+    fixture.detectChanges();
+
+    const continueSection = fixture.nativeElement.querySelector('section[aria-labelledby="continue-reading-heading"]');
+    expect(continueSection).toBeTruthy();
+    expect(continueSection.textContent).toContain('Story With Real Progress Data');
+    expect(continueSection.textContent).toContain('Authentic backend description.');
+    expect(continueSection.textContent).toContain('45% completado');
+    expect(continueSection.querySelector('.continue-reading-progress-track')).toBeTruthy();
+    const fill = continueSection.querySelector('.continue-reading-progress-fill') as HTMLElement;
+    expect(fill.style.width).toBe('45%');
   });
 
   function clickButton(label: string): void {
@@ -1188,7 +1405,8 @@ describe('Home', () => {
   function continueReadingItem(
     readingId: string,
     origin: ReadingOrigin,
-    title: string
+    title: string,
+    overrides: Partial<ContinueReadingItem> = {}
   ): ContinueReadingItem {
     return {
       readingId,
@@ -1199,6 +1417,7 @@ describe('Home', () => {
       editorialLevel: origin === 'PLATFORM' ? 'A1' : null,
       category: origin === 'PLATFORM' ? 'Daily Life' : null,
       startedAt: '2026-09-04T10:00:00',
+      ...overrides,
     };
   }
 
