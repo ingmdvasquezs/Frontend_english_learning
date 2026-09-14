@@ -2,16 +2,23 @@ import { DatePipe, DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, HostListener, NgZone, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DeleteReadingResponse, UserReading, UserReadingsPage } from '../../models/library.models';
+import {
+  DeleteReadingResponse,
+  PlatformReadingHistoryItem,
+  PlatformReadingHistoryPage,
+  UserReading,
+  UserReadingsPage,
+} from '../../models/library.models';
 import { LibraryService, ReadingNotFoundSoapError } from '../../services/library';
 import { toVocabularyCard } from '../../../../shared/utils/reading-metrics';
 import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
+import { coverUrl } from '../../../home/utils/cover-url';
 import { ImportedDocument } from '../../../documents/models/document.models';
 import { DocumentService } from '../../../documents/services/document';
 import { isDocumentNotFoundError, isDocumentProcessingError } from '../../../documents/utils/document-errors';
 import { Observable, Subject, finalize, takeUntil } from 'rxjs';
 
-type LibraryFilter = 'all' | 'personal' | 'ebooks' | 'pdfs';
+type LibraryFilter = 'all' | 'personal' | 'ebooks' | 'pdfs' | 'platform';
 type LibraryDeletionTarget =
   | { type: 'reading'; reading: UserReading }
   | { type: 'document'; document: ImportedDocument };
@@ -76,10 +83,26 @@ export class Library implements OnInit, OnDestroy {
   readonly failedCoverIds = signal(new Set<string>());
   readonly textCoverUrl = userTextCoverUrl;
 
+  readonly platformHistoryPage = signal<PlatformReadingHistoryPage | null>(null);
+  readonly platformReadings = computed(() => this.platformHistoryPage()?.readings ?? []);
+  readonly platformTotalElements = computed(() => this.platformHistoryPage()?.totalElements ?? 0);
+  readonly platformPage = signal(0);
+  readonly platformSize = signal(20);
+  readonly platformTotalPages = computed(() => {
+    const total = this.platformTotalElements();
+    const size = this.platformSize();
+    return size > 0 ? Math.ceil(total / size) : 0;
+  });
+  readonly platformLoading = signal(true);
+  readonly platformError = signal<string | null>(null);
+  readonly failedPlatformCoverIds = signal<ReadonlySet<string>>(new Set());
+  readonly coverUrl = coverUrl;
+
   ngOnInit(): void {
     this.document.addEventListener('pointerdown', this.outsidePointerDownHandler, true);
     this.loadReadings();
     this.loadDocuments();
+    this.loadPlatformHistory(0);
   }
 
   ngOnDestroy(): void {
@@ -139,6 +162,42 @@ export class Library implements OnInit, OnDestroy {
 
   markCoverFailed(readingId: string): void {
     this.failedCoverIds.update((current) => {
+      const next = new Set(current);
+      next.add(readingId);
+      return next;
+    });
+  }
+
+  loadPlatformHistory(page = 0): void {
+    this.platformLoading.set(true);
+    this.platformError.set(null);
+
+    this.libraryService
+      .listPlatformReadingHistory(page, this.platformSize())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.platformHistoryPage.set(
+            this.libraryService.parsePlatformReadingHistory(response)
+          );
+          this.platformPage.set(page);
+          this.platformLoading.set(false);
+        },
+        error: () => {
+          this.platformError.set('No pudimos cargar las lecturas de la plataforma.');
+          this.platformLoading.set(false);
+        },
+      });
+  }
+
+  goToPlatformPage(page: number): void {
+    if (page >= 0 && page < this.platformTotalPages()) {
+      this.loadPlatformHistory(page);
+    }
+  }
+
+  markPlatformCoverFailed(readingId: string): void {
+    this.failedPlatformCoverIds.update((current) => {
       const next = new Set(current);
       next.add(readingId);
       return next;

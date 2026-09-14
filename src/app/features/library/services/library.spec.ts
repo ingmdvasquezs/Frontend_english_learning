@@ -246,4 +246,164 @@ describe('LibraryService', () => {
       </soapenv:Envelope>`, { status:500,statusText:'Internal Server Error' });
     expect(received).not.toBeInstanceOf(ReadingNotFoundSoapError);
   });
+
+  describe('listPlatformReadingHistory', () => {
+    it('generates the authenticated SOAP request with page and size', () => {
+      service.listPlatformReadingHistory(2, 10).subscribe();
+
+      const request = httpTesting.expectOne('/ws');
+      expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+      expect(request.request.body).toContain('<read:listPlatformReadingHistoryRequest>');
+      expect(request.request.body).toContain('<read:page>2</read:page>');
+      expect(request.request.body).toContain('<read:size>10</read:size>');
+      expect(request.request.body.indexOf('<read:page>')).toBeLessThan(
+        request.request.body.indexOf('<read:size>')
+      );
+      request.flush('<response/>');
+    });
+
+    it('propagates SOAP HTTP error according to existing pattern', () => {
+      let errorReceived: unknown;
+      service.listPlatformReadingHistory(0, 20).subscribe({
+        error: (err) => (errorReceived = err),
+      });
+
+      const request = httpTesting.expectOne('/ws');
+      request.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+      expect(errorReceived).toBeTruthy();
+    });
+  });
+
+  describe('parsePlatformReadingHistory', () => {
+    it('parses page metadata and multiple readings in exact backend order', () => {
+      const xml = `
+        <read:listPlatformReadingHistoryResponse xmlns:read="http://soap.com/english-reading/readings">
+          <read:page>0</read:page>
+          <read:size>20</read:size>
+          <read:totalElements>2</read:totalElements>
+          <read:readings>
+            <read:readingId>plat-1</read:readingId>
+            <read:title>First Platform Reading</read:title>
+            <read:editorialLevel>B1</read:editorialLevel>
+            <read:category>Technology</read:category>
+            <read:coverKey>tech-cover</read:coverKey>
+            <read:progressStatus>IN_PROGRESS</read:progressStatus>
+          </read:readings>
+          <read:readings>
+            <read:readingId>plat-2</read:readingId>
+            <read:title>Second Platform Reading</read:title>
+            <read:editorialLevel>A2</read:editorialLevel>
+            <read:category>Culture</read:category>
+            <read:coverKey>culture-cover</read:coverKey>
+            <read:progressStatus>COMPLETED</read:progressStatus>
+          </read:readings>
+        </read:listPlatformReadingHistoryResponse>
+      `;
+
+      const parsed = service.parsePlatformReadingHistory(xml);
+      expect(parsed).toEqual({
+        page: 0,
+        size: 20,
+        totalElements: 2,
+        readings: [
+          {
+            readingId: 'plat-1',
+            title: 'First Platform Reading',
+            editorialLevel: 'B1',
+            category: 'Technology',
+            coverKey: 'tech-cover',
+            progressStatus: 'IN_PROGRESS',
+          },
+          {
+            readingId: 'plat-2',
+            title: 'Second Platform Reading',
+            editorialLevel: 'A2',
+            category: 'Culture',
+            coverKey: 'culture-cover',
+            progressStatus: 'COMPLETED',
+          },
+        ],
+      });
+      expect(parsed.readings[0].readingId).toBe('plat-1');
+      expect(parsed.readings[1].readingId).toBe('plat-2');
+    });
+
+    it.each([
+      ['', null],
+      ['   ', null],
+    ])('preserves absent or empty coverKey as null', (coverKeyVal, expected) => {
+      const xml = `
+        <read:listPlatformReadingHistoryResponse xmlns:read="http://soap.com/english-reading/readings">
+          <read:page>0</read:page>
+          <read:size>20</read:size>
+          <read:totalElements>1</read:totalElements>
+          <read:readings>
+            <read:readingId>plat-3</read:readingId>
+            <read:title>No Cover Reading</read:title>
+            <read:editorialLevel>C1</read:editorialLevel>
+            <read:category>Literature</read:category>
+            <read:coverKey>${coverKeyVal}</read:coverKey>
+            <read:progressStatus>COMPLETED</read:progressStatus>
+          </read:readings>
+        </read:listPlatformReadingHistoryResponse>
+      `;
+
+      const parsed = service.parsePlatformReadingHistory(xml);
+      expect(parsed.readings[0].coverKey).toBe(expected);
+    });
+
+    it('handles omitted coverKey tag as null', () => {
+      const xml = `
+        <read:listPlatformReadingHistoryResponse xmlns:read="http://soap.com/english-reading/readings">
+          <read:page>0</read:page>
+          <read:size>20</read:size>
+          <read:totalElements>1</read:totalElements>
+          <read:readings>
+            <read:readingId>plat-4</read:readingId>
+            <read:title>Omitted Cover Tag</read:title>
+            <read:editorialLevel>A1</read:editorialLevel>
+            <read:category>Nature</read:category>
+            <read:progressStatus>IN_PROGRESS</read:progressStatus>
+          </read:readings>
+        </read:listPlatformReadingHistoryResponse>
+      `;
+
+      const parsed = service.parsePlatformReadingHistory(xml);
+      expect(parsed.readings[0].coverKey).toBeNull();
+    });
+
+    it('throws when editorialLevel is invalid', () => {
+      const xml = `
+        <read:listPlatformReadingHistoryResponse xmlns:read="http://soap.com/english-reading/readings">
+          <read:page>0</read:page><read:size>20</read:size><read:totalElements>1</read:totalElements>
+          <read:readings>
+            <read:readingId>p</read:readingId><read:title>T</read:title>
+            <read:editorialLevel>INVALID</read:editorialLevel>
+            <read:category>C</read:category><read:progressStatus>IN_PROGRESS</read:progressStatus>
+          </read:readings>
+        </read:listPlatformReadingHistoryResponse>
+      `;
+
+      expect(() => service.parsePlatformReadingHistory(xml)).toThrow(
+        'Invalid SOAP response: invalid editorial level'
+      );
+    });
+
+    it('throws when progressStatus is not IN_PROGRESS or COMPLETED', () => {
+      const xml = `
+        <read:listPlatformReadingHistoryResponse xmlns:read="http://soap.com/english-reading/readings">
+          <read:page>0</read:page><read:size>20</read:size><read:totalElements>1</read:totalElements>
+          <read:readings>
+            <read:readingId>p</read:readingId><read:title>T</read:title>
+            <read:editorialLevel>B2</read:editorialLevel>
+            <read:category>C</read:category><read:progressStatus>NOT_STARTED</read:progressStatus>
+          </read:readings>
+        </read:listPlatformReadingHistoryResponse>
+      `;
+
+      expect(() => service.parsePlatformReadingHistory(xml)).toThrow(
+        'Invalid SOAP response: invalid progress status'
+      );
+    });
+  });
 });

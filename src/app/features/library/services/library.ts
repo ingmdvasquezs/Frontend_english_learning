@@ -6,6 +6,9 @@ import {
   DeleteReadingResponse,
   UserReading,
   UserReadingsPage,
+  EditorialLevel,
+  PlatformReadingHistoryItem,
+  PlatformReadingHistoryPage,
 } from '../models/library.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
 import { escapeXml } from '../../../shared/utils/xml-utils';
@@ -28,6 +31,27 @@ export class LibraryService {
             <read:page>${page}</read:page>
             <read:size>${size}</read:size>
           </read:listUserReadingsRequest>
+        </soapenv:Body>
+      </soapenv:Envelope>
+    `;
+
+    return this.http.post(this.soapUrl, body, {
+      headers: this.soapHeaders(),
+      responseType: 'text',
+    });
+  }
+
+  listPlatformReadingHistory(page = 0, size = 20) {
+    const body = `
+      <soapenv:Envelope
+          xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+          xmlns:read="${this.namespace}">
+        <soapenv:Header/>
+        <soapenv:Body>
+          <read:listPlatformReadingHistoryRequest>
+            <read:page>${page}</read:page>
+            <read:size>${size}</read:size>
+          </read:listPlatformReadingHistoryRequest>
         </soapenv:Body>
       </soapenv:Envelope>
     `;
@@ -125,6 +149,50 @@ export class LibraryService {
       totalElements: Number(this.getRequiredValue(xml, 'totalElements')),
       readings,
     };
+  }
+
+  parsePlatformReadingHistory(responseXml: string): PlatformReadingHistoryPage {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    const readingElements = Array.from(
+      xml.getElementsByTagNameNS(this.namespace, 'readings')
+    );
+
+    const readings: PlatformReadingHistoryItem[] = readingElements.map((element) => {
+      const rawCoverKey = this.getOptionalValue(element, 'coverKey');
+      const coverKey = rawCoverKey && rawCoverKey.trim() !== '' ? rawCoverKey.trim() : null;
+
+      return {
+        readingId: this.getRequiredValue(element, 'readingId'),
+        title: this.getRequiredValue(element, 'title'),
+        editorialLevel: this.getEditorialLevel(element),
+        category: this.getRequiredValue(element, 'category'),
+        coverKey,
+        progressStatus: this.getPlatformHistoryProgressStatus(element),
+      };
+    });
+
+    return {
+      page: Number(this.getRequiredValue(xml, 'page')),
+      size: Number(this.getRequiredValue(xml, 'size')),
+      totalElements: Number(this.getRequiredValue(xml, 'totalElements')),
+      readings,
+    };
+  }
+
+  private getEditorialLevel(element: Element): EditorialLevel {
+    const value = this.getRequiredValue(element, 'editorialLevel');
+    if (!['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(value)) {
+      throw new Error('Invalid SOAP response: invalid editorial level');
+    }
+    return value as EditorialLevel;
+  }
+
+  private getPlatformHistoryProgressStatus(element: Element): 'IN_PROGRESS' | 'COMPLETED' {
+    const value = this.getRequiredValue(element, 'progressStatus');
+    if (value !== 'IN_PROGRESS' && value !== 'COMPLETED') {
+      throw new Error('Invalid SOAP response: invalid progress status');
+    }
+    return value;
   }
 
   parseRegisteredReadingResponse(responseXml: string): RegisteredReading {

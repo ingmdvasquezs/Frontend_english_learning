@@ -33,3 +33,21 @@ export interface RegisteredReading {
   language: string;
   createdAt: string;
 }
+
+export type EditorialLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+
+export interface PlatformReadingHistoryItem {
+  readingId: string;
+  title: string;
+  editorialLevel: EditorialLevel;
+  category: string;
+  coverKey?: string | null;
+  progressStatus: 'IN_PROGRESS' | 'COMPLETED';
+}
+
+export interface PlatformReadingHistoryPage {
+  page: number;
+  size: number;
+  totalElements: number;
+  readings: PlatformReadingHistoryItem[];
+}

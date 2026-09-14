@@ -15,6 +15,8 @@ describe('Library', () => {
     listUserReadings: ReturnType<typeof vi.fn>;
     parseUserReadings: ReturnType<typeof vi.fn>;
     deleteReading: ReturnType<typeof vi.fn>;
+    listPlatformReadingHistory: ReturnType<typeof vi.fn>;
+    parsePlatformReadingHistory: ReturnType<typeof vi.fn>;
   };
   let documentService: { list: ReturnType<typeof vi.fn>; getCover: ReturnType<typeof vi.fn>; deleteDocument: ReturnType<typeof vi.fn> };
 
@@ -26,6 +28,8 @@ describe('Library', () => {
       listUserReadings: vi.fn(() => response.asObservable()),
       parseUserReadings: vi.fn(),
       deleteReading: vi.fn(),
+      listPlatformReadingHistory: vi.fn(() => of('')),
+      parsePlatformReadingHistory: vi.fn(() => ({ page: 0, size: 20, totalElements: 0, readings: [] })),
     };
     documentService = {
       list: vi.fn(() => of({ content:[],page:0,size:20,totalElements:0 })),
@@ -171,10 +175,11 @@ describe('Library', () => {
     const buttons = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
 
     expect(buttons.map((button) => button.textContent?.trim())).toEqual([
-      'Todas (7)',
+      'Mis contenidos (7)',
       'Mis lecturas (7)',
       'Libros / eBooks (0)',
       'PDFs (0)',
+      'Plataforma (0)',
     ]);
 
     buttons[2].click();
@@ -632,6 +637,342 @@ describe('Library', () => {
       'No se pudieron cargar tus lecturas'
     );
     expect(fixture.nativeElement.textContent).toContain('Reintentar');
+  });
+
+  describe('Platform reading history', () => {
+    it('renders Plataforma filter and renamed Mis contenidos filter with proper counts', () => {
+      service.parseUserReadings.mockReturnValue({
+        page: 0, size: 20, totalElements: 2,
+        readings: [
+          { readingId: 'r1', title: 'Text 1', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null },
+          { readingId: 'r2', title: 'Text 2', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null },
+        ],
+      });
+      documentService.list.mockReturnValue(of({
+        page: 0, size: 20, totalElements: 1,
+        content: [importedDocument({ documentId: 'doc1' })],
+      }));
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 5,
+        readings: [
+          { readingId: 'plat-1', title: 'Plat 1', editorialLevel: 'B1', category: 'Science', coverKey: 'c1', progressStatus: 'IN_PROGRESS' },
+        ],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(
+        fixture.nativeElement.querySelectorAll('.library-filters button')
+      ) as HTMLButtonElement[];
+
+      expect(filters.length).toBe(5);
+      expect(filters[0].textContent?.trim()).toBe('Mis contenidos (3)');
+      expect(filters[1].textContent?.trim()).toBe('Mis lecturas (2)');
+      expect(filters[2].textContent?.trim()).toBe('Libros / eBooks (1)');
+      expect(filters[3].textContent?.trim()).toBe('PDFs (0)');
+      expect(filters[4].textContent?.trim()).toBe('Plataforma (5)');
+    });
+
+    it('Mis contenidos displays only personal readings and imported documents, excluding platform', () => {
+      service.parseUserReadings.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'user-text', title: 'User Essay', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null }],
+      });
+      documentService.list.mockReturnValue(of({
+        page: 0, size: 20, totalElements: 1,
+        content: [importedDocument({ documentId: 'doc-book', title: 'Epub Book' })],
+      }));
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'plat-read', title: 'Platform Read', editorialLevel: 'A2', category: 'Culture', coverKey: 'c1', progressStatus: 'COMPLETED' }],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      // We are on default filter: 'all' ("Mis contenidos")
+      expect(fixture.nativeElement.querySelector('a[href="/reading/user-text"]')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('a[href="/documents/doc-book/read"]')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('a[href="/reading/plat-read"]')).toBeFalsy();
+    });
+
+    it('Plataforma tab isolates platform readings and does not display EPUB/PDF/TEXT', () => {
+      service.parseUserReadings.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'user-text', title: 'User Essay', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null }],
+      });
+      documentService.list.mockReturnValue(of({
+        page: 0, size: 20, totalElements: 1,
+        content: [importedDocument({ documentId: 'doc-book', title: 'Epub Book' })],
+      }));
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'plat-read', title: 'Platform Read', editorialLevel: 'A2', category: 'Culture', coverKey: 'c1', progressStatus: 'COMPLETED' }],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(
+        fixture.nativeElement.querySelectorAll('.library-filters button')
+      ) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('a[href="/reading/plat-read"]')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('a[href="/reading/user-text"]')).toBeFalsy();
+      expect(fixture.nativeElement.querySelector('a[href="/documents/doc-book/read"]')).toBeFalsy();
+    });
+
+    it('renders IN_PROGRESS with "En progreso" badge and "Continuar →" CTA', () => {
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'in-prog', title: 'Ongoing Story', editorialLevel: 'B2', category: 'Travel', coverKey: 'travel', progressStatus: 'IN_PROGRESS' }],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      const card = fixture.nativeElement.querySelector('a[href="/reading/in-prog"]') as HTMLElement;
+      expect(card).toBeTruthy();
+      expect(card.textContent).toContain('Ongoing Story');
+      expect(card.textContent).toContain('B2');
+      expect(card.textContent).toContain('Travel');
+      expect(card.textContent).toContain('En progreso');
+      expect(card.textContent).toContain('Continuar →');
+      expect(card.querySelector('.library-status-active')).toBeTruthy();
+      expect(card.querySelector('.library-status-complete')).toBeFalsy();
+    });
+
+    it('renders COMPLETED with "✓ Leída" badge and "Releer →" CTA', () => {
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'done', title: 'Finished Story', editorialLevel: 'C1', category: 'History', coverKey: 'history', progressStatus: 'COMPLETED' }],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      const card = fixture.nativeElement.querySelector('a[href="/reading/done"]') as HTMLElement;
+      expect(card).toBeTruthy();
+      expect(card.textContent).toContain('Finished Story');
+      expect(card.textContent).toContain('C1');
+      expect(card.textContent).toContain('History');
+      expect(card.textContent).toContain('✓ Leída');
+      expect(card.textContent).toContain('Releer →');
+      expect(card.querySelector('.library-status-complete')).toBeTruthy();
+      expect(card.querySelector('.library-status-active')).toBeFalsy();
+    });
+
+    it('preserves exact backend order without frontend sorting', () => {
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 2,
+        readings: [
+          { readingId: 'beta', title: 'Beta Reading', editorialLevel: 'B1', category: 'Science', coverKey: null, progressStatus: 'IN_PROGRESS' },
+          { readingId: 'alpha', title: 'Alpha Reading', editorialLevel: 'A1', category: 'Nature', coverKey: null, progressStatus: 'COMPLETED' },
+        ],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      const titles = Array.from(
+        fixture.nativeElement.querySelectorAll('.platform-reading-card h2')
+      ).map((el) => (el as HTMLElement).textContent?.trim());
+
+      expect(titles).toEqual(['Beta Reading', 'Alpha Reading']);
+    });
+
+    it('shows platform empty state when platformReadings is empty', () => {
+      service.parseUserReadings.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'u1', title: 'User Doc', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null }],
+      });
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 0,
+        readings: [],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain(
+        'Aún no tienes lecturas de la plataforma en tu biblioteca.'
+      );
+      expect(fixture.nativeElement.textContent).toContain(
+        'Las lecturas que empieces o completes aparecerán aquí.'
+      );
+    });
+
+    it('shows loading state in Plataforma tab while platform loading is true', () => {
+      const platformSubject = new Subject<string>();
+      service.listPlatformReadingHistory.mockReturnValue(platformSubject.asObservable());
+      service.parseUserReadings.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'u1', title: 'User Doc', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null }],
+      });
+
+      fixture = TestBed.createComponent(Library);
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain(
+        'Cargando lecturas de la plataforma...'
+      );
+
+      platformSubject.next('<xml/>');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).not.toContain(
+        'Cargando lecturas de la plataforma...'
+      );
+    });
+
+    it('platform error does not break other categories and shows retry button', () => {
+      service.listPlatformReadingHistory.mockReturnValue(
+        throwError(() => new Error('Platform network failure'))
+      );
+      service.parseUserReadings.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'u1', title: 'User Doc', language: 'en', createdAt: null, uniqueWords: 0, knownWords: 0, learningWords: 0, explicitNewWords: 0, ignoredWords: 0, unclassifiedWords: 0, progressStatus: null }],
+      });
+
+      fixture = TestBed.createComponent(Library);
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      // Mis contenidos still works
+      expect(fixture.nativeElement.querySelector('a[href="/reading/u1"]')).toBeTruthy();
+
+      // Navigate to Plataforma
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain(
+        'No pudimos cargar las lecturas de la plataforma.'
+      );
+      expect(fixture.nativeElement.textContent).toContain('Reintentar');
+
+      // Click retry
+      service.listPlatformReadingHistory.mockReturnValue(of('<ok/>'));
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 1,
+        readings: [{ readingId: 'plat-retry', title: 'Recovered', editorialLevel: 'A1', category: 'General', coverKey: null, progressStatus: 'IN_PROGRESS' }],
+      });
+      const retryBtn = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+      const buttons = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+      const retry = buttons.find((b) => b.textContent?.includes('Reintentar'));
+      retry?.click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Recovered');
+    });
+
+    it('count uses totalElements, not readings.length', () => {
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 45,
+        readings: [
+          { readingId: 'p1', title: 'One', editorialLevel: 'A1', category: 'Cat', coverKey: null, progressStatus: 'IN_PROGRESS' },
+          { readingId: 'p2', title: 'Two', editorialLevel: 'A2', category: 'Cat', coverKey: null, progressStatus: 'COMPLETED' },
+        ],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      expect(filters[4].textContent?.trim()).toBe('Plataforma (45)');
+    });
+
+    it('pagination requests next page from backend when clicked', () => {
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 25,
+        readings: Array.from({ length: 20 }, (_, i) => ({
+          readingId: `p-${i}`, title: `Title ${i}`, editorialLevel: 'A1' as const, category: 'Cat', coverKey: null, progressStatus: 'IN_PROGRESS' as const,
+        })),
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).toContain('Página 1 de 2');
+      const nextBtn = Array.from(fixture.nativeElement.querySelectorAll('.platform-pagination-btn'))
+        .find((b) => (b as HTMLElement).textContent?.includes('Siguiente')) as HTMLButtonElement;
+      expect(nextBtn).toBeTruthy();
+      expect(nextBtn.disabled).toBe(false);
+
+      nextBtn.click();
+      fixture.detectChanges();
+
+      expect(service.listPlatformReadingHistory).toHaveBeenCalledWith(1, 20);
+    });
+
+    it('renders fallback cover when coverKey is null or image encounters error', () => {
+      service.parsePlatformReadingHistory.mockReturnValue({
+        page: 0, size: 20, totalElements: 2,
+        readings: [
+          { readingId: 'no-cov', title: 'No Cover', editorialLevel: 'B1', category: 'Art', coverKey: null, progressStatus: 'COMPLETED' },
+          { readingId: 'bad-cov', title: 'Bad Cover', editorialLevel: 'B2', category: 'Music', coverKey: 'missing-asset', progressStatus: 'IN_PROGRESS' },
+        ],
+      });
+
+      fixture.detectChanges();
+      response.next('ok');
+      fixture.detectChanges();
+
+      const filters = Array.from(fixture.nativeElement.querySelectorAll('.library-filters button')) as HTMLButtonElement[];
+      filters[4].click();
+      fixture.detectChanges();
+
+      const noCovCard = fixture.nativeElement.querySelector('a[href="/reading/no-cov"]') as HTMLElement;
+      expect(noCovCard.querySelector('.cover-fallback')?.textContent).toContain('English Reading');
+      expect(noCovCard.querySelector('img')).toBeFalsy();
+
+      const badCovCard = fixture.nativeElement.querySelector('a[href="/reading/bad-cov"]') as HTMLElement;
+      const img = badCovCard.querySelector('img');
+      expect(img).toBeTruthy();
+      img?.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+
+      expect(badCovCard.querySelector('.cover-fallback')?.textContent).toContain('English Reading');
+      expect(badCovCard.querySelector('img')).toBeFalsy();
+    });
   });
 
   function importedDocument(overrides: Partial<ImportedDocument> = {}): ImportedDocument {

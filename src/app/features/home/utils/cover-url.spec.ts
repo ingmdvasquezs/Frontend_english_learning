@@ -7,6 +7,7 @@ describe('coverUrl', () => {
 
   it('returns null without a usable key', () => {
     expect(coverUrl(null)).toBeNull();
+    expect(coverUrl(undefined)).toBeNull();
     expect(coverUrl('  ')).toBeNull();
   });
 });
