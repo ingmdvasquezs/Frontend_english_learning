@@ -30,14 +30,19 @@ export class AppShell implements OnInit {
 
   ngOnInit(): void {
     this.profileService.loadProfile();
+    this.updateImmersiveState();
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(() => {
-      let current: ActivatedRoute = this.route;
-      while (current.firstChild) current = current.firstChild;
-      this.isImmersive.set(current.snapshot.data['immersive'] === true);
+      this.updateImmersiveState();
     });
+  }
+
+  private updateImmersiveState(): void {
+    let current: ActivatedRoute = this.route;
+    while (current.firstChild) current = current.firstChild;
+    this.isImmersive.set(current.snapshot?.data?.['immersive'] === true);
   }
 
   closeDrawer(): void { this.drawerOpen.set(false); }
