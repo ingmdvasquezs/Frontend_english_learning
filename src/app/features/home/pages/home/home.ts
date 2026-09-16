@@ -17,7 +17,6 @@ import { HomeReadingCard } from '../../components/home-reading-card/home-reading
 import { EditorialHero } from '../../components/editorial-hero/editorial-hero';
 import { EditorialUniverse } from '../../components/editorial-universe/editorial-universe';
 import { EditorialHeroSlide } from '../../models/editorial-hero.models';
-import { resolveRecommendationPreview } from '../../data/recommendation-editorial-preview.data';
 
 export { calculateKnownPercentage, calculateWordsToLearn, wordCountLabel };
 
@@ -113,14 +112,13 @@ export class Home implements OnInit {
   readonly failedCoverIds = signal<ReadonlySet<string>>(new Set());
   readonly userTextCoverUrl = userTextCoverUrl;
   readonly recommendationCards = computed(() =>
-    this.recommendations().map((reading, index) => {
+    this.recommendations().map((reading) => {
       const card = toVocabularyCard(reading);
-      const preview = resolveRecommendationPreview(reading.readingId, reading.coverKey, index);
       const isDiscovery = reading.reasonCode === 'DISCOVERY';
       const fit = card.vocabularyFitPercentage;
       return {
         ...card,
-        description: reading.description ?? preview ?? null,
+        description: reading.description ?? null,
         fitLabel: fit === null ? null : `${fit}% vocab fit`,
         compatibilityLabel: fit === null ? null : `Compatibility ${fit}%`,
         revealMetricsEn: [

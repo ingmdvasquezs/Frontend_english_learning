@@ -103,6 +103,7 @@ describe('HomeService', () => {
       progressStatus: null,
       coverKey: null,
       reasonCode: null,
+      description: null,
     });
   });
 
@@ -191,7 +192,25 @@ describe('HomeService', () => {
       vocabularyFitPercentage: 78, classificationConfidencePercentage: 93.5,
       progressStatus: 'IN_PROGRESS', coverKey: 'collection-cover',
       reasonCode: null,
+      description: null,
     });
+  });
+
+  it('parses shortDescription from SOAP and maps it to description regardless of coverKey', () => {
+    const xmlWithDescription = pageXml(
+      readingXml('rec-desc', false).replace(
+        '</read:readings>',
+        '<read:shortDescription>A captivating tale of mountain spirits.</read:shortDescription></read:readings>'
+      ),
+      1
+    );
+    const result = service.parseRecommendations(xmlWithDescription);
+    expect(result.readings[0].description).toBe('A captivating tale of mountain spirits.');
+
+    // When shortDescription is omitted, description is null and does not fabricate text
+    const xmlWithoutDescription = pageXml(readingXml('rec-no-desc', false), 1);
+    const resultNoDesc = service.parseRecommendations(xmlWithoutDescription);
+    expect(resultNoDesc.readings[0].description).toBeNull();
   });
 
   it('parses reasonCode when present and handles unknown codes gracefully', () => {

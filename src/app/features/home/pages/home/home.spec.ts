@@ -1445,6 +1445,34 @@ describe('Home', () => {
     return { page: 0, size: 3, totalElements: readings.length, readings };
   }
 
+  it('maps reading.description from SOAP shortDescription directly to card.description and null when absent', () => {
+    fixture.detectChanges();
+    homeService.parseRecommendations.mockReturnValue({
+      page: 0,
+      size: 2,
+      totalElements: 2,
+      readings: [
+        recommendedReading({
+          readingId: 'rec-1',
+          coverKey: 'custom-key',
+          description: 'Authentic legend synopsis directly from backend.',
+        }),
+        recommendedReading({
+          readingId: 'rec-2',
+          coverKey: 'another-key',
+          description: null,
+        }),
+      ],
+    });
+    recommendationResponse.next('<response/>');
+    fixture.detectChanges();
+
+    const cards = fixture.componentInstance.recommendationCards();
+    expect(cards).toHaveLength(2);
+    expect(cards[0].description).toBe('Authentic legend synopsis directly from backend.');
+    expect(cards[1].description).toBeNull();
+  });
+
   function recommendedReading(
     overrides: Partial<RecommendedPlatformReading> = {}
   ): RecommendedPlatformReading {

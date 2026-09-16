@@ -161,6 +161,7 @@ export class HomeService {
       reasonCode: parseRecommendationReasonCode(
         this.getOptionalValue(element, 'reasonCode')
       ),
+      description: this.getOptionalValue(element, 'shortDescription'),
     };
   }
 
