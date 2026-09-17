@@ -8,9 +8,9 @@
 
     <!-- Continuar Leyendo -->
     @if (continueReadingError() || continueReadingCards().length > 0) {
-      <section class="section-block mb-[44px]" aria-labelledby="continue-reading-heading">
-        <div class="section-heading-row flex items-baseline justify-between mb-3">
-          <div>
+      <section class="section-block" aria-labelledby="continue-reading-heading">
+        <div class="section-heading-row">
+          <div class="section-heading-main">
             <h2 id="continue-reading-heading" class="section-title">Continuar leyendo</h2>
             <p class="section-subtitle">Retoma donde lo dejaste. Grandes historias te esperan.</p>
           </div>
@@ -22,7 +22,7 @@
         @if (continueReadingError()) {
           <p class="mt-4 text-[14px] text-red-300">{{ continueReadingError() }}</p>
         } @else {
-          <div class="rail-shell mt-3">
+          <div class="rail-shell">
             @if (continueReadingHasOverflow() && !continueReadingAtStart()) {
               <button type="button" aria-label="Ver lecturas en progreso anteriores" (click)="scrollContinueReading('previous')" class="rail-arrow rail-arrow-previous">‹</button>
             }
@@ -52,48 +52,69 @@
 
                   <!-- Contenido lateral derecho -->
                   <div class="continue-reading-body">
-                    <!-- Metadata: contexto editorial -->
-                    <p class="continue-reading-context">
-                      @if (card.editorialLevel && card.category) {
-                        <span class="continue-reading-level">{{ card.editorialLevel }}</span><span class="continue-reading-sep"> · </span><span class="continue-reading-cat">{{ card.category }}</span>
-                      } @else {
-                        {{ card.context }}
-                      }
-                    </p>
+                    <!-- Header: badge CEFR + Categoría + bookmark -->
+                    <div class="continue-reading-header reading-card-header">
+                      <div class="continue-reading-metadata reading-card-metadata">
+                        <p class="continue-reading-context">
+                          @if (card.origin === 'USER') {
+                            <span class="reading-card-category continue-reading-user-label">Tu lectura</span>
+                          } @else if (card.editorialLevel && card.category) {
+                            <span class="reading-card-badge continue-reading-level">{{ card.editorialLevel }}</span><span class="continue-reading-sep"> · </span><span class="reading-card-category continue-reading-cat">{{ card.category }}</span>
+                          } @else if (card.editorialLevel) {
+                            <span class="reading-card-badge continue-reading-level">{{ card.editorialLevel }}</span>
+                          } @else if (card.category) {
+                            <span class="reading-card-category continue-reading-cat">{{ card.category }}</span>
+                          } @else {
+                            <span class="reading-card-category">{{ card.context }}</span>
+                          }
+                        </p>
+                      </div>
+                      <span class="reading-card-bookmark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                      </span>
+                    </div>
 
                     <!-- Título editorial -->
-                    <h3 class="continue-reading-title">{{ card.title }}</h3>
+                    <h3 class="continue-reading-title reading-card-title">{{ card.title }}</h3>
 
                     <!-- Descripción breve opcional -->
                     @if (card.description) {
-                      <p class="continue-reading-desc">{{ card.description }}</p>
+                      <p class="continue-reading-desc reading-card-desc">{{ card.description }}</p>
                     }
 
-                    <!-- Bloque inferior: Progreso + Footer alineados al fondo -->
-                    <div class="continue-reading-bottom">
-                      <!-- Barra de progreso — sólo cuando existe porcentaje real -->
-                      @if (card.progressPercentage != null && card.progressPercentage >= 0) {
-                        <div class="continue-reading-progress-wrap" aria-hidden="true">
-                          <div class="continue-reading-progress-track">
-                            <div
-                              class="continue-reading-progress-fill"
-                              [style.width.%]="card.progressPercentage"
-                            ></div>
-                          </div>
+                    <!-- Zona compacta de progreso justo ENCIMA del footer -->
+                    @if (card.progressPercentage != null && card.progressPercentage >= 0) {
+                      <div class="continue-reading-progress-block continue-reading-progress-wrap">
+                        <span class="continue-reading-progress-label continue-reading-progress-text">{{ card.progressPercentage }}% de avance</span>
+                        <div
+                          class="continue-reading-progress-track"
+                          role="progressbar"
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          [attr.aria-valuenow]="card.progressPercentage"
+                          [attr.aria-label]="'Progreso de lectura: ' + card.progressPercentage + ' por ciento'"
+                        >
+                          <div
+                            class="continue-reading-progress-fill"
+                            [style.width.%]="card.progressPercentage"
+                          ></div>
                         </div>
-                      }
-
-                      <!-- Footer: estado / porcentaje + CTA -->
-                      <div class="continue-reading-footer">
-                        @if (card.progressPercentage != null && card.progressPercentage >= 0) {
-                          <span class="continue-reading-status continue-reading-progress-text">
-                            {{ card.progressPercentage }}% completado
-                          </span>
-                        } @else {
-                          <span class="continue-reading-status">En progreso</span>
-                        }
-                        <span class="continue-reading-cta-pill">Continuar</span>
                       </div>
+                    }
+
+                    <!-- Footer: lifecycle/status ("● En progreso") + CTA ("Continuar →") -->
+                    <div class="continue-reading-footer reading-card-summary">
+                      <div class="continue-reading-status-block continue-reading-status-row" [attr.title]="card.formattedStartedAt ? card.formattedStartedAt : null">
+                        <div class="continue-reading-status continue-reading-status-badge">
+                          <span class="continue-reading-status-dot" aria-hidden="true">●</span>
+                          <span class="continue-reading-status-label continue-reading-status-text">En progreso</span>
+                        </div>
+                        @if (card.formattedStartedAt; as startedDate) {
+                          <p class="continue-reading-date">{{ startedDate }}</p>
+                        }
+                      </div>
+
+                      <span class="continue-reading-cta reading-card-cta">Continuar →</span>
                     </div>
                   </div>
                 </a>
@@ -108,20 +129,15 @@
     }
 
     <!-- Recomendadas Para Ti -->
-    <section class="section-block mb-[48px]" aria-labelledby="recommendations-heading">
-      <div class="section-heading-row flex flex-col md:flex-row md:items-baseline md:justify-between gap-3 mb-4">
-        <div>
+    <section class="section-block" aria-labelledby="recommendations-heading">
+      <div class="section-heading-row">
+        <div class="section-heading-main">
           <h2 id="recommendations-heading" class="section-title">Recomendadas para ti</h2>
           <p class="section-subtitle">Seleccionadas según tu nivel de vocabulario e historial de lectura.</p>
         </div>
-        <div class="recommendations-callout-pill" role="note">
-          <span class="callout-icon" aria-hidden="true">💡</span>
-          <span class="callout-text">Las recomendaciones se adaptan a tu vocabulario. Explora historias para descubrir nuevos temas.</span>
-          <span class="callout-action" aria-hidden="true">Learn more →</span>
-        </div>
       </div>
 
-      <div class="mt-4" aria-live="polite">
+      <div aria-live="polite">
         @if (recommendationsLoading()) {
           <p class="text-[var(--app-muted)]">Cargando recomendaciones...</p>
         } @else if (recommendationsError()) {
@@ -166,10 +182,10 @@
       </div>
     </section>
 
-    <!-- Explora Historias (Reemplaza encabezado técnico "Collections") -->
-    <section class="section-block mb-[52px] border-t border-[var(--app-border)] pt-10" aria-labelledby="explore-stories-heading">
-      <div class="section-heading-row flex items-baseline justify-between mb-4">
-        <div>
+    <!-- Explora Historias (Shell Editorial Beige) -->
+    <section class="explore-editorial-shell" aria-labelledby="explore-stories-heading">
+      <div class="section-heading-row explore-shell-header">
+        <div class="section-heading-main">
           <h2 id="explore-stories-heading" class="section-title">Explora historias</h2>
           <p class="section-subtitle">Descubre lecturas por lugar, tema o perspectiva.</p>
         </div>
@@ -180,18 +196,23 @@
 
       <!-- Universo temático destacado: Colombia -->
       <app-editorial-universe />
+    </section>
 
-      <!-- Colecciones dinámicas de la plataforma -->
-      @if (collectionsLoading()) {
-        <p class="mt-10 border-t border-[var(--app-border)] pt-8 text-[14px] text-[var(--app-muted)]">Cargando colecciones...</p>
-      }
-      @for (collection of collections(); track collection.key) {
+    <!-- Colecciones dinámicas de la plataforma -->
+    @if (collectionsLoading()) {
+      <p class="mt-6 border-t border-[var(--app-border)] pt-5 text-[14px] text-[var(--app-muted)]">Cargando colecciones...</p>
+    }
+      @for (collection of visibleCollections(); track collection.key) {
         @let state = collectionContent(collection.key);
         @if (state.loading || state.error || state.readings.length > 0) {
-          <div class="collection-section mt-10 border-t border-[var(--app-border)] pt-8" [attr.aria-label]="'Colección ' + collection.displayName">
-            <h3 class="collection-title">{{ collection.displayName }}</h3>
-            <p class="collection-desc">{{ collection.description }}</p>
-            <div class="rail-shell mt-5">
+          <div class="collection-section mt-6 border-t border-[var(--app-border)] pt-5" [attr.aria-label]="'Colección ' + collection.displayName">
+            <div class="section-heading-row">
+              <div class="section-heading-main">
+                <h3 class="collection-title">{{ collection.displayName }}</h3>
+                <p class="section-subtitle collection-desc">{{ collection.description }}</p>
+              </div>
+            </div>
+            <div class="rail-shell">
               @if (collectionState(collection.key).hasOverflow && !collectionState(collection.key).atStart) {
                 <button type="button" [attr.aria-label]="'Ver anteriores lecturas de ' + collection.displayName" (click)="scrollCollection(collection.key, collectionRail, 'previous')" class="rail-arrow rail-arrow-previous">‹</button>
               }
@@ -219,6 +240,5 @@
           </div>
         }
       }
-    </section>
   </main>
 </div>

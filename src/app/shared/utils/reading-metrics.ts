@@ -125,7 +125,7 @@ export function toVocabularyCard<T extends VocabularyCounts & VocabularyFit>(rea
       : `${vocabularyFitPercentage}% vocab fit`,
     compatibilityLabelEn: vocabularyFitPercentage === null
       ? null
-      : `Compatibility ${vocabularyFitPercentage}%`,
+      : `Fit ${vocabularyFitPercentage}%`,
     knownWordsLabelEn: `${knownWords} Known words`,
     learningWordsLabelEn: `${learningWords} Learning words`,
     wordsToLearnLabelEn: `${wordsToLearn} Words to learn`,

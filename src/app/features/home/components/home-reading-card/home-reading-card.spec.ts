@@ -27,11 +27,11 @@ describe('HomeReadingCard', () => {
     expect(anchor.querySelector('.reading-card-title')?.textContent).toContain('A Window for the Workshop');
     expect(anchor.querySelector('.reading-card-primary-metric')?.textContent).toContain('34% vocab fit');
     expect(anchor.querySelector('.reading-card-secondary-metric')?.textContent).toContain('12 min');
-    expect(anchor.querySelector('.reading-card-cta')?.textContent).toContain('Open reading');
+    expect(anchor.querySelector('.reading-card-cta')?.textContent).toContain('Open →');
   });
 
   it.each([
-    ['IN_PROGRESS', 'In progress', 'Continue reading →'],
+    ['IN_PROGRESS', 'In progress', 'Continue →'],
     ['COMPLETED', '✓ Read', 'Re-read →'],
   ] as const)('keeps progress and CTA in the same slots for %s', (progressStatus, progress, cta) => {
     fixture.componentRef.setInput('reading', reading({ progressStatus }));
@@ -189,8 +189,8 @@ describe('HomeReadingCard', () => {
       'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
     );
 
-    // H: Vocabulary fit / Compatibility / Known words / Learning words / Words to learn in English
-    expect(reveal.textContent).toContain('Compatibility 13%');
+    // H: Vocabulary fit / Fit / Known words / Learning words / Words to learn in English
+    expect(reveal.textContent).toContain('Fit 13%');
     expect(reveal.textContent).toContain('30 Known words');
     expect(reveal.textContent).toContain('10 Learning words');
     expect(reveal.textContent).toContain('254 Words to learn');
@@ -390,15 +390,15 @@ describe('HomeReadingCard', () => {
   });
 
   it.each([
-    [null, 'Open reading →'],
-    ['IN_PROGRESS', 'Continue reading →'],
-    ['COMPLETED', 'Re-read →'],
-  ] as const)('renders functional English CTA %s for progressStatus %s', (progressStatus, expectedCta) => {
+    [null, 'Open →', 'Open reading →'],
+    ['IN_PROGRESS', 'Continue →', 'Continue reading →'],
+    ['COMPLETED', 'Re-read →', 'Re-read →'],
+  ] as const)('renders base CTA %s and reveal CTA %s for progressStatus %s', (progressStatus, expectedBaseCta, expectedRevealCta) => {
     fixture.componentRef.setInput('reading', reading({ progressStatus }));
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.reading-card-cta').textContent).toContain(expectedCta);
-    expect(fixture.nativeElement.querySelector('.reading-card-reveal-cta').textContent).toContain(expectedCta);
+    expect(fixture.nativeElement.querySelector('.reading-card-summary .reading-card-cta').textContent).toContain(expectedBaseCta);
+    expect(fixture.nativeElement.querySelector('.reading-card-reveal-cta').textContent).toContain(expectedRevealCta);
   });
 
   it('omits fit indicator when vocabularyFitPercentage is null', () => {
@@ -414,6 +414,21 @@ describe('HomeReadingCard', () => {
     const secondary = fixture.nativeElement.querySelector('.reading-card-secondary-metric');
     expect(secondary?.textContent).toBe('12 min');
   });
+
+  it('preserves an uncollapsed footer layout separating fit indicator and CTA', () => {
+    fixture.detectChanges();
+    const summary = fixture.nativeElement.querySelector('.reading-card-summary') as HTMLElement;
+    const metric = summary.querySelector('.reading-card-primary-metric') as HTMLElement;
+    const cta = summary.querySelector('.reading-card-cta') as HTMLElement;
+
+    expect(metric).toBeTruthy();
+    expect(cta).toBeTruthy();
+    expect(metric.textContent?.trim()).toBe('34% vocab fit');
+    expect(cta.textContent?.trim()).toBe('Open →');
+    expect(summary.textContent).toContain('34% vocab fit');
+    expect(summary.textContent).toContain('Open →');
+  });
+
 
   function reading(overrides: Partial<RecommendedPlatformReading> = {}): RecommendedPlatformReading {
     return {

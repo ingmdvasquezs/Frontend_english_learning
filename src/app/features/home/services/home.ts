@@ -56,6 +56,10 @@ export class HomeService {
       editorialLevel: this.getOptionalEditorialLevel(element),
       category: this.getOptionalValue(element, 'category'),
       startedAt: this.getRequiredValue(element, 'startedAt'),
+      description:
+        this.getOptionalValue(element, 'shortDescription') ??
+        this.getOptionalValue(element, 'description'),
+      progressPercentage: this.getOptionalNumber(element, 'progressPercentage'),
     }));
     return {
       page: this.getRequiredNumber(xml, 'page'),
@@ -65,7 +69,7 @@ export class HomeService {
     };
   }
 
-  listCollectionReadings(collectionKey: string, page = 0, size = 8) {
+  listCollectionReadings(collectionKey: string, page = 0, size = 20) {
     return this.postSoap(`
       <read:listCollectionReadingsRequest>
         <read:collectionKey>${escapeXml(collectionKey)}</read:collectionKey>
@@ -175,6 +179,18 @@ export class HomeService {
       throw new Error(`Invalid SOAP response: ${name} is not numeric`);
     }
     return value;
+  }
+
+  private getOptionalNumber(
+    parent: Element | Document,
+    name: string
+  ): number | null {
+    const rawValue = this.getOptionalValue(parent, name);
+    if (rawValue === null || rawValue.trim() === '') {
+      return null;
+    }
+    const value = Number(rawValue);
+    return Number.isFinite(value) ? value : null;
   }
 
   private getEditorialLevel(element: Element): EditorialLevel {

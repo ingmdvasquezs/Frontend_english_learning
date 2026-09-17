@@ -1,11 +1,25 @@
-@if (currentSlide(); as slide) {
-  <section class="editorial-hero app-card" aria-label="Campañas editoriales destacadas">
-    <div class="editorial-hero-background" aria-hidden="true">
-      <div class="hero-atmosphere-gradient"></div>
-      @if (slide.imageUrl) {
-        <div class="hero-bg-img" [style.backgroundImage]="'url(' + slide.imageUrl + ')'"></div>
+@if (primarySlide(); as slide) {
+  <section
+    class="editorial-hero"
+    aria-label="Campañas editoriales destacadas"
+    (mouseenter)="onMouseEnter()"
+    (mouseleave)="onMouseLeave()"
+  >
+    <!-- Background Crossfade Images -->
+    <div class="editorial-hero-media" aria-hidden="true">
+      @for (s of slides(); track s.id; let idx = $index) {
+        @if (loadedIndices().has(idx) && s.imageUrl) {
+          <div
+            class="hero-bg-img"
+            [class.active]="idx === activeIndex()"
+            [style.backgroundImage]="'url(' + s.imageUrl + ')'"
+          ></div>
+        }
       }
     </div>
+
+    <!-- Soft neutral scrim overlay for legibility -->
+    <div class="hero-banner-backdrop" aria-hidden="true"></div>
 
     <div class="editorial-hero-content">
       <div class="editorial-hero-main">
@@ -44,44 +58,26 @@
             “{{ slide.quote }}”
           </blockquote>
         }
-        @if (slide.location) {
-          <div class="hero-location-tag">
-            <span aria-hidden="true">📍</span> {{ slide.location }}
+        @if (activeLocation(); as loc) {
+          <div class="hero-location-tag" aria-live="polite">
+            <span aria-hidden="true">📍</span> {{ loc }}
           </div>
         }
       </div>
     </div>
 
     @if (slides().length > 1) {
-      <div class="hero-controls" role="group" aria-label="Controles del banner editorial">
-        <button
-          type="button"
-          class="hero-control-arrow"
-          (click)="previousSlide()"
-          aria-label="Campaña anterior"
-        >
-          ‹
-        </button>
-        <div class="hero-dots">
-          @for (item of slides(); track item.id; let idx = $index) {
-            <button
-              type="button"
-              class="hero-dot"
-              [class.hero-dot-active]="idx === activeIndex()"
-              [attr.aria-current]="idx === activeIndex() ? 'true' : null"
-              [attr.aria-label]="'Ir a ' + item.title"
-              (click)="goToSlide(idx)"
-            ></button>
-          }
-        </div>
-        <button
-          type="button"
-          class="hero-control-arrow"
-          (click)="nextSlide()"
-          aria-label="Siguiente campaña"
-        >
-          ›
-        </button>
+      <div class="hero-dots" role="tablist" aria-label="Selector de imágenes">
+        @for (item of slides(); track item.id; let idx = $index) {
+          <button
+            type="button"
+            class="hero-dot"
+            [class.hero-dot-active]="idx === activeIndex()"
+            [attr.aria-selected]="idx === activeIndex()"
+            [attr.aria-label]="getDotLabel(item, idx)"
+            (click)="goToSlide(idx)"
+          ></button>
+        }
       </div>
     }
   </section>

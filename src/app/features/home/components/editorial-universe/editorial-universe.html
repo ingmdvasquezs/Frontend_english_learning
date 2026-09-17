@@ -1,26 +1,64 @@
-<div class="colombia-universe" aria-label="Universo temático Colombia">
+<div class="colombia-universe" [attr.aria-label]="'Universo temático ' + universe.name">
   <!-- Banner Destacado Colombia -->
-  <div class="colombia-featured-banner">
+  <div
+    class="colombia-featured-banner"
+    (mouseenter)="onBannerMouseEnter()"
+    (mouseleave)="onBannerMouseLeave()"
+  >
+    <!-- Background Crossfade Images -->
+    <div class="colombia-banner-media" aria-hidden="true">
+      @for (img of heroImages(); track img.src; let idx = $index) {
+        <div
+          class="colombia-banner-img-slide"
+          [class.active]="activeImageIndex() === idx"
+          [style.background-image]="'url(' + img.src + ')'"
+        ></div>
+      }
+    </div>
+
+    <!-- Dark gradient overlay for legibility -->
     <div class="colombia-banner-backdrop" aria-hidden="true"></div>
+
     <div class="colombia-banner-content">
       <div class="colombia-banner-main">
         <span class="colombia-eyebrow">Universo destacado</span>
         <h3 class="colombia-title">{{ universe.name }}</h3>
         <p class="colombia-subtitle">{{ universe.subtitle }}</p>
         <button type="button" class="colombia-cta" (click)="onExploreColombia()">
-          Explorar Colombia <span aria-hidden="true">→</span>
+          Explorar {{ universe.name }} <span aria-hidden="true">→</span>
         </button>
       </div>
       <div class="colombia-banner-aside">
         <blockquote class="colombia-quote">
           “{{ universe.quote }}”
         </blockquote>
+        @if (activeImage()?.location; as loc) {
+          <span class="colombia-location-chip" aria-live="polite">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 4.5 7 11 7 11s7-6.5 7-11a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            <span>{{ loc }}</span>
+          </span>
+        }
       </div>
     </div>
+
+    @if (heroImages().length > 1) {
+      <div class="colombia-banner-dots" role="tablist" aria-label="Selector de imágenes">
+        @for (img of heroImages(); track img.src; let idx = $index) {
+          <button
+            type="button"
+            class="colombia-banner-dot"
+            [class.active]="activeImageIndex() === idx"
+            [attr.aria-label]="img.location || ('Imagen ' + (idx + 1))"
+            [attr.aria-selected]="activeImageIndex() === idx"
+            (click)="selectImage(idx)"
+          ></button>
+        }
+      </div>
+    }
   </div>
 
   <!-- Píldoras temáticas / Subtemas -->
-  <div class="topic-pills-bar" role="toolbar" aria-label="Subtemas de Colombia">
+  <div class="topic-pills-bar" role="toolbar" [attr.aria-label]="'Subtemas de ' + universe.name">
     @for (topic of universe.topics; track topic.id) {
       <button
         type="button"
@@ -43,40 +81,106 @@
     </div>
   }
 
-  <!-- Grilla de historias de Colombia -->
+  <!-- Grilla de historias del universo -->
   <div class="colombia-stories-container">
-    <h4 class="colombia-stories-heading">Historias de Colombia</h4>
-    <div class="colombia-stories-grid">
-      @for (story of filteredStories(); track story.id) {
-        <article class="colombia-story-card" (click)="onStoryClick(story)">
-          <!-- Cover lateral izquierda -->
+    <h4 class="colombia-stories-heading sr-only">Historias de {{ universe.name }}</h4>
+
+    @if (isRealCollection()) {
+      @if (loading()) {
+        <div class="universe-status" aria-live="polite">
+          <p class="text-[var(--app-muted)]">Cargando historias...</p>
+        </div>
+      } @else if (error(); as err) {
+        <div class="universe-status universe-error" aria-live="polite">
+          <p class="text-red-300">{{ err }}</p>
+          <button type="button" class="universe-retry-btn" (click)="retryTopicCollection()">Reintentar</button>
+        </div>
+      } @else if (realReadings().length === 0) {
+        <div class="universe-status" aria-live="polite">
+          <p class="text-[var(--app-muted)]">No hay historias disponibles en esta colección.</p>
+        </div>
+      } @else {
+        <div class="rail-shell">
+          @if (railHasOverflow() && !railAtStart()) {
+            <button
+              type="button"
+              aria-label="Previous stories"
+              (click)="scrollStories('previous')"
+              class="rail-arrow rail-arrow-previous"
+            >‹</button>
+          }
           <div
-            class="story-cover-wrap"
-            [style.backgroundImage]="coverUrl(story.coverKey) ? 'url(' + coverUrl(story.coverKey) + ')' : null"
+            #storiesRail
+            class="colombia-stories-grid editorial-stories-grid"
+            role="region"
+            aria-label="Historias de Colombia"
+            tabindex="0"
+            (scroll)="onStoriesScroll($event)"
           >
-            @if (!story.coverKey) {
-              <div class="colombia-cover-fallback" aria-hidden="true"><span>Colombia</span></div>
+            @for (reading of realReadings(); track reading.readingId) {
+              <a [routerLink]="['/reading', reading.readingId]" class="colombia-story-card editorial-story-card">
+                <!-- Cover lateral izquierda -->
+                <div class="story-cover-wrap reading-card-cover">
+                  @if (coverUrl(reading.coverKey); as url) {
+                    <img
+                      [src]="url"
+                      [alt]="'Portada de ' + reading.title"
+                      class="story-cover-img"
+                      loading="lazy"
+                    />
+                  } @else {
+                    <div class="colombia-cover-fallback cover-fallback" aria-hidden="true"><span>ERP</span></div>
+                  }
+                </div>
+                <!-- Contenido lateral derecho -->
+                <div class="story-content recommendation-card-body">
+                  <div class="story-header reading-card-header">
+                    <div class="story-meta reading-card-metadata">
+                      <span class="story-level-badge reading-card-badge">{{ reading.editorialLevel }}</span>
+                      <span class="story-category reading-card-category">{{ reading.category }}</span>
+                    </div>
+                    <span class="story-bookmark reading-card-bookmark" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    </span>
+                  </div>
+                  <h3 class="story-title reading-card-title">{{ reading.title }}</h3>
+                  @if (reading.description) {
+                    <p class="story-summary reading-card-desc">{{ reading.description }}</p>
+                  }
+                  <div class="story-footer reading-card-summary">
+                    <app-vocabulary-fit-indicator
+                      [percentage]="fitPercentage(reading)"
+                      [tone]="fitTone(reading)"
+                    />
+                    <span class="story-cta reading-card-cta">{{ resolveBaseCta(reading.progressStatus) }}</span>
+                  </div>
+                  <app-reading-card-reveal
+                    [reason]="reading.reasonCode ? reasonCopy(reading.reasonCode) : null"
+                    [compatibility]="resolvedCompatibility(reading)"
+                    [metrics]="resolvedRevealMetrics(reading)"
+                    [cta]="resolveRevealCta(reading.progressStatus)"
+                    [tone]="fitTone(reading)"
+                  />
+                </div>
+              </a>
             }
           </div>
-          <!-- Contenido lateral derecho -->
-          <div class="story-content">
-            <div class="story-header">
-              <div class="story-meta">
-                <span class="story-level-badge">{{ story.editorialLevel }}</span>
-                <span class="story-topic">{{ story.topicName }}</span>
-              </div>
-              <span class="story-bookmark" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-              </span>
-            </div>
-            <h5 class="story-title">{{ story.title }}</h5>
-            <p class="story-summary">{{ story.summary }}</p>
-            <div class="story-footer">
-              <span class="story-badge-preview">{{ story.statusBadge }}</span>
-            </div>
-          </div>
-        </article>
+          @if (railHasOverflow() && !railAtEnd()) {
+            <button
+              type="button"
+              aria-label="Next stories"
+              (click)="scrollStories('next')"
+              class="rail-arrow rail-arrow-next"
+            >›</button>
+          }
+        </div>
       }
-    </div>
+    } @else {
+      <!-- Pestañas Upcoming: estado editorial no interactivo -->
+      <div class="upcoming-topic-banner" role="status" aria-live="polite">
+        <span class="upcoming-badge">Próximamente</span>
+        <p class="upcoming-text">Próximamente: nuevas historias de {{ selectedTopic().name }} formarán parte del próximo catálogo editorial.</p>
+      </div>
+    }
   </div>
 </div>

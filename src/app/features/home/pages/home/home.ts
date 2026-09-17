@@ -10,6 +10,7 @@ import {
   wordCountLabel,
 } from '../../../../shared/utils/reading-metrics';
 import { coverUrl } from '../../utils/cover-url';
+import { formatStartedAt } from '../../utils/reading-date';
 import { ProfileService } from '../../../profile/services/profile';
 import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
 import { HomeReadingCard } from '../../components/home-reading-card/home-reading-card';
@@ -17,8 +18,16 @@ import { HomeReadingCard } from '../../components/home-reading-card/home-reading
 import { EditorialHero } from '../../components/editorial-hero/editorial-hero';
 import { EditorialUniverse } from '../../components/editorial-universe/editorial-universe';
 import { EditorialHeroSlide } from '../../models/editorial-hero.models';
+import { COLOMBIA_EDITORIAL_PREVIEW } from '../../data/colombia-editorial-preview.data';
 
 export { calculateKnownPercentage, calculateWordsToLearn, wordCountLabel };
+
+/** Collection keys already rendered inside EditorialUniverse — suppress them in the generic list. */
+const EDITORIAL_UNIVERSE_COLLECTION_KEYS: ReadonlySet<string> = new Set(
+  COLOMBIA_EDITORIAL_PREVIEW.topics
+    .map((t) => t.collectionKey)
+    .filter((k): k is string => typeof k === 'string')
+);
 
 interface CollectionState {
   readings: RecommendedPlatformReading[];
@@ -75,19 +84,59 @@ export class Home implements OnInit {
 
   readonly heroSlides = computed<EditorialHeroSlide[]>(() => [
     {
-      id: 'villa-de-leyva',
+      id: 'london-westminster',
       eyebrow: this.greeting(),
       title: 'Aprende inglés con historias que realmente quieras leer.',
       description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
       secondaryNote: '¿Qué te gustaría leer hoy?',
       ctaLabel: 'Encontrar una historia',
       ctaTarget: '#recommendations-heading',
-      location: 'Villa de Leyva, Colombia',
+      location: 'London, United Kingdom',
       quote: 'Different stories. A more open you.',
-      imageAlt: 'Paisaje colonial y montañoso de Villa de Leyva',
-      imageUrl: coverUrl('the-camera-on-platform-three') ?? undefined,
+      imageUrl: '/assets/editorial/heroes/home/hero-home-london-westminster.webp',
+      dotLabel: 'Show London',
+    },
+    {
+      id: 'new-york-brooklyn',
+      eyebrow: this.greeting(),
+      title: 'Aprende inglés con historias que realmente quieras leer.',
+      description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
+      secondaryNote: '¿Qué te gustaría leer hoy?',
+      ctaLabel: 'Encontrar una historia',
+      ctaTarget: '#recommendations-heading',
+      location: 'Brooklyn, New York, USA',
+      quote: 'Different stories. A more open you.',
+      imageUrl: '/assets/editorial/heroes/home/hero-home-new-york-brooklyn.webp',
+      dotLabel: 'Show New York',
+    },
+    {
+      id: 'sydney-opera',
+      eyebrow: this.greeting(),
+      title: 'Aprende inglés con historias que realmente quieras leer.',
+      description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
+      secondaryNote: '¿Qué te gustaría leer hoy?',
+      ctaLabel: 'Encontrar una historia',
+      ctaTarget: '#recommendations-heading',
+      location: 'Sydney, Australia',
+      quote: 'Different stories. A more open you.',
+      imageUrl: '/assets/editorial/heroes/home/hero-home-sydney-opera.webp',
+      dotLabel: 'Show Sydney',
+    },
+    {
+      id: 'oxford-radcliffe-camera',
+      eyebrow: this.greeting(),
+      title: 'Aprende inglés con historias que realmente quieras leer.',
+      description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
+      secondaryNote: '¿Qué te gustaría leer hoy?',
+      ctaLabel: 'Encontrar una historia',
+      ctaTarget: '#recommendations-heading',
+      location: 'Oxford, United Kingdom',
+      quote: 'Different stories. A more open you.',
+      imageUrl: '/assets/editorial/heroes/home/hero-home-oxford-radcliffe-camera.webp',
+      dotLabel: 'Show Oxford',
     },
   ]);
+
 
   onHeroCtaClick(slide: EditorialHeroSlide): void {
     if (typeof document !== 'undefined') {
@@ -120,7 +169,7 @@ export class Home implements OnInit {
         ...card,
         description: reading.description ?? null,
         fitLabel: fit === null ? null : `${fit}% vocab fit`,
-        compatibilityLabel: fit === null ? null : `Compatibility ${fit}%`,
+        compatibilityLabel: fit === null ? null : `Fit ${fit}%`,
         revealMetricsEn: [
           card.knownWordsLabelEn,
           card.learningWordsLabelEn,
@@ -139,6 +188,11 @@ export class Home implements OnInit {
   readonly collectionRailStates = signal<
     Readonly<Record<string, { atStart: boolean; atEnd: boolean; hasOverflow: boolean }>>
   >({});
+
+  /** Collections NOT already covered by EditorialUniverse tabs. */
+  readonly visibleCollections = computed<ReadingCollection[]>(() =>
+    this.collections().filter((c) => !EDITORIAL_UNIVERSE_COLLECTION_KEYS.has(c.key))
+  );
   readonly continueReadingCards = computed(() => {
     const cards = (this.continueReadingPage()?.readings ?? [])
       .filter((reading) => reading.progressStatus === 'IN_PROGRESS')
@@ -154,6 +208,7 @@ export class Home implements OnInit {
             typeof reading.progressPercentage === 'number' && Number.isFinite(reading.progressPercentage)
               ? reading.progressPercentage
               : null,
+          formattedStartedAt: formatStartedAt(reading.startedAt),
         };
       });
     return cards.filter(
@@ -365,7 +420,7 @@ export class Home implements OnInit {
       return {
         ...card,
         fitLabel: fit === null ? null : `${fit}% vocab fit`,
-        compatibilityLabel: fit === null ? null : `Compatibility ${fit}%`,
+        compatibilityLabel: fit === null ? null : `Fit ${fit}%`,
         revealMetricsEn: [
           card.knownWordsLabelEn,
           card.learningWordsLabelEn,

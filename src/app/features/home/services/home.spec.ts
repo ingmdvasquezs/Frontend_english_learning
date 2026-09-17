@@ -64,10 +64,32 @@ describe('HomeService', () => {
     expect(result).toEqual({
       page: 0, size: 10, totalElements: 2,
       readings: [
-        { readingId:'user-1', title:'My text', origin:'USER', progressStatus:'IN_PROGRESS', coverKey:null, editorialLevel:null, category:null, startedAt:'2026-09-04T10:00:00' },
-        { readingId:'platform-1', title:'Platform story', origin:'PLATFORM', progressStatus:'IN_PROGRESS', coverKey:'platform-cover', editorialLevel:'A1', category:'Daily Life', startedAt:'2026-09-04T09:00:00' },
+        { readingId:'user-1', title:'My text', origin:'USER', progressStatus:'IN_PROGRESS', coverKey:null, editorialLevel:null, category:null, startedAt:'2026-09-04T10:00:00', description:null, progressPercentage:null },
+        { readingId:'platform-1', title:'Platform story', origin:'PLATFORM', progressStatus:'IN_PROGRESS', coverKey:'platform-cover', editorialLevel:'A1', category:'Daily Life', startedAt:'2026-09-04T09:00:00', description:null, progressPercentage:null },
       ],
     });
+  });
+
+  it('parses progressPercentage and shortDescription directly from backend SOAP response', () => {
+    const result = service.parseContinueReading(`
+      <read:listContinueReadingResponse xmlns:read="http://soap.com/english-reading/readings">
+        <read:page>0</read:page><read:size>10</read:size><read:totalElements>1</read:totalElements>
+        <read:readings>
+          <read:readingId>candileja-1</read:readingId>
+          <read:title>The Candileja</read:title>
+          <read:origin>PLATFORM</read:origin>
+          <read:progressStatus>IN_PROGRESS</read:progressStatus>
+          <read:coverKey>candileja-llanos</read:coverKey>
+          <read:editorialLevel>B1</read:editorialLevel>
+          <read:category>Culture, Arts &amp; Fiction</read:category>
+          <read:startedAt>2026-09-15T23:48:15.950494</read:startedAt>
+          <read:shortDescription>An authentic description.</read:shortDescription>
+          <read:progressPercentage>99</read:progressPercentage>
+        </read:readings>
+      </read:listContinueReadingResponse>`);
+    expect(result.readings).toHaveLength(1);
+    expect(result.readings[0].progressPercentage).toBe(99);
+    expect(result.readings[0].description).toBe('An authentic description.');
   });
 
   it('parses an empty recommendations page', () => {

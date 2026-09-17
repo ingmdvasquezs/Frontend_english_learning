@@ -1,0 +1,25 @@
+<div class="recommendation-metrics-reveal">
+  @if (reason(); as r) {
+    <p class="reading-card-reason-reveal">{{ r }}</p>
+  }
+  @if (compatibility(); as compat) {
+    <p
+      class="reading-card-primary-metric"
+      [class.reading-card-fit-discovery]="tone() === 'discovery'"
+      [class.reading-card-fit-amber]="tone() === 'discovery'"
+      [class.reading-card-fit-normal]="tone() === 'mature'"
+      [class.reading-card-fit-green]="tone() === 'mature'"
+    >{{ compat }}</p>
+  }
+  @if (secondary(); as sec) {
+    <p class="reading-card-secondary-metric">{{ sec }}</p>
+  }
+  @if (metrics().length) {
+    <div class="reading-card-reveal-details">
+      @for (metric of metrics(); track metric) {
+        <p>{{ metric }}</p>
+      }
+    </div>
+  }
+  <p class="reading-card-cta reading-card-reveal-cta">{{ cta() }}</p>
+</div>

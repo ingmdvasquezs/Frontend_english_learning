@@ -1,16 +1,13 @@
 /**
- * TEMPORARY VISUAL PREVIEW.
- * Replace with backend editorial collections when available.
- *
- * Este dataset es una previsualización de frontend para maquetar el universo
- * temático de Colombia y sus historias culturales. No debe introducirse
- * en flujos de backend, recomendaciones ni progreso.
+ * Configuración editorial del universo temático.
+ * Diseñado para ser genérico y reutilizable para cualquier país o región.
  */
 
 export interface EditorialTopic {
   id: string;
   name: string;
   icon?: string;
+  collectionKey?: string;
 }
 
 export interface EditorialStoryPreview {
@@ -24,69 +21,48 @@ export interface EditorialStoryPreview {
   statusBadge: string;
 }
 
-export interface ColombiaEditorialUniverse {
+export interface EditorialHeroImage {
+  src: string;
+  location?: string;
+  alt?: string;
+}
+
+export interface EditorialUniverseData {
   key: string;
   name: string;
   subtitle: string;
   tagline: string;
   quote: string;
   topics: EditorialTopic[];
-  stories: EditorialStoryPreview[];
+  stories?: EditorialStoryPreview[];
+  heroImages?: EditorialHeroImage[];
 }
 
-export const COLOMBIA_EDITORIAL_PREVIEW: ColombiaEditorialUniverse = {
+export type ColombiaEditorialUniverse = EditorialUniverseData;
+
+export const COLOMBIA_EDITORIAL_PREVIEW: EditorialUniverseData = {
   key: 'colombia',
   name: 'Colombia',
   subtitle: 'Personas extraordinarias. Lugares inolvidables. Historias que trascienden el tiempo.',
   tagline: 'Historias, lugares, mitos y tradiciones para aprender inglés leyendo.',
   quote: 'Muchas historias. Un lugar increíble.',
+  heroImages: [
+    {
+      src: '/assets/editorial/heroes/colombia/hero-colombia-villa-de-leyva.webp',
+      location: 'Villa de Leyva, Boyacá',
+      alt: 'Villa de Leyva, Boyacá',
+    },
+    {
+      src: '/assets/editorial/heroes/colombia/hero-colombia-valle-de-cocora.webp',
+      location: 'Valle de Cocora, Quindío',
+      alt: 'Valle de Cocora, Quindío',
+    },
+  ],
   topics: [
-    { id: 'myths', name: 'Mitos y leyendas', icon: '🌙' },
+    { id: 'myths', name: 'Mitos y leyendas', icon: '🌙', collectionKey: 'colombian-myths-legends' },
     { id: 'real-stories', name: 'Historias reales', icon: '👥' },
     { id: 'history', name: 'Historia y memoria', icon: '🏛️' },
     { id: 'culture', name: 'Cultura y tradiciones', icon: '👒' },
     { id: 'nature', name: 'Naturaleza y lugares', icon: '⛰️' },
-  ],
-  stories: [
-    {
-      id: 'col-story-1',
-      title: 'The Legend of La Llorona',
-      topicId: 'myths',
-      topicName: 'Mitos y leyendas',
-      editorialLevel: 'A2',
-      summary: 'A mother, a river, and an unforgettable story passed down through generations.',
-      coverKey: 'the-grammar-of-tides',
-      statusBadge: 'Próximamente',
-    },
-    {
-      id: 'col-story-2',
-      title: 'The Mohán by the River',
-      topicId: 'myths',
-      topicName: 'Mitos y leyendas',
-      editorialLevel: 'A2',
-      summary: 'A mysterious figure, a flowing river, and a quiet warning from the water.',
-      coverKey: 'a-boat-for-the-little-island',
-      statusBadge: 'Próximamente',
-    },
-    {
-      id: 'col-story-3',
-      title: 'The Patasola in the Forest',
-      topicId: 'myths',
-      topicName: 'Mitos y leyendas',
-      editorialLevel: 'B1',
-      summary: 'Beauty, danger, and a deep shadow moving between the mountain trees.',
-      coverKey: 'the-garden-behind-the-school',
-      statusBadge: 'Próximamente',
-    },
-    {
-      id: 'col-story-4',
-      title: 'The Sombrerón at Night',
-      topicId: 'myths',
-      topicName: 'Mitos y leyendas',
-      editorialLevel: 'A2',
-      summary: 'A small man, a wide hat, and a nighttime lesson no traveler ever forgot.',
-      coverKey: 'the-camera-on-platform-three',
-      statusBadge: 'Próximamente',
-    },
   ],
 };

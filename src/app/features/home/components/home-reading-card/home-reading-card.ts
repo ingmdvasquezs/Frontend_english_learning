@@ -67,10 +67,10 @@ export class HomeReadingCard {
 
   readonly resolvedRevealCompatibility = computed(() => {
     const fit = this.resolvedFitPercentage();
-    if (fit !== null) return `Compatibility ${fit}%`;
+    if (fit !== null) return `Fit ${fit}%`;
     const primary = this.primaryMetric();
     if (primary) {
-      return primary.replace('Compatibilidad', 'Compatibility');
+      return primary.replace('Compatibilidad', 'Fit').replace('Compatibility', 'Fit');
     }
     return null;
   });
@@ -104,12 +104,19 @@ export class HomeReadingCard {
     if (status === 'IN_PROGRESS') return 'In progress';
     return null;
   });
-  readonly ctaLabel = computed(() => {
+  readonly baseCtaLabel = computed(() => {
+    const status = this.reading().progressStatus;
+    if (status === 'COMPLETED') return 'Re-read →';
+    if (status === 'IN_PROGRESS') return 'Continue →';
+    return 'Open →';
+  });
+  readonly revealCtaLabel = computed(() => {
     const status = this.reading().progressStatus;
     if (status === 'COMPLETED') return 'Re-read →';
     if (status === 'IN_PROGRESS') return 'Continue reading →';
     return 'Open reading →';
   });
+  readonly ctaLabel = computed(() => this.baseCtaLabel());
 
   markImageFailed(): void {
     this.imageFailed.set(true);

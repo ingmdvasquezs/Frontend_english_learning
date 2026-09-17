@@ -1,0 +1,97 @@
+app-reading-card-reveal {
+  display: block;
+}
+
+.recommendation-metrics-reveal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.75rem 0.85rem;
+  border-radius: inherit;
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-surface) 84%, transparent);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  border-left: 1px solid color-mix(in srgb, var(--app-border) 50%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(2px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 5;
+}
+
+:root[data-theme='dark'] .recommendation-metrics-reveal {
+  background: color-mix(in srgb, var(--app-surface) 88%, transparent);
+}
+
+.reading-card-reason-reveal {
+  display: -webkit-box;
+  margin-bottom: 0.35rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.recommendation-metrics-reveal .reading-card-primary-metric {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #437055;
+  margin-bottom: 0.15rem;
+}
+
+.recommendation-metrics-reveal .reading-card-primary-metric.reading-card-fit-discovery,
+.recommendation-metrics-reveal .reading-card-primary-metric.reading-card-fit-amber {
+  color: #b58129;
+}
+
+:root[data-theme='dark'] .recommendation-metrics-reveal .reading-card-primary-metric.reading-card-fit-discovery,
+:root[data-theme='dark'] .recommendation-metrics-reveal .reading-card-primary-metric.reading-card-fit-amber {
+  color: #d99b38;
+}
+
+.reading-card-secondary-metric {
+  font-size: 0.7rem;
+  color: var(--app-muted);
+  margin-bottom: 0.25rem;
+}
+
+.reading-card-reveal-details {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.reading-card-reveal-details p {
+  margin: 0;
+}
+
+.reading-card-reveal-cta {
+  margin-top: 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.recommendation-card:hover .recommendation-metrics-reveal,
+.recommendation-card:focus-visible .recommendation-metrics-reveal,
+.recommendation-card:focus-within .recommendation-metrics-reveal,
+.colombia-story-card:hover .recommendation-metrics-reveal,
+.colombia-story-card:focus-visible .recommendation-metrics-reveal,
+.colombia-story-card:focus-within .recommendation-metrics-reveal,
+.editorial-story-card:hover .recommendation-metrics-reveal,
+.editorial-story-card:focus-visible .recommendation-metrics-reveal,
+.editorial-story-card:focus-within .recommendation-metrics-reveal {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}

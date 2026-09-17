@@ -81,7 +81,7 @@
           [attr.aria-hidden]="secondaryMetric() ? null : 'true'"
         >{{ secondaryMetric() }}</span>
       </div>
-      <span class="reading-card-cta">{{ ctaLabel() }}</span>
+      <span class="reading-card-cta">{{ baseCtaLabel() }}</span>
     </div>
 
     <!-- Reveal overlay: aparece en hover/focus — preserva todos los datos del Recommendation Engine -->
@@ -108,7 +108,7 @@
           }
         </div>
       }
-      <p class="reading-card-cta reading-card-reveal-cta">{{ ctaLabel() }}</p>
+      <p class="reading-card-cta reading-card-reveal-cta">{{ revealCtaLabel() }}</p>
     </div>
   </div>
 </a>

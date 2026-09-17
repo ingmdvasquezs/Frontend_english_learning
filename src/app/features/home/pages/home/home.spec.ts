@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal, type WritableSignal } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { Subject, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { LibraryService } from '../../../library/services/library';
 import { HomeService } from '../../services/home';
 import { ContinueReadingItem, RecommendedPlatformReading, ReadingOrigin } from '../../models/home.models';
@@ -193,7 +193,7 @@ describe('Home', () => {
     expect(reveal.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
       'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
     );
-    expect(reveal.textContent).toContain('Compatibility 31%');
+    expect(reveal.textContent).toContain('Fit 31%');
     expect(card.textContent).not.toContain('DISCOVERY');
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
   });
@@ -285,7 +285,7 @@ describe('Home', () => {
     expect(reveal.querySelector('.reading-card-reason-reveal')?.textContent).toContain(
       'Estamos conociendo tu vocabulario para mejorar tus recomendaciones.'
     );
-    expect(reveal.textContent).toContain('Compatibility 31%');
+    expect(reveal.textContent).toContain('Fit 31%');
     expect(railCard.textContent).not.toContain('DISCOVERY');
   });
 
@@ -377,7 +377,8 @@ describe('Home', () => {
     continueReadingResponse.next('<response/>');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelectorAll('.continue-reading-card')).toHaveLength(2);
-    expect(fixture.nativeElement.querySelectorAll('.continue-reading-cta-pill')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('.continue-reading-cta')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelector('.continue-reading-cta-pill')).toBeNull();
     expect(componentText()).toContain('Tu lectura');
     expect(componentText()).toContain('A1 · Daily Life');
     expect(componentText()).toContain('En progreso');
@@ -662,7 +663,7 @@ describe('Home', () => {
 
   // ---- V6.1 Continue Reading Card Tests ----
 
-  it('renders continue-reading card with context metadata, serif title, and cta-pill', () => {
+  it('renders continue-reading card with context metadata, serif title, and standard CTA', () => {
     homeService.parseContinueReading.mockReturnValue(continueReadingPage([
       continueReadingItem('cr-v6', 'PLATFORM', 'The Camera on Platform Three'),
     ]));
@@ -673,7 +674,8 @@ describe('Home', () => {
     expect(card.querySelector('.continue-reading-context')?.textContent).toContain('A1 · Daily Life');
     expect(card.querySelector('.continue-reading-title')?.textContent).toContain('The Camera on Platform Three');
     expect(card.querySelector('.continue-reading-status')?.textContent).toContain('En progreso');
-    expect(card.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
+    expect(card.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+    expect(card.querySelector('.continue-reading-cta-pill')).toBeNull();
   });
 
   it('renders short description when description exists (A)', () => {
@@ -701,7 +703,7 @@ describe('Home', () => {
     expect(card.querySelector('.continue-reading-desc')).toBeNull();
   });
 
-  it('renders progress bar and fill when progressPercentage exists (C & D)', () => {
+  it('renders accessible progress bar and fill when progressPercentage exists (A & Accessibility)', () => {
     homeService.parseContinueReading.mockReturnValue(continueReadingPage([
       { ...continueReadingItem('cr-pct', 'PLATFORM', 'Story with percentage'), progressPercentage: 62 },
     ]));
@@ -709,24 +711,51 @@ describe('Home', () => {
 
     const card = fixture.nativeElement.querySelector('a[href="/reading/cr-pct"]') as HTMLElement;
     const progressWrap = card.querySelector('.continue-reading-progress-wrap');
+    const progressTrack = card.querySelector('.continue-reading-progress-track') as HTMLElement;
     const progressFill = card.querySelector('.continue-reading-progress-fill') as HTMLElement;
     expect(progressWrap).toBeTruthy();
+    expect(progressTrack).toBeTruthy();
+    expect(progressTrack.getAttribute('role')).toBe('progressbar');
+    expect(progressTrack.getAttribute('aria-valuemin')).toBe('0');
+    expect(progressTrack.getAttribute('aria-valuemax')).toBe('100');
+    expect(progressTrack.getAttribute('aria-valuenow')).toBe('62');
+    expect(progressTrack.getAttribute('aria-label')).toBe('Progreso de lectura: 62 por ciento');
     expect(progressFill).toBeTruthy();
     expect(progressFill.style.width).toBe('62%');
   });
 
-  it('renders "62% completado" when progressPercentage is 62 and replaces "En progreso" (E)', () => {
+  it('renders "62% de avance" when progressPercentage is 62 and preserves "En progreso" in footer (C & E)', () => {
     homeService.parseContinueReading.mockReturnValue(continueReadingPage([
       { ...continueReadingItem('cr-pct-62', 'PLATFORM', 'Story 62%'), progressPercentage: 62 },
     ]));
     fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
 
     const card = fixture.nativeElement.querySelector('a[href="/reading/cr-pct-62"]') as HTMLElement;
-    expect(card.querySelector('.continue-reading-progress-text')?.textContent).toContain('62% completado');
-    expect(card.textContent).not.toContain('En progreso');
+    expect(card.querySelector('.continue-reading-progress-text')?.textContent).toContain('62% de avance');
+    expect(card.textContent).not.toContain('leído');
+    expect(card.textContent).not.toContain('completado');
+    expect(card.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
   });
 
-  it('renders "En progreso" in footer when progressPercentage is absent or null (F)', () => {
+  it('renders exactly "99% de avance" when backend returns 99 without rounding to 100', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      { ...continueReadingItem('cr-candileja', 'PLATFORM', 'The Candileja'), progressPercentage: 99 },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/cr-candileja"]') as HTMLElement;
+    expect(card.querySelector('.continue-reading-progress-text')?.textContent).toBe('99% de avance');
+    expect(card.textContent).not.toContain('99% leído');
+    expect(card.textContent).not.toContain('leído');
+    expect(card.textContent).not.toContain('completado');
+    expect(card.textContent).not.toContain('100');
+    expect(card.querySelector('.continue-reading-progress-track')).toBeTruthy();
+    expect(card.querySelector('.continue-reading-progress-track')?.getAttribute('aria-valuenow')).toBe('99');
+    expect(card.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
+    expect(card.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+  });
+
+  it('renders "En progreso" in footer and hides progress bar when progressPercentage is absent or null (B & F)', () => {
     homeService.parseContinueReading.mockReturnValue(continueReadingPage([
       continueReadingItem('cr-in-prog', 'PLATFORM', 'Story in Progress'),
       { ...continueReadingItem('cr-null-pct', 'PLATFORM', 'Story null percentage'), progressPercentage: null },
@@ -735,14 +764,29 @@ describe('Home', () => {
 
     const card1 = fixture.nativeElement.querySelector('a[href="/reading/cr-in-prog"]') as HTMLElement;
     const card2 = fixture.nativeElement.querySelector('a[href="/reading/cr-null-pct"]') as HTMLElement;
-    expect(card1.querySelector('.continue-reading-status')?.textContent).toContain('En progreso');
+    expect(card1.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
     expect(card1.querySelector('.continue-reading-progress-text')).toBeNull();
     expect(card1.querySelector('.continue-reading-progress-wrap')).toBeNull();
-    expect(card2.querySelector('.continue-reading-status')?.textContent).toContain('En progreso');
+    expect(card1.querySelector('[role="progressbar"]')).toBeNull();
+    expect(card2.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
     expect(card2.querySelector('.continue-reading-progress-wrap')).toBeNull();
   });
 
-  it('always renders CTA "Continuar" pill regardless of progress percentage presence (G)', () => {
+  it('preserves "Tu lectura" and does not invent progress for USER reading with null progressPercentage (G)', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      { ...continueReadingItem('user-reading-null', 'USER', 'My User Reading'), progressPercentage: null },
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const card = fixture.nativeElement.querySelector('a[href="/reading/user-reading-null"]') as HTMLElement;
+    expect(card.querySelector('.continue-reading-user-label')?.textContent).toBe('Tu lectura');
+    expect(card.querySelector('.continue-reading-progress-wrap')).toBeNull();
+    expect(card.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
+    expect(card.textContent).not.toContain('avance');
+    expect(card.textContent).not.toContain('leído');
+  });
+
+  it('always renders CTA "Continuar →" regardless of progress percentage presence (G)', () => {
     homeService.parseContinueReading.mockReturnValue(continueReadingPage([
       continueReadingItem('cr-cta-1', 'PLATFORM', 'Card without pct'),
       { ...continueReadingItem('cr-cta-2', 'PLATFORM', 'Card with pct'), progressPercentage: 38 },
@@ -751,8 +795,10 @@ describe('Home', () => {
 
     const card1 = fixture.nativeElement.querySelector('a[href="/reading/cr-cta-1"]') as HTMLElement;
     const card2 = fixture.nativeElement.querySelector('a[href="/reading/cr-cta-2"]') as HTMLElement;
-    expect(card1.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
-    expect(card2.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
+    expect(card1.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+    expect(card2.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+    expect(card1.querySelector('.continue-reading-cta-pill')).toBeNull();
+    expect(card2.querySelector('.continue-reading-cta-pill')).toBeNull();
   });
 
   it('shows "Ver todo" in continue reading section heading row', () => {
@@ -766,7 +812,7 @@ describe('Home', () => {
     expect(section.querySelector('.section-more-link')?.textContent).not.toContain('See all');
   });
 
-  it('renders USER context label "Tu lectura" and shows continue reading pill CTA', () => {
+  it('renders USER context label "Tu lectura" and shows continue reading CTA', () => {
     homeService.parseContinueReading.mockReturnValue(continueReadingPage([
       continueReadingItem('cr-user', 'USER', 'Mi propio texto'),
     ]));
@@ -774,7 +820,66 @@ describe('Home', () => {
 
     const card = fixture.nativeElement.querySelector('a[href="/reading/cr-user"]') as HTMLElement;
     expect(card.querySelector('.continue-reading-context')?.textContent).toContain('Tu lectura');
-    expect(card.querySelector('.continue-reading-cta-pill')?.textContent?.trim()).toBe('Continuar');
+    expect(card.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+    expect(card.querySelector('.continue-reading-cta-pill')).toBeNull();
+  });
+
+  it('verifies continue reading card semantic consistency, whole-card navigation, and absence of pill/reveal/vocab-fit', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('cr-plat', 'PLATFORM', 'The Candileja', { editorialLevel: 'B1', category: 'CULTURE, ARTS & FICTION' }),
+      continueReadingItem('cr-usr', 'USER', 'Rhe best'),
+    ]));
+    fixture.detectChanges(); continueReadingResponse.next('x'); fixture.detectChanges();
+
+    const platCard = fixture.nativeElement.querySelector('a[href="/reading/cr-plat"]') as HTMLAnchorElement;
+    const usrCard = fixture.nativeElement.querySelector('a[href="/reading/cr-usr"]') as HTMLAnchorElement;
+    expect(platCard).toBeTruthy();
+    expect(usrCard).toBeTruthy();
+
+    // PLATFORM card shows real editorial metadata
+    expect(platCard.querySelector('.continue-reading-level')?.textContent).toBe('B1');
+    expect(platCard.querySelector('.continue-reading-cat')?.textContent).toBe('CULTURE, ARTS & FICTION');
+    expect(platCard.querySelector('.continue-reading-title')?.textContent).toContain('The Candileja');
+
+    // USER card shows "Tu lectura"
+    expect(usrCard.querySelector('.continue-reading-context')?.textContent).toContain('Tu lectura');
+    expect(usrCard.querySelector('.continue-reading-title')?.textContent).toContain('Rhe best');
+
+    // Status block in body shows "En progreso" with dot & startedAt date
+    expect(platCard.querySelector('.continue-reading-status-block')).toBeTruthy();
+    expect(platCard.querySelector('.continue-reading-status-dot')?.textContent).toBe('●');
+    expect(platCard.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
+    expect(platCard.querySelector('.continue-reading-date')?.textContent).toBe('Iniciada el 4 sep');
+    expect(usrCard.querySelector('.continue-reading-status-block')).toBeTruthy();
+    expect(usrCard.querySelector('.continue-reading-status-dot')?.textContent).toBe('●');
+    expect(usrCard.querySelector('.continue-reading-status-label')?.textContent).toContain('En progreso');
+    expect(usrCard.querySelector('.continue-reading-date')?.textContent).toBe('Iniciada el 4 sep');
+
+    // Footer shows CTA "Continuar →"
+    expect(platCard.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+    expect(usrCard.querySelector('.continue-reading-cta')?.textContent?.trim()).toBe('Continuar →');
+
+    // NO pill button
+    expect(platCard.querySelector('.continue-reading-cta-pill')).toBeNull();
+    expect(usrCard.querySelector('.continue-reading-cta-pill')).toBeNull();
+
+    // NO fake percentage
+    expect(platCard.querySelector('.continue-reading-progress-text')).toBeNull();
+    expect(usrCard.querySelector('.continue-reading-progress-text')).toBeNull();
+
+    // NO vocab fit
+    expect(platCard.querySelector('.vocab-fit-indicator')).toBeNull();
+    expect(usrCard.querySelector('.vocab-fit-indicator')).toBeNull();
+
+    // NO pedagogical reveal overlay
+    expect(platCard.querySelector('.recommendation-metrics-reveal')).toBeNull();
+    expect(usrCard.querySelector('.recommendation-metrics-reveal')).toBeNull();
+
+    // Whole card navigation without nested interactive elements
+    expect(platCard.tagName).toBe('A');
+    expect(platCard.querySelectorAll('button, a')).toHaveLength(0);
+    expect(usrCard.tagName).toBe('A');
+    expect(usrCard.querySelectorAll('button, a')).toHaveLength(0);
   });
 
   it('renders recommendations in one native horizontal carousel', () => {
@@ -822,20 +927,20 @@ describe('Home', () => {
 
     expect(card.getAttribute('href')).toBe('/reading/platform-1');
     expect(primaryMetric.textContent).toContain('90% vocab fit');
-    expect(reveal.textContent).toContain('Compatibility 90%');
+    expect(reveal.textContent).toContain('Fit 90%');
     expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(reveal.textContent).toContain('12 Known words');
     expect(reveal.textContent).toContain('2 Learning words');
     expect(reveal.textContent).toContain('8 Words to learn');
-    expect(cta.textContent).toContain('Open reading');
+    expect(cta.textContent).toContain('Open');
     expect(card.textContent?.match(/Recommended story/g)).toHaveLength(1);
     expect(card.querySelector('.reading-card-cover')).toBeTruthy();
   });
 
   it.each([
-    [31.4, '31% vocab fit', 'Compatibility 31%'],
-    [76, '76% vocab fit', 'Compatibility 76%'],
-    [0, '0% vocab fit', 'Compatibility 0%'],
+    [31.4, '31% vocab fit', 'Fit 31%'],
+    [76, '76% vocab fit', 'Fit 76%'],
+    [0, '0% vocab fit', 'Fit 0%'],
   ])('formats vocabulary fit %s through the shared helper on recommendation cards', (value, expectedResting, expectedReveal) => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([{
       ...recommendedReading(),
@@ -951,9 +1056,9 @@ describe('Home', () => {
     expect(body.children[0].textContent).toContain('Science');
     expect(summary.textContent).toContain('90% vocab fit');
     expect(summary.textContent).not.toContain('% de vocabulario conocido');
-    expect(summary.textContent).toContain('Continue reading');
+    expect(summary.textContent).toContain('Continue');
     expect(reveal.classList.contains('recommendation-metrics-reveal')).toBe(true);
-    expect(reveal.textContent).toContain('Compatibility 90%');
+    expect(reveal.textContent).toContain('Fit 90%');
     expect(reveal.textContent).toContain('12 Known words');
     expect(reveal.textContent).toContain('2 Learning words');
     expect(reveal.textContent).toContain('8 Words to learn');
@@ -1009,9 +1114,11 @@ describe('Home', () => {
     const firstPage = new Subject<string>();
     const secondPage = new Subject<string>();
     homeService.parseCollections.mockReturnValue([collection('science', 'Science', 1)]);
-    homeService.listCollectionReadings
-      .mockReturnValueOnce(firstPage.asObservable())
-      .mockReturnValueOnce(secondPage.asObservable());
+    homeService.listCollectionReadings.mockImplementation((key: string, page = 0) => {
+      if (key === 'science' && page === 0) return firstPage.asObservable();
+      if (key === 'science' && page === 1) return secondPage.asObservable();
+      return of('<empty/>');
+    });
     homeService.parseCollectionReadings.mockImplementation((value: string) => {
       if (value === 'page-0') return collectionPage(
         Array.from({ length: 8 }, (_, index) => collectionReading(`science-${index}`)), 0, 10
@@ -1027,7 +1134,7 @@ describe('Home', () => {
     const rail = fixture.nativeElement.querySelector('.collection-carousel') as HTMLElement;
     setCarouselGeometry(rail, 650, 400, 1200);
     rail.dispatchEvent(new Event('scroll')); rail.dispatchEvent(new Event('scroll'));
-    expect(homeService.listCollectionReadings).toHaveBeenCalledTimes(2);
+    expect(homeService.listCollectionReadings).toHaveBeenCalledWith('science', 0, 8);
     expect(homeService.listCollectionReadings).toHaveBeenLastCalledWith('science', 1, 8);
     secondPage.next('page-1'); fixture.detectChanges();
     expect(fixture.componentInstance.collectionContent('science').readings.map((reading) => reading.readingId)).toEqual(
@@ -1287,6 +1394,7 @@ describe('Home', () => {
     expect(continueSection.textContent).toContain('Continuar');
 
     // Confirm NO fake percentage (not 62%, 38%, 27%) and NO fake description
+    expect(continueSection.textContent).not.toContain('% leído');
     expect(continueSection.textContent).not.toContain('% completado');
     expect(continueSection.textContent).not.toContain('62%');
     expect(continueSection.textContent).not.toContain('38%');
@@ -1313,7 +1421,9 @@ describe('Home', () => {
     expect(continueSection).toBeTruthy();
     expect(continueSection.textContent).toContain('Story With Real Progress Data');
     expect(continueSection.textContent).toContain('Authentic backend description.');
-    expect(continueSection.textContent).toContain('45% completado');
+    expect(continueSection.textContent).toContain('45% de avance');
+    expect(continueSection.textContent).not.toContain('% leído');
+    expect(continueSection.textContent).toContain('En progreso');
     expect(continueSection.querySelector('.continue-reading-progress-track')).toBeTruthy();
     const fill = continueSection.querySelector('.continue-reading-progress-fill') as HTMLElement;
     expect(fill.style.width).toBe('45%');
@@ -1497,4 +1607,85 @@ describe('Home', () => {
       ...overrides,
     };
   }
+
+  it('does not render colombian-myths-legends as a standalone collection section when EditorialUniverse is active', () => {
+    homeService.parseCollections.mockReturnValue([
+      { key: 'colombian-myths-legends', displayName: 'Mitos y leyendas de Colombia', description: 'Real myths', displayOrder: 1, coverKey: null },
+    ]);
+    homeService.parseRecommendations.mockReturnValue(recommendationsPage());
+    homeService.listCollectionReadings.mockReturnValue(of('<collection/>'));
+    homeService.parseCollectionReadings.mockReturnValue({ page: 0, size: 8, totalElements: 0, readings: [] });
+    libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
+
+    fixture.detectChanges();
+    recommendationResponse.next('recommendations');
+    userReadingsResponse.next('users');
+    collectionsResponse.next('collections');
+    fixture.detectChanges();
+
+    // The colombian-myths-legends collection must NOT appear as a .collection-section duplicate
+    const collectionSections = fixture.nativeElement.querySelectorAll('.collection-section');
+    const mythsSection = Array.from(collectionSections).find(
+      (el) => (el as HTMLElement).textContent?.includes('Mitos y leyendas de Colombia')
+    );
+    expect(mythsSection).toBeUndefined();
+  });
+
+  it('does not render recommendations callout pill or "Learn more" in recommendations section', () => {
+    fixture.detectChanges();
+    recommendationResponse.next('recommendations');
+    fixture.detectChanges();
+
+    const callout = fixture.nativeElement.querySelector('.recommendations-callout-pill');
+    expect(callout).toBeNull();
+    const recommendationsSection = fixture.nativeElement.querySelector('section[aria-labelledby="recommendations-heading"]');
+    expect(recommendationsSection?.textContent).not.toContain('Learn more');
+    expect(recommendationsSection?.textContent).not.toContain('Las recomendaciones se adaptan a tu vocabulario');
+  });
+
+  it('renders compact inline section headings with title and subtitle in section-heading-main', () => {
+    homeService.parseContinueReading.mockReturnValue(continueReadingPage([
+      continueReadingItem('prog-1', 'PLATFORM', 'In Progress Reading'),
+    ]));
+    fixture.detectChanges();
+    recommendationResponse.next('recommendations');
+    continueReadingResponse.next('continue');
+    fixture.detectChanges();
+
+    // Check Continue Reading heading
+    const contRow = fixture.nativeElement.querySelector('section[aria-labelledby="continue-reading-heading"] .section-heading-row');
+    expect(contRow).toBeTruthy();
+    const contMain = contRow.querySelector('.section-heading-main');
+    expect(contMain).toBeTruthy();
+    expect(contMain.querySelector('#continue-reading-heading')?.textContent).toContain('Continuar leyendo');
+    expect(contMain.querySelector('.section-subtitle')?.textContent).toContain('Retoma donde lo dejaste');
+    expect(contRow.querySelector('.section-more-link')).toBeTruthy();
+
+    // Check Recommendations heading
+    const recRow = fixture.nativeElement.querySelector('section[aria-labelledby="recommendations-heading"] .section-heading-row');
+    expect(recRow).toBeTruthy();
+    const recMain = recRow.querySelector('.section-heading-main');
+    expect(recMain).toBeTruthy();
+    expect(recMain.querySelector('#recommendations-heading')?.textContent).toContain('Recomendadas para ti');
+    expect(recMain.querySelector('.section-subtitle')?.textContent).toContain('Seleccionadas según tu nivel');
+
+    // Check Explore Stories heading
+    const expRow = fixture.nativeElement.querySelector('section[aria-labelledby="explore-stories-heading"] .section-heading-row');
+    expect(expRow).toBeTruthy();
+    const expMain = expRow.querySelector('.section-heading-main');
+    expect(expMain).toBeTruthy();
+    expect(expMain.querySelector('#explore-stories-heading')?.textContent).toContain('Explora historias');
+    expect(expMain.querySelector('.section-subtitle')?.textContent).toContain('Descubre lecturas por lugar');
+    expect(expRow.querySelector('.section-more-link')).toBeTruthy();
+  });
+
+  it('boxes the entire explore stories section and editorial universe in a styled shell', () => {
+    fixture.detectChanges();
+    const shell = fixture.nativeElement.querySelector('section.explore-editorial-shell');
+    expect(shell).toBeTruthy();
+    expect(shell.getAttribute('aria-labelledby')).toBe('explore-stories-heading');
+    expect(shell.querySelector('#explore-stories-heading')?.textContent).toContain('Explora historias');
+    expect(shell.querySelector('.explore-shell-header')).toBeTruthy();
+    expect(shell.querySelector('app-editorial-universe')).toBeTruthy();
+  });
 });

@@ -10,4 +10,5 @@ export interface EditorialHeroSlide {
   ctaTarget: string;
   location?: string;
   quote?: string;
+  dotLabel?: string;
 }

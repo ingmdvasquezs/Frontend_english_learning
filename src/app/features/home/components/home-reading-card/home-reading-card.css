@@ -6,10 +6,19 @@
 
 :host {
   display: block;
-  flex: 0 0 clamp(345px, 22.5vw, 365px);
-  min-width: 0;
+  flex: 0 0 var(--reading-card-width, 248px);
+  width: var(--reading-card-width, 248px);
+  min-width: var(--reading-card-min-width, 240px);
+  flex-shrink: 0;
   scroll-snap-align: start;
   --fit-discovery-color: #b58129;
+}
+
+@container (min-width: 1500px) {
+  :host {
+    flex: 0 0 calc((100cqw - 5 * var(--reading-card-gap, 0.7rem)) / 6);
+    width: calc((100cqw - 5 * var(--reading-card-gap, 0.7rem)) / 6);
+  }
 }
 
 :host-context([data-theme='dark']) {
@@ -21,11 +30,13 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  height: 232px;
-  min-height: 228px;
-  max-height: 238px;
-  padding: 0.5rem;
-  border-radius: 0.85rem;
+  width: 100%;
+  height: var(--reading-card-height, 220px);
+  min-height: var(--reading-card-min-height, 218px);
+  max-height: var(--reading-card-max-height, 224px);
+  padding: var(--reading-card-padding, 0.45rem);
+  border-radius: var(--reading-card-radius, 0.85rem);
+  box-sizing: border-box;
   border: 1px solid var(--app-border);
   background: var(--app-surface) !important;
   color: var(--app-text);
@@ -45,12 +56,12 @@
   outline-offset: 2px;
 }
 
-/* Cover — lateral izquierda más dominante (36%–38%) */
+/* Cover — lateral izquierda más dominante (34%) */
 .reading-card-cover {
   position: relative;
-  flex: 0 0 37.5%;
-  min-width: 122px;
-  max-width: 136px;
+  flex: 0 0 var(--reading-card-cover-width, 34%);
+  min-width: var(--reading-card-cover-min-width, 74px);
+  max-width: var(--reading-card-cover-max-width, 86px);
   height: 100%;
   border-radius: 0.55rem;
   overflow: hidden;
@@ -207,18 +218,22 @@
 .reading-card-summary {
   margin-top: auto;
   display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   width: 100%;
+  padding-top: 0.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--app-border) 50%, transparent);
   flex-shrink: 0;
 }
 
 .reading-card-metrics-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 1.1rem;
+  gap: 0.35rem;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .reading-card-primary-metric {
@@ -270,7 +285,6 @@
   line-height: 1.25;
   margin: 0;
   overflow-wrap: anywhere;
-  margin-left: auto;
 }
 
 .reading-card-secondary-metric-empty {
@@ -278,15 +292,16 @@
 }
 
 .reading-card-cta {
-  align-self: flex-end;
-  font-size: 0.66rem;
-  font-weight: 500;
-  color: var(--app-muted);
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--app-accent);
   white-space: nowrap;
-  transition: color 0.16s ease;
+  transition: transform 0.16s ease, color 0.16s ease;
 }
 
 .recommendation-card:hover .reading-card-cta {
+  transform: translateX(2px);
   color: var(--app-accent);
 }
 
@@ -368,21 +383,4 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
-}
-
-/* Breakpoints responsivos */
-@media (min-width: 1024px) and (max-width: 1439px) {
-  :host {
-    flex: 0 0 clamp(310px, 27vw, 340px);
-  }
-}
-@media (min-width: 640px) and (max-width: 1023px) {
-  :host {
-    flex: 0 0 clamp(290px, 39vw, 320px);
-  }
-}
-@media (max-width: 639px) {
-  :host {
-    flex: 0 0 min(88vw, 330px);
-  }
 }

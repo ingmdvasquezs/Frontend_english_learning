@@ -73,4 +73,75 @@ describe('EditorialHero', () => {
 
     expect(emitted).toEqual(mockSlides[0]);
   });
+
+  it('keeps core copy fixed when navigating between slides', () => {
+    fixture.componentRef.setInput('slides', mockSlides);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).toContain('Aprende inglés con historias que realmente quieras leer.');
+    expect(root.textContent).toContain('Different stories. A more open you.');
+    expect(root.textContent).toContain('Villa de Leyva, Colombia');
+
+    component.nextSlide();
+    fixture.detectChanges();
+
+    // Core copy remains fixed from primary slide
+    expect(root.textContent).toContain('Aprende inglés con historias que realmente quieras leer.');
+    expect(root.textContent).toContain('Different stories. A more open you.');
+  });
+
+  it('pauses rotation on mouse enter and resumes on mouse leave', () => {
+    fixture.componentRef.setInput('slides', mockSlides);
+    fixture.detectChanges();
+
+    expect(component.isPaused()).toBe(false);
+    component.onMouseEnter();
+    expect(component.isPaused()).toBe(true);
+    component.onMouseLeave();
+    expect(component.isPaused()).toBe(false);
+  });
+
+  it('renders discrete accessible dots for slides', () => {
+    const canonicalSlides: EditorialHeroSlide[] = [
+      {
+        id: 'london',
+        eyebrow: 'Hola 👋',
+        title: 'Title',
+        description: 'Desc',
+        ctaLabel: 'CTA',
+        ctaTarget: '#rec',
+        location: 'London, United Kingdom',
+        imageUrl: '/assets/editorial/heroes/home/hero-home-london-westminster.webp',
+        dotLabel: 'Show London',
+      },
+      {
+        id: 'new-york',
+        eyebrow: 'Hola 👋',
+        title: 'Title',
+        description: 'Desc',
+        ctaLabel: 'CTA',
+        ctaTarget: '#rec',
+        location: 'Brooklyn, New York, USA',
+        imageUrl: '/assets/editorial/heroes/home/hero-home-new-york-brooklyn.webp',
+        dotLabel: 'Show New York',
+      },
+    ];
+
+    fixture.componentRef.setInput('slides', canonicalSlides);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const dots = root.querySelectorAll('.hero-dot');
+    expect(dots.length).toBe(2);
+    expect(dots[0].getAttribute('aria-label')).toBe('Show London');
+    expect(dots[1].getAttribute('aria-label')).toBe('Show New York');
+    expect(dots[0].classList.contains('hero-dot-active')).toBe(true);
+
+    // Click second dot
+    (dots[1] as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.activeIndex()).toBe(1);
+    expect(root.textContent).toContain('Brooklyn, New York, USA');
+  });
 });
