@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="te">
+  <title id="te">Cubierta editorial de libro EPUB</title>
+  <rect width="200" height="400" fill="#ebe5d8"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#cfc3af" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#c0b39f" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#c0b39f" stroke-width="0.75"/>
+  <!-- Book Spine & Cover Frame -->
+  <rect x="36" y="90" width="128" height="200" rx="3" fill="#faf7f0" stroke="#4a6358" stroke-width="1.8"/>
+  <rect x="42" y="96" width="116" height="188" rx="2" fill="none" stroke="#d5c8b5" stroke-width="1" stroke-dasharray="4 3"/>
+  <!-- Book ribbon -->
+  <path d="M125 90 V140 L135 130 L145 140 V90 Z" fill="#28688f"/>
+  <!-- Centered motif -->
+  <g transform="translate(100, 200)">
+    <path d="M-30 -10 C-18 -16, -6 -14, 0 -4 C6 -14, 18 -16, 30 -10 L30 20 C18 14, 6 16, 0 26 C-6 16, -18 14, -30 20 Z" fill="#f0eae0" stroke="#4a6358" stroke-width="1.6"/>
+    <line x1="0" y1="-4" x2="0" y2="26" stroke="#4a6358" stroke-width="1.4"/>
+  </g>
+  <circle cx="100" cy="255" r="5" fill="#d4aa60"/>
+  <text x="100" y="325" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" letter-spacing="2" fill="#737972">EPUB</text>
+</svg>

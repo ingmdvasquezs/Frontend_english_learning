@@ -95,7 +95,6 @@ describe('Library', () => {
     expect(fixture.nativeElement.textContent).toContain('A short story');
     expect(fixture.nativeElement.textContent).toContain('56% vocab fit');
     expect(fixture.nativeElement.textContent).not.toContain('% de vocabulario conocido');
-    expect(fixture.nativeElement.textContent).toContain('10 palabras por aprender');
     expect(fixture.nativeElement.textContent).toContain('En progreso');
     expect(fixture.nativeElement.textContent).toContain('Continuar');
     expect(fixture.nativeElement.textContent).toContain('LECTURA');
@@ -122,24 +121,19 @@ describe('Library', () => {
     expect(fixture.nativeElement.textContent).toContain(cta);
   });
 
-  it('keeps detailed metrics in a desktop reveal without a fake progress bar or menu', () => {
+  it('renders editorial card for USER TEXT with vocab fit indicator, no progress bar when null, and whole card navigation', () => {
     service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[{ readingId:'r',title:'Metrics',language:'en',createdAt:null,uniqueWords:20,knownWords:5,learningWords:2,explicitNewWords:1,ignoredWords:3,unclassifiedWords:9,vocabularyFitPercentage:56,classificationConfidencePercentage:80,progressStatus:null }] });
     fixture.detectChanges(); response.next('x'); fixture.detectChanges();
     const card = fixture.nativeElement.querySelector('.library-card') as HTMLElement;
-    const reveal = card.querySelector('.library-card-metrics') as HTMLElement;
-    expect(reveal.textContent).toContain('5 palabras conocidas');
-    expect(reveal.textContent).toContain('2 palabras que estás aprendiendo');
-    expect(reveal.textContent).toContain('10 palabras por aprender');
-    expect(reveal.textContent).toContain('56% vocab fit');
+    expect(card.textContent).toContain('56% vocab fit');
     expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(card.querySelector('[role="progressbar"]')).toBeFalsy();
-    expect(card.querySelector('button')).toBeFalsy();
     expect(card.getAttribute('href')).toBe('/reading/r');
   });
 
   it.each([
     [0, '0% vocab fit'],
-    [null, 'Compatibilidad no disponible'],
+    [null, ''],
   ] as const)('renders TEXT vocabulary fit %s without falling back to known coverage', (vocabularyFitPercentage, expected) => {
     service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[{
       readingId:'fit',title:'Fit',language:'en',createdAt:null,
@@ -149,12 +143,13 @@ describe('Library', () => {
     fixture.detectChanges(); response.next('x'); fixture.detectChanges();
 
     const card = fixture.nativeElement.querySelector('.library-card') as HTMLElement;
-    expect(card.querySelector('.library-card-summary')?.textContent).toContain(expected);
+    if (expected) {
+      expect(card.textContent).toContain(expected);
+    } else {
+      expect(card.querySelector('app-vocabulary-fit-indicator')).toBeFalsy();
+    }
     expect(card.textContent).not.toContain('% de vocabulario conocido');
     expect(card.textContent).not.toContain('NaN');
-    expect(card.querySelector('.library-card-metrics')?.textContent).toContain('1 palabra conocida');
-    expect(card.querySelector('.library-card-metrics')?.textContent).toContain('0 palabras que estás aprendiendo');
-    expect(card.querySelector('.library-card-metrics')?.textContent).toContain('1 palabra por aprender');
   });
 
   it('resolves Library User TEXT fit to amber when confidence < 40 even with low fit (13%)', () => {
@@ -182,11 +177,11 @@ describe('Library', () => {
     response.next('x');
     fixture.detectChanges();
 
-    const metric = fixture.nativeElement.querySelector('.library-fit-metric') as HTMLElement;
+    const metric = fixture.nativeElement.querySelector('.vocab-fit-indicator') as HTMLElement;
     expect(metric).toBeTruthy();
     expect(metric.textContent).toContain('13% vocab fit');
-    expect(metric.classList.contains('library-fit-discovery')).toBe(true);
-    expect(metric.classList.contains('library-fit-mature')).toBe(false);
+    expect(metric.classList.contains('vocab-fit-indicator--discovery')).toBe(true);
+    expect(metric.classList.contains('vocab-fit-indicator--mature')).toBe(false);
     expect(metric.getAttribute('aria-label')).toBe('Vocabulary fit estimate — limited evidence');
   });
 
@@ -215,11 +210,11 @@ describe('Library', () => {
     response.next('x');
     fixture.detectChanges();
 
-    const metric = fixture.nativeElement.querySelector('.library-fit-metric') as HTMLElement;
+    const metric = fixture.nativeElement.querySelector('.vocab-fit-indicator') as HTMLElement;
     expect(metric).toBeTruthy();
     expect(metric.textContent).toContain('13% vocab fit');
-    expect(metric.classList.contains('library-fit-mature')).toBe(true);
-    expect(metric.classList.contains('library-fit-discovery')).toBe(false);
+    expect(metric.classList.contains('vocab-fit-indicator--mature')).toBe(true);
+    expect(metric.classList.contains('vocab-fit-indicator--discovery')).toBe(false);
     expect(metric.getAttribute('aria-label')).toBe('Vocabulary fit');
   });
 
@@ -248,12 +243,12 @@ describe('Library', () => {
     response.next('x');
     fixture.detectChanges();
 
-    const metric = fixture.nativeElement.querySelector('.library-fit-metric') as HTMLElement;
+    const metric = fixture.nativeElement.querySelector('.vocab-fit-indicator') as HTMLElement;
     expect(metric).toBeTruthy();
     expect(metric.textContent).toContain('50% vocab fit');
-    expect(metric.classList.contains('library-fit-unknown')).toBe(true);
-    expect(metric.classList.contains('library-fit-mature')).toBe(false);
-    expect(metric.classList.contains('library-fit-discovery')).toBe(false);
+    expect(metric.classList.contains('vocab-fit-indicator--unknown')).toBe(true);
+    expect(metric.classList.contains('vocab-fit-indicator--mature')).toBe(false);
+    expect(metric.classList.contains('vocab-fit-indicator--discovery')).toBe(false);
     expect(metric.getAttribute('aria-label')).toBe('Vocabulary fit — evidence unavailable');
   });
 
@@ -345,8 +340,10 @@ describe('Library', () => {
     fixture.detectChanges(); response.next('text'); fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"] .library-cover-fallback').textContent).toContain('PDF');
-    expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"]').textContent).toContain('DOCUMENTO · PDF');
+    const pdfCard = fixture.nativeElement.querySelector('a[href="/documents/pdf/read"]') as HTMLElement;
+    const pdfImg = pdfCard.querySelector('.library-cover-img-fallback') as HTMLImageElement;
+    expect(pdfImg.getAttribute('src')).toContain('pdf-fallback.svg');
+    expect(pdfCard.textContent).toContain('PDF');
     expect(Array.from(
       fixture.nativeElement.querySelectorAll('.document-card') as NodeListOf<HTMLElement>
     ).every((card) => !card.textContent?.includes('Compatibilidad'))).toBe(true);
@@ -357,15 +354,15 @@ describe('Library', () => {
     filters[3].click(); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('a[href="/documents/pdf/read"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('a[href="/documents/epub/read"]')).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('.document-card').textContent).toContain('DOCUMENTO · PDF');
-    expect(fixture.nativeElement.querySelector('.document-card .library-cover-fallback').textContent).toContain('PDF');
+    expect(fixture.nativeElement.querySelector('.document-card').textContent).toContain('PDF');
+    expect(fixture.nativeElement.querySelector('.document-card .library-cover-img-fallback').getAttribute('src')).toContain('pdf-fallback.svg');
     expect(fixture.nativeElement.querySelector('.document-card').textContent).not.toContain('Compatibilidad');
   });
 
   it.each([
     ['NOT_STARTED','Sin empezar','Leer'],
     ['IN_PROGRESS','En progreso','Continuar'],
-    ['COMPLETED','Leído','Releer'],
+    ['COMPLETED','✓ Leída','Releer'],
   ] as const)('allows READY documents with %s progress to open the Reader', (progressStatus, statusLabel, cta) => {
     service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:0,readings:[] });
     documentService.list.mockReturnValue(of({ page:0,size:20,totalElements:1,content:[{
@@ -411,7 +408,7 @@ describe('Library', () => {
     fixture.detectChanges(); response.next('text'); fixture.detectChanges();
     const documentCover = fixture.nativeElement.querySelector('.document-card .document-cover') as HTMLElement;
     expect(documentCover).toBeTruthy();
-    expect(documentCover.querySelector('.library-cover-fallback')).toBeTruthy();
+    expect(documentCover.querySelector('.library-cover-img-fallback')?.getAttribute('src')).toContain('epub-fallback.svg');
     expect(fixture.nativeElement.textContent).toContain('Leer');
     expect(documentService.getCover).not.toHaveBeenCalled();
   });
@@ -431,8 +428,8 @@ describe('Library', () => {
     documentService.list.mockReturnValue(of({ page:0,size:20,totalElements:1,content:[{ documentId:'book',title:'Missing cover',author:'Writer',language:'en',format:'EPUB',status:'READY',failureReason:null,coverAvailable:true,coverUrl:'/api/v1/documents/book/cover',progressStatus:'NOT_STARTED',lastReadAt:null,createdAt:'2026-09-07' }] }));
     documentService.getCover.mockReturnValue(throwError(()=>new HttpErrorResponse({status:404})));
     fixture.detectChanges(); response.next('text'); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.document-card img')).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('.document-card .library-cover-fallback').textContent).toContain('Missing cover');
+    expect(fixture.nativeElement.querySelector('.document-card .library-cover-img-contain')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.document-card .library-cover-img-fallback')?.getAttribute('src')).toContain('epub-fallback.svg');
     expect(fixture.nativeElement.querySelector('a[href="/documents/book/read"]')).toBeTruthy();
   });
 
@@ -464,7 +461,6 @@ describe('Library', () => {
     expect(Array.from(actionButtons).map((button) => button.getAttribute('aria-label'))).toEqual([
       'Acciones para Personal','Acciones para Ready EPUB','Acciones para Ready PDF',
     ]);
-    expect(fixture.nativeElement.querySelector('a[href="/reading/text"] .document-actions-trigger')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('[aria-label="Acciones para Processing PDF"]')).toBeFalsy();
   });
 
@@ -508,7 +504,7 @@ describe('Library', () => {
     expect(document.activeElement).toBe(textTrigger);
   });
 
-  it('renders a transparent square hit area whose wrapper contains only trigger and dropdown', () => {
+  it('renders a transparent action trigger in the card header that toggles the menu', () => {
     service.parseUserReadings.mockReturnValue({ page:0,size:20,totalElements:1,readings:[
       { readingId:'text',title:'Personal',language:'en',createdAt:null,uniqueWords:1,knownWords:0,learningWords:0,explicitNewWords:1,ignoredWords:0,unclassifiedWords:0,progressStatus:null },
     ] });
@@ -518,15 +514,11 @@ describe('Library', () => {
     const trigger = wrapper.querySelector('.document-actions-trigger') as HTMLButtonElement;
     const styles = getComputedStyle(trigger);
 
-    expect(wrapper.contains(card.querySelector('.library-card'))).toBe(false);
-    expect(wrapper.children).toHaveLength(1);
+    expect(wrapper).toBeTruthy();
     expect(styles.backgroundColor === 'transparent' || styles.backgroundColor === 'rgba(0, 0, 0, 0)').toBe(true);
     expect(styles.borderTopWidth).toBe('0px');
-    expect(styles.borderRadius).toBe('0px');
-    expect(styles.boxShadow).toBe('none');
 
     trigger.click(); fixture.detectChanges();
-    expect(wrapper.children).toHaveLength(2);
     expect(wrapper.querySelector('[role="menu"]')).toBeTruthy();
   });
 
@@ -1082,4 +1074,23 @@ describe('Library', () => {
       createdAt:'2026-09-07',...overrides,
     };
   }
+  it('guarantees rendering Library does NOT execute GET /documents/:id/compatibility per document (no N+1)', () => {
+    const getCompatibilitySpy = vi.fn();
+    (documentService as Record<string, unknown>)['getCompatibility'] = getCompatibilitySpy;
+    service.parseUserReadings.mockReturnValue({ page: 0, size: 20, totalElements: 0, readings: [] });
+    documentService.list.mockReturnValue(of({
+      page: 0,
+      size: 20,
+      totalElements: 2,
+      content: [
+        importedDocument({ documentId: 'epub-1', title: 'EPUB 1', format: 'EPUB' }),
+        importedDocument({ documentId: 'pdf-1', title: 'PDF 1', format: 'PDF' }),
+      ],
+    }));
+    fixture.detectChanges();
+    response.next('ok');
+    fixture.detectChanges();
+
+    expect(getCompatibilitySpy).not.toHaveBeenCalled();
+  });
 });

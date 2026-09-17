@@ -176,7 +176,7 @@
   min-height: var(--reading-card-min-height, 218px);
   max-height: var(--reading-card-max-height, 224px);
   padding: var(--reading-card-padding, 0.45rem);
-  border-radius: var(--reading-card-radius, 0.85rem);
+  border-radius: var(--reading-card-radius, 0.375rem);
   box-sizing: border-box;
   overflow: hidden;
   border: 1px solid var(--app-border);
@@ -184,14 +184,14 @@
   color: var(--app-text);
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
   scroll-snap-align: start;
 }
 .continue-reading-card:hover {
   transform: translateY(-2px);
-  border-color: var(--app-accent);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  border-color: color-mix(in srgb, var(--app-accent) 55%, var(--app-border));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 .continue-reading-card:focus-visible {
   outline: 2px solid var(--app-accent);
@@ -205,7 +205,8 @@
   min-width: var(--reading-card-cover-min-width, 74px);
   max-width: var(--reading-card-cover-max-width, 86px);
   height: 100%;
-  border-radius: 0.55rem;
+  border-radius: 0.25rem;
+  border: 1px solid color-mix(in srgb, var(--app-border) 60%, transparent);
   overflow: hidden;
   background: var(--app-active);
   flex-shrink: 0;
@@ -225,7 +226,7 @@
   flex: 1;
   min-width: 0;
   padding: 0.35rem 0.55rem 0.35rem 0.65rem;
-  border-radius: 0 0.55rem 0.55rem 0;
+  border-radius: 0 0.25rem 0.25rem 0;
   overflow: hidden;
 }
 
@@ -257,8 +258,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.12rem 0.4rem;
-  border-radius: 9999px;
+  padding: 0.12rem 0.38rem;
+  border-radius: 0.2rem;
   background: color-mix(in srgb, #437055 14%, transparent);
   color: #437055;
   font-size: 0.65rem;

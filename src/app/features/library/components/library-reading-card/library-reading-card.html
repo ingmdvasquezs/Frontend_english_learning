@@ -1,0 +1,153 @@
+@let card = item();
+<div class="library-card-shell">
+  <a
+    [routerLink]="!card.isUnavailable ? card.routerLink : null"
+    (click)="onCardClick($event)"
+    [class.is-unavailable]="card.isUnavailable"
+    [class.document-card]="card.type === 'EPUB' || card.type === 'PDF'"
+    [class.platform-reading-card]="card.type === 'PLATFORM'"
+    [attr.aria-disabled]="card.isUnavailable ? 'true' : null"
+    [attr.tabindex]="card.isUnavailable ? -1 : null"
+    class="library-card app-card focus:outline-none"
+    [attr.aria-label]="card.title + (card.ctaLabel ? ', ' + card.ctaLabel : '')"
+  >
+    <!-- Portada lateral izquierda — estándar editorial (~34%) -->
+    <div
+      class="library-card-visual library-card-cover"
+      [class.document-cover]="card.type === 'EPUB' || card.type === 'PDF'"
+      [class.library-card-cover-contain]="card.coverFitMode === 'contain'"
+    >
+      @if (coverSrc(); as src) {
+        <img
+          [src]="src"
+          [alt]="card.coverAlt"
+          loading="lazy"
+          (error)="onCoverError()"
+          [class.library-cover-img-contain]="card.coverFitMode === 'contain'"
+          [class.library-cover-img-cover]="card.coverFitMode !== 'contain'"
+        />
+      } @else if (card.coverFallbackUrl; as fallback) {
+        <img
+          [src]="fallback"
+          [alt]="card.coverAlt"
+          loading="lazy"
+          class="library-cover-img-fallback"
+        />
+      } @else {
+        <div class="library-cover-fallback cover-fallback" aria-hidden="true">
+          <span>{{ card.type === 'PLATFORM' ? 'English Reading' : card.badge }}</span>
+          @if (card.type === 'USER') {
+            <strong>Lectura personal</strong>
+          } @else if (card.subtitle) {
+            <small>{{ card.subtitle }}</small>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Cuerpo lateral derecho -->
+    <div class="library-card-body">
+      <!-- Header Row: metadata + botón acciones (⋯) -->
+      <div class="library-card-header">
+        <div class="library-card-metadata">
+          @if (card.isPlatformLevel) {
+            <span class="library-card-level-badge">{{ card.badge }}</span>
+            @if (card.category) {
+              <span class="library-card-cat">{{ card.category }}</span>
+            }
+          } @else {
+            <span class="library-card-type-badge library-content-type">{{ card.badge }}</span>
+          }
+        </div>
+
+        @if (card.canDelete && !card.isUnavailable) {
+          <div class="library-actions library-actions-wrap" (click)="$event.stopPropagation()" data-library-actions>
+            <button
+              type="button"
+              class="document-actions-trigger"
+              [attr.aria-label]="'Acciones para ' + card.title"
+              aria-haspopup="menu"
+              [attr.aria-expanded]="isMenuOpen()"
+              [class.is-open]="isMenuOpen()"
+              (click)="onMenuToggle($event)"
+            >
+              ⋯
+            </button>
+            @if (isMenuOpen()) {
+              <div
+                class="document-actions-menu"
+                role="menu"
+                [attr.aria-label]="'Acciones para ' + card.title"
+              >
+                <button type="button" role="menuitem" (click)="onDeleteClick($event)">
+                  Eliminar de mi biblioteca
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Título editorial serif Georgia (máx 2 líneas) -->
+      <h2 class="library-card-title">{{ card.title }}</h2>
+
+      <!-- Subtítulo / Autor / Descripción secundaria (máx 2 líneas) -->
+      @if (card.subtitle) {
+        <p class="library-card-subtitle">{{ card.subtitle }}</p>
+      }
+
+      <!-- Zona media: Vocab Fit y Barra de progreso real -->
+      <div class="library-card-middle">
+        @if (card.vocabularyFitPercentage != null && (card.vocabularyFitPercentage ?? -1) >= 0) {
+          <div class="library-card-fit-wrap">
+            <app-vocabulary-fit-indicator
+              [percentage]="card.vocabularyFitPercentage ?? null"
+              [tone]="card.vocabularyFitTone ?? 'mature'"
+            />
+          </div>
+        }
+
+        @if (card.progressStatus === 'IN_PROGRESS' && card.progressPercentage != null && (card.progressPercentage ?? -1) >= 0) {
+          <div class="library-card-progress-block">
+            <span class="library-card-progress-label">{{ card.progressPercentage }}% de avance</span>
+            <div
+              class="library-card-progress-track"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="card.progressPercentage"
+              [attr.aria-label]="'Progreso de lectura: ' + card.progressPercentage + ' por ciento'"
+            >
+              <div
+                class="library-card-progress-fill"
+                [style.width.%]="card.progressPercentage"
+              ></div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Footer / Summary: Lifecycle status (izq) + CTA (der) -->
+      <div class="library-card-footer">
+        <div class="library-card-status">
+          @if (card.progressStatus === 'IN_PROGRESS') {
+            <span class="library-card-status-dot" aria-hidden="true">●</span>
+          }
+          <span
+            class="library-card-status-label"
+            [class.status-completed]="card.progressStatus === 'COMPLETED'"
+            [class.library-status-complete]="card.progressStatus === 'COMPLETED'"
+            [class.status-active]="card.progressStatus === 'IN_PROGRESS'"
+            [class.library-status-active]="card.progressStatus === 'IN_PROGRESS'"
+          >
+            {{ card.statusLabel }}
+          </span>
+        </div>
+
+        @if (card.ctaLabel) {
+          <span class="library-card-cta">{{ card.ctaLabel }}</span>
+        }
+      </div>
+    </div>
+  </a>
+</div>

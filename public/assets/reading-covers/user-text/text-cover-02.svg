@@ -1,9 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
-  <title id="title">Cubierta editorial con libros y una ventana</title>
-  <rect width="1200" height="675" fill="#dce4e6"/>
-  <rect x="725" y="105" width="300" height="330" fill="#edf1ef" stroke="#657d86" stroke-width="6"/>
-  <path d="M875 105v330M725 270h300" stroke="#657d86" stroke-width="4"/>
-  <circle cx="935" cy="191" r="46" fill="#d3b77f" opacity=".8"/>
-  <path d="M135 540h930M235 488h344v52H235zM280 421h362v67H280zM212 346h328v75H212z" fill="#f3eee5" stroke="#536b7c" stroke-width="6"/>
-  <path d="M260 375h208M321 451h258M275 515h250" stroke="#8c7964" stroke-width="5" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="t2">
+  <title id="t2">Rama botánica y arco sereno</title>
+  <rect width="200" height="400" fill="#ede7dc"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#cec2b0" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#c0b39f" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#c0b39f" stroke-width="0.75"/>
+  <path d="M50 310 V145 C50 100, 150 100, 150 145 V310 Z" fill="#f6f2ea" stroke="#5a6f62" stroke-width="1.8"/>
+  <circle cx="100" cy="140" r="22" fill="#c8926b" opacity="0.8"/>
+  <!-- Botanical stem & leaves -->
+  <path d="M100 290 C100 230, 95 190, 100 135" fill="none" stroke="#3d5244" stroke-width="2" stroke-linecap="round"/>
+  <path d="M99 265 C85 258, 82 245, 80 238 C88 238, 97 248, 99 255" fill="#587661" stroke="#3d5244" stroke-width="1"/>
+  <path d="M100 245 C114 238, 117 225, 119 218 C111 218, 102 228, 100 235" fill="#587661" stroke="#3d5244" stroke-width="1"/>
+  <path d="M99 220 C85 213, 82 200, 80 193 C88 193, 97 203, 99 210" fill="#587661" stroke="#3d5244" stroke-width="1"/>
+  <path d="M100 200 C114 193, 117 180, 119 173 C111 173, 102 183, 100 190" fill="#587661" stroke="#3d5244" stroke-width="1"/>
+  <path d="M99 175 C87 168, 85 157, 83 151 C91 151, 98 160, 99 166" fill="#587661" stroke="#3d5244" stroke-width="1"/>
+  <circle cx="100" cy="78" r="3" fill="#5a6f62"/>
 </svg>

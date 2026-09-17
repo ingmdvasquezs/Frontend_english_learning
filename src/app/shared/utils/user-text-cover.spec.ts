@@ -14,7 +14,7 @@ describe('userTextCoverUrl', () => {
 
   it('always resolves inside the local USER/TEXT cover directory', () => {
     expect(userTextCoverUrl('any-reading')).toMatch(
-      /^\/assets\/reading-covers\/user-text\/text-cover-0[1-3]\.svg$/
+      /^\/assets\/reading-covers\/user-text\/text-cover-0[1-8]\.svg$/
     );
   });
 });

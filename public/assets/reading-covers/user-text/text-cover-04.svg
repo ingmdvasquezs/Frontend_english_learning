@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="t4">
+  <title id="t4">Pórtico y arquitectura clásica</title>
+  <rect width="200" height="400" fill="#f1ece3"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#d5cbba" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#c4b6a3" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#c4b6a3" stroke-width="0.75"/>
+  <!-- Sun sphere -->
+  <circle cx="100" cy="130" r="30" fill="#c9795e" opacity="0.85"/>
+  <!-- Portico / Classical Arch -->
+  <path d="M42 300 V165 C42 120, 158 120, 158 165 V300" fill="#fcf9f4" stroke="#485c69" stroke-width="2"/>
+  <!-- Columns -->
+  <line x1="62" y1="175" x2="62" y2="300" stroke="#b0a28f" stroke-width="1.8"/>
+  <line x1="78" y1="175" x2="78" y2="300" stroke="#b0a28f" stroke-width="1.8"/>
+  <line x1="122" y1="175" x2="122" y2="300" stroke="#b0a28f" stroke-width="1.8"/>
+  <line x1="138" y1="175" x2="138" y2="300" stroke="#b0a28f" stroke-width="1.8"/>
+  <!-- Arch Inset -->
+  <path d="M66 300 V185 C66 155, 134 155, 134 185 V300" fill="none" stroke="#485c69" stroke-width="1.5"/>
+  <!-- Steps Base -->
+  <rect x="34" y="300" width="132" height="6" fill="#ded5c6" stroke="#485c69" stroke-width="1.5"/>
+  <rect x="28" y="306" width="144" height="6" fill="#cec4b3" stroke="#485c69" stroke-width="1.5"/>
+  <circle cx="100" cy="78" r="2.5" fill="#485c69"/>
+</svg>

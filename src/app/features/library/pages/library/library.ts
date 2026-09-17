@@ -17,15 +17,18 @@ import { ImportedDocument } from '../../../documents/models/document.models';
 import { DocumentService } from '../../../documents/services/document';
 import { isDocumentNotFoundError, isDocumentProcessingError } from '../../../documents/utils/document-errors';
 import { Observable, Subject, finalize, takeUntil } from 'rxjs';
+import { LibraryReadingCard } from '../../components/library-reading-card/library-reading-card';
+import { LibraryCardItem } from '../../components/library-reading-card/library-reading-card.models';
 
-type LibraryFilter = 'all' | 'personal' | 'ebooks' | 'pdfs' | 'platform';
-type LibraryDeletionTarget =
+export type LibraryFilter = 'all' | 'personal' | 'ebooks' | 'pdfs' | 'platform';
+export type LibraryDeletionTarget =
   | { type: 'reading'; reading: UserReading }
   | { type: 'document'; document: ImportedDocument };
 
 @Component({
   selector: 'app-library',
-  imports: [DatePipe, RouterLink],
+  imports: [RouterLink, LibraryReadingCard],
+  providers: [DatePipe],
   templateUrl: './library.html',
   styleUrl: './library.css',
 })
@@ -34,12 +37,14 @@ export class Library implements OnInit, OnDestroy {
   private readonly documentService = inject(DocumentService);
   private readonly document = inject(DOCUMENT);
   private readonly ngZone = inject(NgZone);
+  private readonly datePipe = inject(DatePipe);
   private readonly destroy$ = new Subject<void>();
   private actionMenuTrigger: HTMLElement | null = null;
   private actionMenuContainer: HTMLElement | null = null;
   private readonly outsidePointerDownHandler = (event: PointerEvent): void => {
-    if (!this.openActionMenuKey() || !this.actionMenuContainer) return;
-    if (event.composedPath().includes(this.actionMenuContainer)) return;
+    if (!this.openActionMenuKey()) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('.library-actions-wrap') || target?.closest('[data-library-actions]')) return;
     this.ngZone.run(() => this.closeActionMenu());
   };
 
@@ -64,20 +69,7 @@ export class Library implements OnInit, OnDestroy {
   readonly deleteError = signal<string | null>(null);
   readonly allCount = computed(() => this.readingCount() + this.documentCount());
   readonly activeFilter = signal<LibraryFilter>('all');
-  readonly visibleReadingCards = computed(() =>
-    this.activeFilter() === 'all' || this.activeFilter() === 'personal'
-      ? this.readingCards()
-      : []
-  );
-  readonly visibleDocuments = computed(() =>
-    this.activeFilter() === 'all'
-      ? this.documents()
-      : this.activeFilter() === 'ebooks'
-        ? this.documents().filter((document) => document.format === 'EPUB')
-        : this.activeFilter() === 'pdfs'
-          ? this.documents().filter((document) => document.format === 'PDF')
-          : []
-  );
+
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly failedCoverIds = signal(new Set<string>());
@@ -97,6 +89,52 @@ export class Library implements OnInit, OnDestroy {
   readonly platformError = signal<string | null>(null);
   readonly failedPlatformCoverIds = signal<ReadonlySet<string>>(new Set());
   readonly coverUrl = coverUrl;
+
+  // Normalized LibraryCardItem collections
+  readonly personalCardItems = computed<LibraryCardItem[]>(() =>
+    this.readings().map((reading) => this.toPersonalCardItem(reading))
+  );
+
+  readonly documentCardItems = computed<LibraryCardItem[]>(() =>
+    this.documents().map((doc) => this.toDocumentCardItem(doc))
+  );
+
+  readonly platformCardItems = computed<LibraryCardItem[]>(() =>
+    this.platformReadings().map((item) => this.toPlatformCardItem(item))
+  );
+
+  readonly displayedCardItems = computed<LibraryCardItem[]>(() => {
+    const filter = this.activeFilter();
+    if (filter === 'all') {
+      return [...this.personalCardItems(), ...this.documentCardItems()];
+    }
+    if (filter === 'personal') {
+      return this.personalCardItems();
+    }
+    if (filter === 'ebooks') {
+      return this.documentCardItems().filter((item) => item.type === 'EPUB');
+    }
+    if (filter === 'pdfs') {
+      return this.documentCardItems().filter((item) => item.type === 'PDF');
+    }
+    return [];
+  });
+
+  // Keep for backward compatibility with specs
+  readonly visibleReadingCards = computed(() =>
+    this.activeFilter() === 'all' || this.activeFilter() === 'personal'
+      ? this.readingCards()
+      : []
+  );
+  readonly visibleDocuments = computed(() =>
+    this.activeFilter() === 'all'
+      ? this.documents()
+      : this.activeFilter() === 'ebooks'
+        ? this.documents().filter((document) => document.format === 'EPUB')
+        : this.activeFilter() === 'pdfs'
+          ? this.documents().filter((document) => document.format === 'PDF')
+          : []
+  );
 
   ngOnInit(): void {
     this.document.addEventListener('pointerdown', this.outsidePointerDownHandler, true);
@@ -217,7 +255,7 @@ export class Library implements OnInit, OnDestroy {
     if (document.status === 'PROCESSING') return 'Procesando…';
     if (document.status === 'FAILED') return 'No disponible';
     return document.progressStatus === 'COMPLETED'
-      ? 'Leído'
+      ? '✓ Leída'
       : document.progressStatus === 'IN_PROGRESS'
         ? 'En progreso'
         : 'Sin empezar';
@@ -260,7 +298,9 @@ export class Library implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   closeActionMenuOnEscape(): void {
-    this.closeActionMenu(true);
+    const openTrigger = this.document.querySelector<HTMLElement>('.document-actions-trigger[aria-expanded="true"]');
+    this.closeActionMenu();
+    openTrigger?.focus();
   }
 
   requestReadingDeletion(reading: UserReading): void {
@@ -331,6 +371,121 @@ export class Library implements OnInit, OnDestroy {
 
   deletionTitle(target: LibraryDeletionTarget): string {
     return target.type === 'reading' ? target.reading.title : target.document.title;
+  }
+
+  // Normalizer methods
+  toPersonalCardItem(reading: UserReading): LibraryCardItem {
+    const cardMetrics = toVocabularyCard(reading);
+    const formattedDate = reading.createdAt ? this.datePipe.transform(reading.createdAt, 'd MMM y') : null;
+    return {
+      id: reading.readingId,
+      type: 'USER',
+      title: reading.title,
+      subtitle: formattedDate ? `Añadida ${formattedDate}` : null,
+      badge: 'LECTURA',
+      isPlatformLevel: false,
+      category: null,
+      coverUrl: this.failedCoverIds().has(reading.readingId) ? null : this.textCoverUrl(reading.readingId),
+      coverFitMode: 'cover',
+      coverFallbackUrl: null,
+      coverAlt: `Portada de ${reading.title}`,
+      routerLink: ['/reading', reading.readingId],
+      isUnavailable: false,
+      vocabularyFitPercentage: reading.vocabularyFitPercentage ?? null,
+      vocabularyFitTone: cardMetrics.fitTone,
+      progressStatus: reading.progressStatus ?? 'NOT_STARTED',
+      progressPercentage: null,
+      statusLabel: reading.progressStatus === 'COMPLETED' ? '✓ Leída' : reading.progressStatus === 'IN_PROGRESS' ? 'En progreso' : 'Sin empezar',
+      ctaLabel: reading.progressStatus === 'COMPLETED' ? 'Releer →' : reading.progressStatus === 'IN_PROGRESS' ? 'Continuar →' : 'Leer →',
+      actionKey: this.readingActionKey(reading.readingId),
+      canDelete: true,
+    };
+  }
+
+  toDocumentCardItem(doc: ImportedDocument): LibraryCardItem {
+    const isEpub = doc.format === 'EPUB';
+    const coverUrl = !this.failedDocumentCoverIds().has(doc.documentId)
+      ? this.documentCoverUrls()[doc.documentId] ?? null
+      : null;
+    const fallbackUrl = isEpub
+      ? '/assets/reading-covers/documents/epub-fallback.svg'
+      : '/assets/reading-covers/documents/pdf-fallback.svg';
+    const isReady = this.canReadDocument(doc);
+    const formattedDate = doc.createdAt ? this.datePipe.transform(doc.createdAt, 'd MMM y') : null;
+    const subtitle = doc.author
+      ? (doc.author.startsWith('Por ') ? doc.author : `Por ${doc.author}`)
+      : (formattedDate ? `Añadido ${formattedDate}` : null);
+
+    return {
+      id: doc.documentId,
+      type: isEpub ? 'EPUB' : 'PDF',
+      title: doc.title,
+      subtitle,
+      badge: isEpub ? 'EPUB' : 'PDF',
+      isPlatformLevel: false,
+      category: null,
+      coverUrl,
+      coverFitMode: 'contain',
+      coverFallbackUrl: fallbackUrl,
+      coverAlt: `Portada de ${doc.title}`,
+      routerLink: isReady ? ['/documents', doc.documentId, 'read'] : null,
+      isUnavailable: !isReady,
+      unavailableLabel: this.documentStatusLabel(doc),
+      vocabularyFitPercentage: null,
+      progressStatus: isReady ? (doc.progressStatus ?? 'NOT_STARTED') : null,
+      progressPercentage: null,
+      statusLabel: this.documentStatusLabel(doc),
+      ctaLabel: this.documentCtaLabel(doc),
+      actionKey: this.documentActionKey(doc.documentId),
+      canDelete: doc.status !== 'PROCESSING',
+    };
+  }
+
+  toPlatformCardItem(item: PlatformReadingHistoryItem): LibraryCardItem {
+    return {
+      id: item.readingId,
+      type: 'PLATFORM',
+      title: item.title,
+      subtitle: null,
+      badge: item.editorialLevel,
+      isPlatformLevel: true,
+      category: item.category,
+      coverUrl: !this.failedPlatformCoverIds().has(item.readingId) && item.coverKey ? this.coverUrl(item.coverKey) : null,
+      coverFitMode: 'cover',
+      coverFallbackUrl: null,
+      coverAlt: `Portada de ${item.title}`,
+      routerLink: ['/reading', item.readingId],
+      isUnavailable: false,
+      vocabularyFitPercentage: null,
+      progressStatus: item.progressStatus ?? 'NOT_STARTED',
+      progressPercentage: null,
+      statusLabel: item.progressStatus === 'COMPLETED' ? '✓ Leída' : 'En progreso',
+      ctaLabel: item.progressStatus === 'COMPLETED' ? 'Releer →' : 'Continuar →',
+      actionKey: null,
+      canDelete: false,
+    };
+  }
+
+  onDeleteRequested(card: LibraryCardItem): void {
+    if (card.type === 'USER') {
+      const reading = this.readings().find((r) => r.readingId === card.id);
+      if (reading) this.requestReadingDeletion(reading);
+    } else if (card.type === 'EPUB' || card.type === 'PDF') {
+      const doc = this.documents().find((d) => d.documentId === card.id);
+      if (doc) this.requestDocumentDeletion(doc);
+    }
+  }
+
+  onCardCoverError(card: LibraryCardItem): void {
+    if (card.type === 'USER') {
+      this.markCoverFailed(card.id);
+    } else if (card.type === 'EPUB' || card.type === 'PDF') {
+      this.markDocumentCoverFailed(card.id);
+    }
+  }
+
+  onPlatformCoverError(card: LibraryCardItem): void {
+    this.markPlatformCoverFailed(card.id);
   }
 
   private loadDocumentCover(documentId: string): void {

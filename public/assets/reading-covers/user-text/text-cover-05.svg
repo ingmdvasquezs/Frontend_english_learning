@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="t5">
+  <title id="t5">Pluma literaria y manuscrito</title>
+  <rect width="200" height="400" fill="#eae3d4"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#cbbeaa" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#bbae97" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#bbae97" stroke-width="0.75"/>
+  <!-- Manuscript card -->
+  <rect x="40" y="115" width="120" height="175" rx="3" fill="#f8f4ec" stroke="#b9ab96" stroke-width="1.2"/>
+  <line x1="58" y1="145" x2="142" y2="145" stroke="#cfc1ad" stroke-width="1.5"/>
+  <line x1="58" y1="165" x2="142" y2="165" stroke="#cfc1ad" stroke-width="1.5"/>
+  <line x1="58" y1="185" x2="142" y2="185" stroke="#cfc1ad" stroke-width="1.5"/>
+  <line x1="58" y1="205" x2="120" y2="205" stroke="#cfc1ad" stroke-width="1.5"/>
+  <!-- Vintage Pen Nib -->
+  <g transform="translate(112, 240) rotate(-35)">
+    <path d="M0 -75 C-12 -55, -16 -20, -14 10 L14 10 C16 -20, 12 -55, 0 -75 Z" fill="#455866" stroke="#2c3a44" stroke-width="1.8"/>
+    <line x1="0" y1="-75" x2="0" y2="-20" stroke="#fffdf8" stroke-width="1.5"/>
+    <circle cx="0" cy="-20" r="2.5" fill="#fffdf8"/>
+    <rect x="-10" y="10" width="20" height="12" fill="#c99742" stroke="#2c3a44" stroke-width="1.5"/>
+  </g>
+  <!-- Ink droplet / flourish -->
+  <circle cx="78" cy="272" r="3.5" fill="#455866"/>
+  <circle cx="100" cy="74" r="3" fill="#c99742"/>
+</svg>

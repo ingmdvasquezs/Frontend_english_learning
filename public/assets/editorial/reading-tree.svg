@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 170" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" class="reading-tree-svg">
+  <defs>
+    <linearGradient id="treeGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.06"/>
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ground contours and roots -->
+  <g class="tree-ground" opacity="0.45">
+    <path d="M 15 158 C 55 152, 145 152, 185 158" stroke-width="1.2"/>
+    <path d="M 35 163 C 75 160, 125 160, 165 163" stroke-width="0.8" stroke-dasharray="3 3"/>
+    <path d="M 94 152 C 86 155, 78 157, 70 158" stroke-width="1.2"/>
+    <path d="M 106 152 C 114 155, 122 157, 130 158" stroke-width="1.2"/>
+  </g>
+
+  <!-- Trunk with organic wood curves -->
+  <g class="tree-trunk">
+    <path d="M 93 154 C 95 132, 91 114, 96 96 C 98 88, 97 80, 93 72 C 90 66, 84 60, 78 54" stroke-width="1.8"/>
+    <path d="M 107 154 C 105 132, 109 114, 104 96 C 102 88, 103 80, 107 72 C 110 66, 116 60, 122 54" stroke-width="1.8"/>
+    <path d="M 98 148 C 100 130, 98 110, 101 94 C 102 87, 100 80, 98 74" stroke-width="0.9" opacity="0.5"/>
+    <path d="M 102 148 C 100 134, 102 118, 100 102" stroke-width="0.8" opacity="0.4"/>
+  </g>
+
+  <!-- Central & Canopy Branches -->
+  <g class="tree-branches" stroke-width="1.3">
+    <path d="M 95 90 C 82 86, 68 88, 54 80 C 44 74, 38 64, 34 52"/>
+    <path d="M 54 80 C 48 84, 40 88, 32 89" opacity="0.75"/>
+    <path d="M 68 87 C 64 96, 56 102, 46 104" opacity="0.6"/>
+
+    <path d="M 105 90 C 118 86, 132 88, 146 80 C 156 74, 162 64, 166 52"/>
+    <path d="M 146 80 C 152 84, 160 88, 168 89" opacity="0.75"/>
+    <path d="M 132 87 C 136 96, 144 102, 154 104" opacity="0.6"/>
+
+    <path d="M 97 70 C 96 58, 93 46, 100 34 C 102 30, 104 28, 100 22"/>
+    <path d="M 97 52 C 90 46, 84 38, 82 28" opacity="0.75"/>
+    <path d="M 103 52 C 110 46, 116 38, 118 28" opacity="0.75"/>
+  </g>
+
+  <!-- Open Books nestled in the boughs (Literary Blossoms) -->
+  <g class="tree-books">
+    <!-- Top Crown Open Book (100, 22) -->
+    <g class="book-crown" transform="translate(100, 22)">
+      <path d="M 0 0 C -7 -6, -16 -4, -22 2 C -15 6, -7 5, 0 8 Z" fill="url(#treeGrad)" stroke-width="1.1"/>
+      <path d="M -2 2 C -8 -3, -15 -1, -20 4" stroke-width="0.6" opacity="0.6"/>
+      <path d="M 0 0 C 7 -6, 16 -4, 22 2 C 15 6, 7 5, 0 8 Z" fill="url(#treeGrad)" stroke-width="1.1"/>
+      <path d="M 2 2 C 8 -3, 15 -1, 20 4" stroke-width="0.6" opacity="0.6"/>
+      <path d="M 0 8 C 1 13, -2 17, 0 21" stroke-width="0.9" opacity="0.8"/>
+    </g>
+
+    <!-- Left Bough Open Book (38, 56) -->
+    <g class="book-left" transform="translate(38, 56) rotate(-14)">
+      <path d="M 0 0 C -6 -5, -14 -3, -18 2 C -12 5, -6 4, 0 7 Z" fill="url(#treeGrad)" stroke-width="1.1"/>
+      <path d="M 0 0 C 6 -5, 14 -3, 18 2 C 12 5, 6 4, 0 7 Z" fill="url(#treeGrad)" stroke-width="1.1"/>
+      <path d="M 0 7 C 2 11, -1 14, 1 18" stroke-width="0.8" opacity="0.8"/>
+    </g>
+
+    <!-- Right Bough Open Book (162, 56) -->
+    <g class="book-right" transform="translate(162, 56) rotate(14)">
+      <path d="M 0 0 C -6 -5, -14 -3, -18 2 C -12 5, -6 4, 0 7 Z" fill="url(#treeGrad)" stroke-width="1.1"/>
+      <path d="M 0 0 C 6 -5, 14 -3, 18 2 C 12 5, 6 4, 0 7 Z" fill="url(#treeGrad)" stroke-width="1.1"/>
+      <path d="M 0 7 C -2 11, 1 14, -1 18" stroke-width="0.8" opacity="0.8"/>
+    </g>
+
+    <!-- Mid-Left Small Open Book (72, 48) -->
+    <g class="book-mid-left" transform="translate(72, 48) rotate(-8)">
+      <path d="M 0 0 C -5 -4, -10 -2, -14 2 C -9 4, -4 3, 0 5 Z" fill="url(#treeGrad)" stroke-width="0.9"/>
+      <path d="M 0 0 C 5 -4, 10 -2, 14 2 C 9 4, 4 3, 0 5 Z" fill="url(#treeGrad)" stroke-width="0.9"/>
+      <path d="M 0 5 C 1 8, 0 11, 1 14" stroke-width="0.7" opacity="0.7"/>
+    </g>
+
+    <!-- Mid-Right Small Open Book (128, 48) -->
+    <g class="book-mid-right" transform="translate(128, 48) rotate(8)">
+      <path d="M 0 0 C -5 -4, -10 -2, -14 2 C -9 4, -4 3, 0 5 Z" fill="url(#treeGrad)" stroke-width="0.9"/>
+      <path d="M 0 0 C 5 -4, 10 -2, 14 2 C 9 4, 4 3, 0 5 Z" fill="url(#treeGrad)" stroke-width="0.9"/>
+      <path d="M 0 5 C -1 8, 0 11, -1 14" stroke-width="0.7" opacity="0.7"/>
+    </g>
+
+    <!-- Nesting Stacked Folios at Lower Branch Fork (100, 94) -->
+    <g class="book-nest" transform="translate(100, 94)">
+      <path d="M -8 0 L 8 -2 L 10 2 L -6 4 Z" fill="url(#treeGrad)" stroke-width="0.9"/>
+      <path d="M -9 4 L 7 2 L 9 6 L -7 8 Z" fill="url(#treeGrad)" stroke-width="0.9"/>
+    </g>
+  </g>
+
+  <!-- Botanical Leaves / Foliage sprouting from branches and books -->
+  <g class="tree-foliage" stroke-width="0.9">
+    <!-- Top crown leaves -->
+    <path d="M 98 16 C 96 10, 100 6, 100 4 C 102 8, 104 12, 102 16 Z" fill="url(#leafGrad)"/>
+    <path d="M 80 24 C 74 20, 72 14, 76 11 C 80 14, 82 18, 80 24 Z" fill="url(#leafGrad)"/>
+    <path d="M 120 24 C 126 20, 128 14, 124 11 C 120 14, 118 18, 120 24 Z" fill="url(#leafGrad)"/>
+
+    <!-- Left branch leaves -->
+    <path d="M 28 48 C 22 46, 19 40, 23 37 C 27 39, 29 44, 28 48 Z" fill="url(#leafGrad)"/>
+    <path d="M 33 42 C 32 36, 36 31, 40 31 C 40 36, 37 40, 33 42 Z" fill="url(#leafGrad)"/>
+    <path d="M 22 84 C 16 83, 14 78, 18 75 C 22 77, 23 81, 22 84 Z" fill="url(#leafGrad)"/>
+    <path d="M 44 98 C 39 101, 34 98, 35 94 C 39 93, 42 95, 44 98 Z" fill="url(#leafGrad)"/>
+    <path d="M 52 74 C 48 70, 48 64, 53 63 C 55 67, 54 71, 52 74 Z" fill="url(#leafGrad)"/>
+
+    <!-- Right branch leaves -->
+    <path d="M 172 48 C 178 46, 181 40, 177 37 C 173 39, 171 44, 172 48 Z" fill="url(#leafGrad)"/>
+    <path d="M 167 42 C 168 36, 164 31, 160 31 C 160 36, 163 40, 167 42 Z" fill="url(#leafGrad)"/>
+    <path d="M 178 84 C 184 83, 186 78, 182 75 C 178 77, 177 81, 178 84 Z" fill="url(#leafGrad)"/>
+    <path d="M 156 98 C 161 101, 166 98, 165 94 C 161 93, 158 95, 156 98 Z" fill="url(#leafGrad)"/>
+    <path d="M 148 74 C 152 70, 152 64, 147 63 C 145 67, 146 71, 148 74 Z" fill="url(#leafGrad)"/>
+
+    <!-- Mid branch foliage clusters -->
+    <path d="M 64 42 C 60 39, 61 33, 66 33 C 68 36, 67 40, 64 42 Z" fill="url(#leafGrad)"/>
+    <path d="M 136 42 C 140 39, 139 33, 134 33 C 132 36, 133 40, 136 42 Z" fill="url(#leafGrad)"/>
+    <path d="M 88 40 C 85 36, 86 31, 90 31 C 92 34, 91 38, 88 40 Z" fill="url(#leafGrad)"/>
+    <path d="M 112 40 C 115 36, 114 31, 110 31 C 108 34, 109 38, 112 40 Z" fill="url(#leafGrad)"/>
+  </g>
+
+  <!-- Poetic celestial accents (curiosity & literary wonder) -->
+  <g class="tree-celestial" opacity="0.55">
+    <path d="M 150 16 C 147 19, 147 24, 151 26 C 146 26, 142 22, 145 17 Z" fill="currentColor"/>
+    <path d="M 48 22 Q 48 25 51 25 Q 48 25 48 28 Q 48 25 45 25 Q 48 25 48 22 Z" fill="currentColor"/>
+    <path d="M 100 8 Q 100 10 102 10 Q 100 10 100 12 Q 100 10 98 10 Q 100 10 100 8 Z" fill="currentColor"/>
+    <circle cx="168" cy="22" r="1" fill="currentColor"/>
+    <circle cx="34" cy="30" r="1" fill="currentColor"/>
+  </g>
+</svg>

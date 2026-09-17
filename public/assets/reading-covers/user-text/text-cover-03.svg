@@ -1,9 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title">
-  <title id="title">Cubierta editorial con una mesa de lectura y una planta</title>
-  <rect width="1200" height="675" fill="#e7ddd0"/>
-  <path d="M112 520h976" stroke="#6d7880" stroke-width="7"/>
-  <path d="M290 447h438v73H290zM337 385h438v62H337z" fill="#f7f0e5" stroke="#596f7e" stroke-width="6"/>
-  <path d="M349 480h320M398 416h316" stroke="#987e67" stroke-width="5" stroke-linecap="round"/>
-  <path d="M872 518c-7-111 15-210 72-295M906 334c-81-3-128-38-143-105 81 5 128 40 143 105ZM923 288c1-75 37-128 109-158 1 78-35 130-109 158Z" fill="none" stroke="#6f8a72" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M825 455h137l-17 65H842z" fill="#c99572" stroke="#596f7e" stroke-width="6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="t3">
+  <title id="t3">Luna creciente y cordillera nocturna</title>
+  <rect width="200" height="400" fill="#1b242b"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#35444f" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#2d3a43" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#2d3a43" stroke-width="0.75"/>
+  <!-- Crescent Moon -->
+  <path d="M112 125 C92 125, 76 141, 76 161 C76 181, 92 197, 112 197 C100 191, 92 177, 92 161 C92 145, 100 131, 112 125 Z" fill="#e8ba6c"/>
+  <!-- Tiny Stars -->
+  <circle cx="68" cy="115" r="1.5" fill="#f0ece1" opacity="0.8"/>
+  <circle cx="138" cy="105" r="2" fill="#f0ece1" opacity="0.9"/>
+  <circle cx="148" cy="148" r="1.5" fill="#f0ece1" opacity="0.7"/>
+  <circle cx="60" cy="170" r="1.2" fill="#f0ece1" opacity="0.6"/>
+  <circle cx="132" cy="195" r="1.8" fill="#f0ece1" opacity="0.75"/>
+  <!-- Mountain Silhouettes -->
+  <path d="M16 315 L65 240 L115 285 L155 230 L184 265 L184 315 Z" fill="#293742"/>
+  <path d="M16 315 L45 280 L95 245 L140 295 L184 260 L184 315 Z" fill="#354654" opacity="0.75"/>
+  <line x1="16" y1="315" x2="184" y2="315" stroke="#526877" stroke-width="1.5"/>
+  <circle cx="100" cy="345" r="3" fill="#e8ba6c" opacity="0.7"/>
 </svg>

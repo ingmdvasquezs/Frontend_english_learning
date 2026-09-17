@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="tp">
+  <title id="tp">Cubierta editorial de documento PDF</title>
+  <rect width="200" height="400" fill="#ebe5d8"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#cfc3af" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#c0b39f" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#c0b39f" stroke-width="0.75"/>
+  <!-- Document Sheet with folded corner -->
+  <g transform="translate(42, 95)">
+    <path d="M0 0 H84 L116 32 V195 H0 Z" fill="#faf7f0" stroke="#4a5a63" stroke-width="1.8"/>
+    <path d="M84 0 V32 H116" fill="#ded5c6" stroke="#4a5a63" stroke-width="1.8"/>
+    <!-- Text Lines -->
+    <line x1="20" y1="58" x2="96" y2="58" stroke="#beb2a0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="78" x2="96" y2="78" stroke="#beb2a0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="98" x2="80" y2="98" stroke="#beb2a0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="118" x2="96" y2="118" stroke="#beb2a0" stroke-width="2" stroke-linecap="round"/>
+    <line x1="20" y1="138" x2="70" y2="138" stroke="#beb2a0" stroke-width="2" stroke-linecap="round"/>
+    <!-- PDF Badge Seal -->
+    <circle cx="58" cy="165" r="14" fill="#ad4b43"/>
+    <text x="58" y="169" text-anchor="middle" font-family="Inter, sans-serif" font-size="8" font-weight="800" fill="#ffffff">PDF</text>
+  </g>
+  <circle cx="100" cy="335" r="2.5" fill="#ad4b43"/>
+</svg>

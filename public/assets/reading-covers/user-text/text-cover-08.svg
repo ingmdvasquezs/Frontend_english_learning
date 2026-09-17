@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" role="img" aria-labelledby="t8">
+  <title id="t8">Composición geométrica editorial</title>
+  <rect width="200" height="400" fill="#f3eee5"/>
+  <rect x="8" y="8" width="184" height="384" rx="2" fill="none" stroke="#d5cbba" stroke-width="1"/>
+  <line x1="16" y1="24" x2="184" y2="24" stroke="#c5b8a5" stroke-width="0.75"/>
+  <line x1="16" y1="376" x2="184" y2="376" stroke="#c5b8a5" stroke-width="0.75"/>
+  <!-- Abstract Shapes -->
+  <rect x="42" y="110" width="60" height="150" rx="30" fill="#58766a" opacity="0.9"/>
+  <circle cx="130" cy="165" r="32" fill="#d99f43" opacity="0.9"/>
+  <path d="M60 280 C60 220, 145 220, 145 280 Z" fill="#b86955" opacity="0.9"/>
+  <line x1="100" y1="75" x2="100" y2="320" stroke="#3b4952" stroke-width="1.4"/>
+  <circle cx="100" cy="85" r="3" fill="#3b4952"/>
+  <circle cx="100" cy="335" r="3" fill="#3b4952"/>
+</svg>

@@ -2,6 +2,11 @@ const USER_TEXT_COVERS = [
   '/assets/reading-covers/user-text/text-cover-01.svg',
   '/assets/reading-covers/user-text/text-cover-02.svg',
   '/assets/reading-covers/user-text/text-cover-03.svg',
+  '/assets/reading-covers/user-text/text-cover-04.svg',
+  '/assets/reading-covers/user-text/text-cover-05.svg',
+  '/assets/reading-covers/user-text/text-cover-06.svg',
+  '/assets/reading-covers/user-text/text-cover-07.svg',
+  '/assets/reading-covers/user-text/text-cover-08.svg',
 ] as const;
 
 export function userTextCoverUrl(readingId: string): string {
