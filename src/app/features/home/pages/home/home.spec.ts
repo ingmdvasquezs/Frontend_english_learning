@@ -32,6 +32,10 @@ describe('Home', () => {
     parseCollectionReadings: ReturnType<typeof vi.fn>;
     listContinueReading: ReturnType<typeof vi.fn>;
     parseContinueReading: ReturnType<typeof vi.fn>;
+    getDiscoveryRegionOverview: ReturnType<typeof vi.fn>;
+    parseDiscoveryRegionOverview: ReturnType<typeof vi.fn>;
+    browsePlatformReadings: ReturnType<typeof vi.fn>;
+    parseBrowsePlatformReadings: ReturnType<typeof vi.fn>;
   };
   let libraryService: {
     listUserReadings: ReturnType<typeof vi.fn>;
@@ -55,6 +59,18 @@ describe('Home', () => {
       parseCollectionReadings: vi.fn(),
       listContinueReading: vi.fn(() => continueReadingResponse.asObservable()),
       parseContinueReading: vi.fn(),
+      getDiscoveryRegionOverview: vi.fn().mockReturnValue(of('<overviewXml/>')),
+      parseDiscoveryRegionOverview: vi.fn().mockReturnValue({
+        region: { key: 'latin-america', displayName: 'Latinoamérica', subtitle: 'Historias, cultura y lugares de nuestra región.' },
+        countries: [],
+      }),
+      browsePlatformReadings: vi.fn().mockReturnValue(of('<browseXml/>')),
+      parseBrowsePlatformReadings: vi.fn().mockReturnValue({
+        page: 0,
+        size: 20,
+        totalElements: 0,
+        readings: [],
+      }),
     };
     libraryService = {
       listUserReadings: vi.fn(() => userReadingsResponse.asObservable()),

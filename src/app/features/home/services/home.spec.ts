@@ -259,6 +259,135 @@ describe('HomeService', () => {
     expect(withUnknownReason.readings[0].reasonCode).toBeNull();
   });
 
+  it('sends the authenticated getDiscoveryRegionOverview request', () => {
+    service.getDiscoveryRegionOverview('latin-america').subscribe();
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.body).toContain('<read:getDiscoveryRegionOverviewRequest>');
+    expect(request.request.body).toContain('<read:regionKey>latin-america</read:regionKey>');
+    request.flush('<response/>');
+  });
+
+  it('parses getDiscoveryRegionOverview response with region, countries, hero images and topics', () => {
+    const xml = `
+      <read:getDiscoveryRegionOverviewResponse xmlns:read="http://soap.com/english-reading/readings">
+        <read:region>
+          <read:key>latin-america</read:key>
+          <read:displayName>Latinoamérica</read:displayName>
+          <read:subtitle>Historias, cultura y lugares de nuestra región.</read:subtitle>
+        </read:region>
+        <read:countries>
+          <read:countryCode>CO</read:countryCode>
+          <read:displayName>Colombia</read:displayName>
+          <read:tagline>Historias, lugares, mitos y tradiciones para aprender inglés leyendo.</read:tagline>
+          <read:description>Personas extraordinarias. Lugares inolvidables. Historias que trascienden el tiempo.</read:description>
+          <read:displayOrder>1</read:displayOrder>
+          <read:readingCount>15</read:readingCount>
+          <read:heroImages>
+            <read:assetKey>editorial/heroes/colombia/hero-colombia-villa-de-leyva.webp</read:assetKey>
+            <read:location>Villa de Leyva, Boyacá</read:location>
+            <read:alt>Villa de Leyva, Boyacá</read:alt>
+            <read:displayOrder>1</read:displayOrder>
+          </read:heroImages>
+          <read:heroImages>
+            <read:assetKey>editorial/heroes/colombia/hero-colombia-valle-de-cocora.webp</read:assetKey>
+            <read:location>Valle de Cocora, Quindío</read:location>
+            <read:alt>Valle de Cocora, Quindío</read:alt>
+            <read:displayOrder>2</read:displayOrder>
+          </read:heroImages>
+          <read:topics>
+            <read:key>MYTHS_AND_LEGENDS</read:key>
+            <read:displayName>Mitos y leyendas</read:displayName>
+            <read:displayOrder>1</read:displayOrder>
+            <read:readingCount>15</read:readingCount>
+          </read:topics>
+        </read:countries>
+      </read:getDiscoveryRegionOverviewResponse>
+    `;
+
+    const overview = service.parseDiscoveryRegionOverview(xml);
+    expect(overview.region.key).toBe('latin-america');
+    expect(overview.region.displayName).toBe('Latinoamérica');
+    expect(overview.region.subtitle).toBe('Historias, cultura y lugares de nuestra región.');
+
+    expect(overview.countries).toHaveLength(1);
+    const co = overview.countries[0];
+    expect(co.countryCode).toBe('CO');
+    expect(co.displayName).toBe('Colombia');
+    expect(co.tagline).toBe('Historias, lugares, mitos y tradiciones para aprender inglés leyendo.');
+    expect(co.description).toBe('Personas extraordinarias. Lugares inolvidables. Historias que trascienden el tiempo.');
+    expect(co.displayOrder).toBe(1);
+    expect(co.readingCount).toBe(15);
+
+    expect(co.heroImages).toHaveLength(2);
+    expect(co.heroImages[0].assetKey).toBe('editorial/heroes/colombia/hero-colombia-villa-de-leyva.webp');
+    expect(co.heroImages[0].location).toBe('Villa de Leyva, Boyacá');
+    expect(co.heroImages[1].assetKey).toBe('editorial/heroes/colombia/hero-colombia-valle-de-cocora.webp');
+
+    expect(co.topics).toHaveLength(1);
+    expect(co.topics[0].key).toBe('MYTHS_AND_LEGENDS');
+    expect(co.topics[0].displayName).toBe('Mitos y leyendas');
+    expect(co.topics[0].readingCount).toBe(15);
+  });
+
+  it('sends browsePlatformReadings request with countryCode and discoveryTopic filters', () => {
+    service.browsePlatformReadings({
+      countryCode: 'CO',
+      discoveryTopic: 'MYTHS_AND_LEGENDS',
+      page: 0,
+      size: 20,
+    }).subscribe();
+
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.body).toContain('<read:browsePlatformReadingsRequest>');
+    expect(request.request.body).toContain('<read:countryCode>CO</read:countryCode>');
+    expect(request.request.body).toContain('<read:discoveryTopic>MYTHS_AND_LEGENDS</read:discoveryTopic>');
+    expect(request.request.body).toContain('<read:page>0</read:page>');
+    expect(request.request.body).toContain('<read:size>20</read:size>');
+    request.flush('<response/>');
+  });
+
+  it('parses browsePlatformReadings response including countryCode and discoveryTopic', () => {
+    const xml = `
+      <read:browsePlatformReadingsResponse xmlns:read="http://soap.com/english-reading/readings">
+        <read:page>0</read:page>
+        <read:size>20</read:size>
+        <read:totalElements>1</read:totalElements>
+        <read:readings>
+          <read:readingId>reading-dorado</read:readingId>
+          <read:title>El Dorado</read:title>
+          <read:language>en</read:language>
+          <read:editorialLevel>B1</read:editorialLevel>
+          <read:category>Culture, Arts &amp; Fiction</read:category>
+          <read:uniqueWords>250</read:uniqueWords>
+          <read:knownWords>100</read:knownWords>
+          <read:learningWords>50</read:learningWords>
+          <read:explicitNewWords>20</read:explicitNewWords>
+          <read:ignoredWords>5</read:ignoredWords>
+          <read:unclassifiedWords>75</read:unclassifiedWords>
+          <read:vocabularyFitPercentage>88.5</read:vocabularyFitPercentage>
+          <read:classificationConfidencePercentage>90.0</read:classificationConfidencePercentage>
+          <read:coverKey>el-dorado-cover</read:coverKey>
+          <read:countryCode>CO</read:countryCode>
+          <read:discoveryTopic>MYTHS_AND_LEGENDS</read:discoveryTopic>
+          <read:shortDescription>The legend of El Dorado.</read:shortDescription>
+        </read:readings>
+      </read:browsePlatformReadingsResponse>
+    `;
+
+    const page = service.parseBrowsePlatformReadings(xml);
+    expect(page.page).toBe(0);
+    expect(page.size).toBe(20);
+    expect(page.totalElements).toBe(1);
+    expect(page.readings).toHaveLength(1);
+    expect(page.readings[0].title).toBe('El Dorado');
+    expect(page.readings[0].countryCode).toBe('CO');
+    expect(page.readings[0].discoveryTopic).toBe('MYTHS_AND_LEGENDS');
+    expect(page.readings[0].description).toBe('The legend of El Dorado.');
+    expect(page.readings[0].vocabularyFitPercentage).toBe(88.5);
+  });
+
   function pageXml(readings: string, totalElements = 0): string {
     return `
       <read:recommendPlatformReadingsResponse xmlns:read="http://soap.com/english-reading/readings">

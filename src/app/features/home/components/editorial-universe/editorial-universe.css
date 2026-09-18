@@ -6,10 +6,32 @@
 .colombia-universe {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
   width: 100%;
   container-type: inline-size;
   container-name: colombia-universe;
+}
+
+.latam-region-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.15rem;
+}
+
+.latam-region-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.4rem, 2.2vw, 1.85rem);
+  font-weight: 400;
+  color: var(--app-text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.latam-region-subtitle {
+  font-size: 0.88rem;
+  color: var(--app-muted);
+  margin: 0;
 }
 
 .colombia-featured-banner {
@@ -275,96 +297,107 @@
   }
 }
 
-/* Subtemas Colombia — Grid Adaptable según espacio disponible */
-.topic-pills-bar {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.6rem;
-  margin-top: 0;
+.latam-discovery-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
   width: 100%;
 }
 
-/* Fallback viewport media queries */
-@media (min-width: 640px) {
-  .topic-pills-bar {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 1024px) {
-  .topic-pills-bar {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-@media (min-width: 1400px) {
-  .topic-pills-bar {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.6rem;
-  }
+.discovery-filter-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
-/* Container Queries: adapta el número de columnas al ancho real del contenedor */
-@container (min-width: 560px) {
-  .topic-pills-bar {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.discovery-group-label {
+  display: none;
 }
-@container (min-width: 780px) {
-  .topic-pills-bar {
-    grid-template-columns: repeat(3, 1fr);
-  }
+
+.country-pills-bar,
+.topic-pills-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
 }
-@container (min-width: 1120px) {
+
+@media (max-width: 639px) {
+  .country-pills-bar,
   .topic-pills-bar {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.6rem;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.15rem;
+    max-width: 100%;
+  }
+  .country-pills-bar::-webkit-scrollbar,
+  .topic-pills-bar::-webkit-scrollbar {
+    display: none;
   }
 }
 
 .topic-pill {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.35rem;
-  padding: 0.6rem 0.9rem;
-  min-height: 3.85rem;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: fit-content;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 0.85rem;
   border-radius: 0.375rem;
   border: 1px solid var(--app-border);
-  background: var(--app-surface);
-  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-surface) 90%, transparent);
+  color: var(--app-text-secondary);
   cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: none;
+  text-align: center;
 }
 
 .topic-pill:hover {
-  transform: translateY(-2px);
-  border-color: var(--app-accent);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--app-border) 40%, var(--app-surface));
+  color: var(--app-text);
+  border-color: color-mix(in srgb, var(--app-border) 70%, var(--app-text));
 }
 
 .topic-pill-active {
-  background: var(--app-surface);
+  background: color-mix(in srgb, var(--app-border) 55%, var(--app-surface));
+  border-color: var(--app-text);
   color: var(--app-text);
-  border-color: var(--app-accent);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06), inset 0 0 0 1px var(--app-accent);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--app-text);
 }
 
 .topic-pill-active:hover {
-  background: var(--app-surface);
-  border-color: var(--app-accent);
+  background: color-mix(in srgb, var(--app-border) 65%, var(--app-surface));
+  border-color: var(--app-text);
+  color: var(--app-text);
 }
 
-.topic-icon {
-  font-size: 1.25rem;
-  line-height: 1;
+.topic-pill:focus-visible {
+  outline: 2px solid var(--app-accent, #3b82f6);
+  outline-offset: 2px;
 }
 
+.country-pill {
+  /* Inherits from .topic-pill */
+}
+
+.country-pill .country-name,
 .topic-name {
-  font-size: 0.84rem;
-  font-weight: 600;
-  line-height: 1.25;
+  font-size: 0.82rem;
+  font-weight: inherit;
+  line-height: 1;
 }
 
 .preview-notice-toast {
@@ -434,11 +467,11 @@
 }
 
 .rail-arrow-previous {
-  left: -1rem;
+  left: -0.75rem;
 }
 
 .rail-arrow-next {
-  right: -1rem;
+  right: -0.75rem;
 }
 
 .rail-arrow:hover:not(:disabled) {
@@ -465,7 +498,7 @@
   flex-direction: row;
   overflow-x: auto;
   overflow-y: hidden;
-  gap: var(--reading-card-gap, 0.7rem);
+  gap: var(--reading-card-gap, 11px);
   width: 100%;
   padding-bottom: 0.4rem;
   scroll-behavior: smooth;
@@ -509,8 +542,8 @@
 
 @container (min-width: 1500px) {
   .colombia-story-card {
-    flex: 0 0 calc((100cqw - 5 * var(--reading-card-gap, 0.7rem)) / 6);
-    width: calc((100cqw - 5 * var(--reading-card-gap, 0.7rem)) / 6);
+    flex: 0 0 calc((100cqw - 5 * var(--reading-card-gap, 11px)) / 6);
+    width: calc((100cqw - 5 * var(--reading-card-gap, 11px)) / 6);
   }
 }
 
@@ -744,4 +777,43 @@
   margin: 0;
   font-size: 0.88rem;
   color: var(--app-muted);
+}
+
+.universe-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.universe-upcoming {
+  padding: 2.85rem 1rem;
+  text-align: center;
+}
+
+.universe-upcoming-text {
+  font-size: 0.92rem;
+  color: var(--app-muted);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.universe-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.universe-retry-btn:hover {
+  background: var(--app-active);
 }

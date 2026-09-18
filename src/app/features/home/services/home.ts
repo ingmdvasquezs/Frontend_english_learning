@@ -9,6 +9,13 @@ import {
   ContinueReadingPage,
   ContinueReadingItem,
   ReadingOrigin,
+  DiscoveryRegionOverview,
+  DiscoveryRegionDetails,
+  DiscoveryCountrySummary,
+  DiscoveryHeroImage,
+  DiscoveryTopicSummary,
+  BrowsePlatformReadingsFilters,
+  BrowsePlatformReadingsPage,
 } from '../models/home.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
 import { escapeXml } from '../../../shared/utils/xml-utils';
@@ -88,11 +95,117 @@ export class HomeService {
         description: this.getRequiredValue(element, 'description'),
         displayOrder: this.getRequiredNumber(element, 'displayOrder'),
         coverKey: this.getOptionalValue(element, 'coverKey'),
+        readingCount: this.getOptionalNumber(element, 'readingCount'),
       }))
       .sort((left, right) => left.displayOrder - right.displayOrder);
   }
 
   parseCollectionReadings(responseXml: string): CollectionReadingsPage {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    const readings: RecommendedPlatformReading[] = Array.from(
+      xml.getElementsByTagNameNS(this.namespace, 'readings')
+    ).map((element) => this.parseRecommendedReading(element));
+    return {
+      page: this.getRequiredNumber(xml, 'page'),
+      size: this.getRequiredNumber(xml, 'size'),
+      totalElements: this.getRequiredNumber(xml, 'totalElements'),
+      readings,
+    };
+  }
+
+  getDiscoveryRegionOverview(regionKey = 'latin-america') {
+    return this.postSoap(`
+      <read:getDiscoveryRegionOverviewRequest>
+        <read:regionKey>${escapeXml(regionKey)}</read:regionKey>
+      </read:getDiscoveryRegionOverviewRequest>
+    `);
+  }
+
+  parseDiscoveryRegionOverview(responseXml: string): DiscoveryRegionOverview {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+    const regionElement = xml.getElementsByTagNameNS(this.namespace, 'region')[0];
+    if (!regionElement) {
+      throw new Error('Invalid SOAP response: missing region');
+    }
+
+    const region: DiscoveryRegionDetails = {
+      key: this.getRequiredValue(regionElement, 'key'),
+      displayName: this.getRequiredValue(regionElement, 'displayName'),
+      subtitle: this.getOptionalValue(regionElement, 'subtitle'),
+    };
+
+    const countryElements = Array.from(
+      xml.getElementsByTagNameNS(this.namespace, 'countries')
+    );
+
+    const countries: DiscoveryCountrySummary[] = countryElements.map((countryEl) => {
+      const heroImageElements = Array.from(
+        countryEl.getElementsByTagNameNS(this.namespace, 'heroImages')
+      );
+      const heroImages: DiscoveryHeroImage[] = heroImageElements.map((imgEl) => ({
+        assetKey: this.getRequiredValue(imgEl, 'assetKey'),
+        location: this.getOptionalValue(imgEl, 'location'),
+        alt: this.getOptionalValue(imgEl, 'alt'),
+        displayOrder: this.getRequiredNumber(imgEl, 'displayOrder'),
+      })).sort((a, b) => a.displayOrder - b.displayOrder);
+
+      const topicElements = Array.from(
+        countryEl.getElementsByTagNameNS(this.namespace, 'topics')
+      );
+      const topics: DiscoveryTopicSummary[] = topicElements.map((topicEl) => ({
+        key: this.getRequiredValue(topicEl, 'key'),
+        displayName: this.getRequiredValue(topicEl, 'displayName'),
+        displayOrder: this.getRequiredNumber(topicEl, 'displayOrder'),
+        readingCount: this.getRequiredNumber(topicEl, 'readingCount'),
+      })).sort((a, b) => a.displayOrder - b.displayOrder);
+
+      return {
+        countryCode: this.getRequiredValue(countryEl, 'countryCode'),
+        displayName: this.getDirectChildValue(countryEl, 'displayName') ?? this.getRequiredValue(countryEl, 'displayName'),
+        tagline: this.getRequiredValue(countryEl, 'tagline'),
+        description: this.getRequiredValue(countryEl, 'description'),
+        displayOrder: this.getRequiredNumber(countryEl, 'displayOrder'),
+        readingCount: this.getRequiredNumber(countryEl, 'readingCount'),
+        heroImages,
+        topics,
+      };
+    }).sort((a, b) => a.displayOrder - b.displayOrder);
+
+    return {
+      region,
+      countries,
+    };
+  }
+
+  browsePlatformReadings(filters: BrowsePlatformReadingsFilters) {
+    const filterElements = [
+      filters.collectionKey
+        ? `<read:collectionKey>${escapeXml(filters.collectionKey)}</read:collectionKey>`
+        : '',
+      filters.category
+        ? `<read:category>${escapeXml(filters.category)}</read:category>`
+        : '',
+      filters.editorialLevel
+        ? `<read:editorialLevel>${escapeXml(filters.editorialLevel)}</read:editorialLevel>`
+        : '',
+      filters.countryCode
+        ? `<read:countryCode>${escapeXml(filters.countryCode)}</read:countryCode>`
+        : '',
+      filters.discoveryTopic
+        ? `<read:discoveryTopic>${escapeXml(filters.discoveryTopic)}</read:discoveryTopic>`
+        : '',
+      `<read:page>${filters.page ?? 0}</read:page>`,
+      `<read:size>${filters.size ?? 20}</read:size>`,
+    ]
+      .filter(Boolean)
+      .join('');
+
+    return this.postSoap(`
+      <read:browsePlatformReadingsRequest>${filterElements}</read:browsePlatformReadingsRequest>
+    `);
+  }
+
+  parseBrowsePlatformReadings(responseXml: string): BrowsePlatformReadingsPage {
     const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
     const readings: RecommendedPlatformReading[] = Array.from(
       xml.getElementsByTagNameNS(this.namespace, 'readings')
@@ -139,7 +252,7 @@ export class HomeService {
     };
   }
 
-  private parseRecommendedReading(element: Element): RecommendedPlatformReading {
+  parseRecommendedReading(element: Element): RecommendedPlatformReading {
     return {
       readingId: this.getRequiredValue(element, 'readingId'),
       title: this.getRequiredValue(element, 'title'),
@@ -166,6 +279,8 @@ export class HomeService {
         this.getOptionalValue(element, 'reasonCode')
       ),
       description: this.getOptionalValue(element, 'shortDescription'),
+      countryCode: this.getOptionalValue(element, 'countryCode') ?? undefined,
+      discoveryTopic: this.getOptionalValue(element, 'discoveryTopic') ?? undefined,
     };
   }
 
@@ -243,5 +358,19 @@ export class HomeService {
     return (
       parent.getElementsByTagNameNS(this.namespace, name)[0]?.textContent ?? null
     );
+  }
+
+  private getDirectChildValue(parent: Element, name: string): string | null {
+    for (let i = 0; i < parent.childNodes.length; i++) {
+      const node = parent.childNodes[i];
+      if (node.nodeType === 1) {
+        const el = node as Element;
+        if (el.localName === name || el.nodeName.endsWith(`:${name}`)) {
+          const text = el.textContent?.trim();
+          return text !== undefined && text !== '' ? text : null;
+        }
+      }
+    }
+    return null;
   }
 }

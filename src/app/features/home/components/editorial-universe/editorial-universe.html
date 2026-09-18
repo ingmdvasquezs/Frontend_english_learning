@@ -1,185 +1,222 @@
-<div class="colombia-universe" [attr.aria-label]="'Universo temático ' + universe.name">
-  <!-- Banner Destacado Colombia -->
-  <div
-    class="colombia-featured-banner"
-    (mouseenter)="onBannerMouseEnter()"
-    (mouseleave)="onBannerMouseLeave()"
-  >
-    <!-- Background Crossfade Images -->
-    <div class="colombia-banner-media" aria-hidden="true">
-      @for (img of heroImages(); track img.src; let idx = $index) {
-        <div
-          class="colombia-banner-img-slide"
-          [class.active]="activeImageIndex() === idx"
-          [style.background-image]="'url(' + img.src + ')'"
-        ></div>
+<div
+  class="colombia-universe latam-universe"
+  [attr.aria-label]="'Catálogo editorial ' + regionName()"
+  (focusin)="onInteractiveFocus()"
+>
+  <!-- Cabecera Editorial del Bloque: Descubre Latinoamérica -->
+  <div class="latam-region-header">
+    <h3 class="latam-region-title">Descubre {{ regionName() }}</h3>
+    @if (regionSubtitle(); as sub) {
+      <p class="latam-region-subtitle">{{ sub }}</p>
+    }
+  </div>
+
+  <!-- Banner Destacado País -->
+  @if (activeCountry(); as country) {
+    <div
+      class="colombia-featured-banner latam-featured-banner"
+      (mouseenter)="onBannerMouseEnter()"
+      (mouseleave)="onBannerMouseLeave()"
+    >
+      <!-- Background Crossfade Images -->
+      <div class="colombia-banner-media" aria-hidden="true">
+        @for (img of heroImages(); track img.assetKey; let idx = $index) {
+          <div
+            class="colombia-banner-img-slide"
+            [class.active]="activeHeroImageIndex() === idx"
+            [style.background-image]="'url(' + resolveHeroSrc(img.assetKey) + ')'"
+          ></div>
+        }
+      </div>
+
+      <!-- Dark gradient overlay for legibility -->
+      <div class="colombia-banner-backdrop" aria-hidden="true"></div>
+
+      <div class="colombia-banner-content">
+        <div class="colombia-banner-main">
+          <span class="colombia-eyebrow">{{ regionName() | uppercase }} · {{ country.displayName | uppercase }}</span>
+          <h4 class="colombia-title">{{ country.displayName }}</h4>
+          <p class="colombia-subtitle">{{ country.description || country.tagline }}</p>
+          <button
+            type="button"
+            class="colombia-cta latam-hero-cta"
+            (click)="onHeroCtaClick()"
+            [attr.aria-label]="'Descubrir historias de ' + country.displayName"
+          >
+            Descubrir {{ country.displayName }} <span aria-hidden="true">↓</span>
+          </button>
+        </div>
+        <div class="colombia-banner-aside">
+          @if (country.tagline && country.tagline !== country.description) {
+            <blockquote class="colombia-quote">
+              “{{ country.tagline }}”
+            </blockquote>
+          }
+          @if (activeHeroImage()?.location; as loc) {
+            <span class="colombia-location-chip" aria-live="polite">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 4.5 7 11 7 11s7-6.5 7-11a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+              <span>{{ loc }}</span>
+            </span>
+          }
+        </div>
+      </div>
+
+      @if (heroImages().length > 1) {
+        <div class="colombia-banner-dots" role="tablist" aria-label="Selector de imágenes">
+          @for (img of heroImages(); track img.assetKey; let idx = $index) {
+            <button
+              type="button"
+              class="colombia-banner-dot"
+              [class.active]="activeHeroImageIndex() === idx"
+              [attr.aria-label]="img.location || ('Imagen ' + (idx + 1))"
+              [attr.aria-selected]="activeHeroImageIndex() === idx"
+              (click)="selectHeroImage(idx)"
+            ></button>
+          }
+        </div>
       }
     </div>
 
-    <!-- Dark gradient overlay for legibility -->
-    <div class="colombia-banner-backdrop" aria-hidden="true"></div>
-
-    <div class="colombia-banner-content">
-      <div class="colombia-banner-main">
-        <span class="colombia-eyebrow">Universo destacado</span>
-        <h3 class="colombia-title">{{ universe.name }}</h3>
-        <p class="colombia-subtitle">{{ universe.subtitle }}</p>
-        <button type="button" class="colombia-cta" (click)="onExploreColombia()">
-          Explorar {{ universe.name }} <span aria-hidden="true">→</span>
-        </button>
+    <!-- Contenedor interactivo: Países + Temas -->
+    <div id="discoveryContent" class="latam-discovery-controls" tabindex="-1">
+      <!-- Selector de Países -->
+      <div class="discovery-filter-group country-selector-group">
+        <span class="discovery-group-label sr-only" id="countries-label">Países</span>
+        <div class="country-pills-bar" role="toolbar" aria-labelledby="countries-label" aria-label="Países">
+          @for (c of countries(); track c.countryCode) {
+            <button
+              type="button"
+              class="topic-pill country-pill"
+              [class.topic-pill-active]="activeCountryCode() === c.countryCode"
+              [attr.aria-pressed]="activeCountryCode() === c.countryCode"
+              (click)="selectCountry(c.countryCode)"
+            >
+              <span class="country-name topic-name">{{ c.displayName }}</span>
+            </button>
+          }
+        </div>
       </div>
-      <div class="colombia-banner-aside">
-        <blockquote class="colombia-quote">
-          “{{ universe.quote }}”
-        </blockquote>
-        @if (activeImage()?.location; as loc) {
-          <span class="colombia-location-chip" aria-live="polite">
-            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 4.5 7 11 7 11s7-6.5 7-11a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <span>{{ loc }}</span>
-          </span>
-        }
-      </div>
-    </div>
 
-    @if (heroImages().length > 1) {
-      <div class="colombia-banner-dots" role="tablist" aria-label="Selector de imágenes">
-        @for (img of heroImages(); track img.src; let idx = $index) {
-          <button
-            type="button"
-            class="colombia-banner-dot"
-            [class.active]="activeImageIndex() === idx"
-            [attr.aria-label]="img.location || ('Imagen ' + (idx + 1))"
-            [attr.aria-selected]="activeImageIndex() === idx"
-            (click)="selectImage(idx)"
-          ></button>
-        }
-      </div>
-    }
-  </div>
-
-  <!-- Píldoras temáticas / Subtemas -->
-  <div class="topic-pills-bar" role="toolbar" [attr.aria-label]="'Subtemas de ' + universe.name">
-    @for (topic of universe.topics; track topic.id) {
-      <button
-        type="button"
-        class="topic-pill"
-        [class.topic-pill-active]="selectedTopicId() === topic.id"
-        (click)="selectTopic(topic.id)"
-      >
-        @if (topic.icon) {
-          <span class="topic-icon" aria-hidden="true">{{ topic.icon }}</span>
-        }
-        <span class="topic-name">{{ topic.name }}</span>
-      </button>
-    }
-  </div>
-
-  @if (previewNotice(); as notice) {
-    <div class="preview-notice-toast" role="status" aria-live="polite">
-      <span>{{ notice }}</span>
-      <button type="button" class="notice-dismiss" (click)="dismissNotice()" aria-label="Cerrar aviso">✕</button>
+      <!-- Selector de Temas -->
+      @if (activeTopics().length > 0) {
+        <div class="discovery-filter-group topic-selector-group">
+          <span class="discovery-group-label sr-only" id="topics-label">Temas</span>
+          <div class="topic-pills-bar" role="toolbar" aria-labelledby="topics-label" aria-label="Temas">
+            @for (topic of activeTopics(); track topic.key) {
+              <button
+                type="button"
+                class="topic-pill"
+                [class.topic-pill-active]="activeTopicKey() === topic.key"
+                [attr.aria-pressed]="activeTopicKey() === topic.key"
+                (click)="selectTopic(topic.key)"
+              >
+                <span class="topic-name">{{ topic.displayName }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
     </div>
   }
 
   <!-- Grilla de historias del universo -->
   <div class="colombia-stories-container">
-    <h4 class="colombia-stories-heading sr-only">Historias de {{ universe.name }}</h4>
+    <h4 class="colombia-stories-heading sr-only">Historias de {{ activeCountry()?.displayName ?? regionName() }}</h4>
 
-    @if (isRealCollection()) {
-      @if (loading()) {
-        <div class="universe-status" aria-live="polite">
-          <p class="text-[var(--app-muted)]">Cargando historias...</p>
-        </div>
-      } @else if (error(); as err) {
-        <div class="universe-status universe-error" aria-live="polite">
-          <p class="text-red-300">{{ err }}</p>
-          <button type="button" class="universe-retry-btn" (click)="retryTopicCollection()">Reintentar</button>
-        </div>
-      } @else if (realReadings().length === 0) {
-        <div class="universe-status" aria-live="polite">
-          <p class="text-[var(--app-muted)]">No hay historias disponibles en esta colección.</p>
-        </div>
-      } @else {
-        <div class="rail-shell">
-          @if (railHasOverflow() && !railAtStart()) {
-            <button
-              type="button"
-              aria-label="Previous stories"
-              (click)="scrollStories('previous')"
-              class="rail-arrow rail-arrow-previous"
-            >‹</button>
-          }
-          <div
-            #storiesRail
-            class="colombia-stories-grid editorial-stories-grid"
-            role="region"
-            aria-label="Historias de Colombia"
-            tabindex="0"
-            (scroll)="onStoriesScroll($event)"
-          >
-            @for (reading of realReadings(); track reading.readingId) {
-              <a [routerLink]="['/reading', reading.readingId]" class="colombia-story-card editorial-story-card">
-                <!-- Cover lateral izquierda -->
-                <div class="story-cover-wrap reading-card-cover">
-                  @if (coverUrl(reading.coverKey); as url) {
-                    <img
-                      [src]="url"
-                      [alt]="'Portada de ' + reading.title"
-                      class="story-cover-img"
-                      loading="lazy"
-                    />
-                  } @else {
-                    <div class="colombia-cover-fallback cover-fallback" aria-hidden="true"><span>ERP</span></div>
-                  }
+    @if (isUpcomingCountry()) {
+      <div class="universe-status universe-upcoming" aria-live="polite">
+        <p class="universe-upcoming-text">
+          Próximamente, nuevas historias de {{ activeCountry()?.displayName }}.
+        </p>
+      </div>
+    } @else if (readingsLoading()) {
+      <div class="universe-status" aria-live="polite">
+        <p class="text-[var(--app-muted)]">Cargando historias...</p>
+      </div>
+    } @else if (readingsError(); as err) {
+      <div class="universe-status universe-error" aria-live="polite">
+        <p class="text-red-300">{{ err }}</p>
+        <button type="button" class="universe-retry-btn" (click)="retryReadings()">Reintentar</button>
+      </div>
+    } @else if (realReadings().length === 0) {
+      <div class="universe-status" aria-live="polite">
+        <p class="text-[var(--app-muted)]">No hay historias disponibles para esta selección.</p>
+      </div>
+    } @else {
+      <div class="rail-shell">
+        @if (railHasOverflow() && !railAtStart()) {
+          <button
+            type="button"
+            aria-label="Historias anteriores"
+            (click)="scrollStories('previous')"
+            class="rail-arrow rail-arrow-previous"
+          >‹</button>
+        }
+        <div
+          #storiesRail
+          class="colombia-stories-grid editorial-stories-grid"
+          role="region"
+          [attr.aria-label]="'Historias de ' + (activeCountry()?.displayName ?? '')"
+          tabindex="0"
+          (scroll)="onStoriesScroll($event)"
+          (touchstart)="onRailTouch()"
+        >
+          @for (reading of realReadings(); track reading.readingId) {
+            <a [routerLink]="['/reading', reading.readingId]" class="colombia-story-card editorial-story-card">
+              <!-- Cover lateral izquierda -->
+              <div class="story-cover-wrap reading-card-cover">
+                @if (coverUrl(reading.coverKey); as url) {
+                  <img
+                    [src]="url"
+                    [alt]="'Portada de ' + reading.title"
+                    class="story-cover-img"
+                    loading="lazy"
+                  />
+                } @else {
+                  <div class="colombia-cover-fallback cover-fallback" aria-hidden="true"><span>ERP</span></div>
+                }
+              </div>
+              <!-- Contenido lateral derecho -->
+              <div class="story-content recommendation-card-body">
+                <div class="story-header reading-card-header">
+                  <div class="story-meta reading-card-metadata">
+                    <span class="story-level-badge reading-card-badge">{{ reading.editorialLevel }}</span>
+                    <span class="story-category reading-card-category">{{ reading.category }}</span>
+                  </div>
+                  <span class="story-bookmark reading-card-bookmark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                  </span>
                 </div>
-                <!-- Contenido lateral derecho -->
-                <div class="story-content recommendation-card-body">
-                  <div class="story-header reading-card-header">
-                    <div class="story-meta reading-card-metadata">
-                      <span class="story-level-badge reading-card-badge">{{ reading.editorialLevel }}</span>
-                      <span class="story-category reading-card-category">{{ reading.category }}</span>
-                    </div>
-                    <span class="story-bookmark reading-card-bookmark" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-                    </span>
-                  </div>
-                  <h3 class="story-title reading-card-title">{{ reading.title }}</h3>
-                  @if (reading.description) {
-                    <p class="story-summary reading-card-desc">{{ reading.description }}</p>
-                  }
-                  <div class="story-footer reading-card-summary">
-                    <app-vocabulary-fit-indicator
-                      [percentage]="fitPercentage(reading)"
-                      [tone]="fitTone(reading)"
-                    />
-                    <span class="story-cta reading-card-cta">{{ resolveBaseCta(reading.progressStatus) }}</span>
-                  </div>
-                  <app-reading-card-reveal
-                    [reason]="reading.reasonCode ? reasonCopy(reading.reasonCode) : null"
-                    [compatibility]="resolvedCompatibility(reading)"
-                    [metrics]="resolvedRevealMetrics(reading)"
-                    [cta]="resolveRevealCta(reading.progressStatus)"
+                <h3 class="story-title reading-card-title">{{ reading.title }}</h3>
+                @if (reading.description) {
+                  <p class="story-summary reading-card-desc">{{ reading.description }}</p>
+                }
+                <div class="story-footer reading-card-summary">
+                  <app-vocabulary-fit-indicator
+                    [percentage]="fitPercentage(reading)"
                     [tone]="fitTone(reading)"
                   />
+                  <span class="story-cta reading-card-cta">{{ resolveBaseCta(reading.progressStatus) }}</span>
                 </div>
-              </a>
-            }
-          </div>
-          @if (railHasOverflow() && !railAtEnd()) {
-            <button
-              type="button"
-              aria-label="Next stories"
-              (click)="scrollStories('next')"
-              class="rail-arrow rail-arrow-next"
-            >›</button>
+                <app-reading-card-reveal
+                  [reason]="reading.reasonCode ? reasonCopy(reading.reasonCode) : null"
+                  [compatibility]="resolvedCompatibility(reading)"
+                  [metrics]="resolvedRevealMetrics(reading)"
+                  [cta]="resolveRevealCta(reading.progressStatus)"
+                  [tone]="fitTone(reading)"
+                />
+              </div>
+            </a>
           }
         </div>
-      }
-    } @else {
-      <!-- Pestañas Upcoming: estado editorial no interactivo -->
-      <div class="upcoming-topic-banner" role="status" aria-live="polite">
-        <span class="upcoming-badge">Próximamente</span>
-        <p class="upcoming-text">Próximamente: nuevas historias de {{ selectedTopic().name }} formarán parte del próximo catálogo editorial.</p>
+        @if (railHasOverflow() && !railAtEnd()) {
+          <button
+            type="button"
+            aria-label="Historias siguientes"
+            (click)="scrollStories('next')"
+            class="rail-arrow rail-arrow-next"
+          >›</button>
+        }
       </div>
     }
   </div>

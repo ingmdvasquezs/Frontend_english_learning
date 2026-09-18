@@ -1,9 +1,24 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
-import { EditorialUniverse } from './editorial-universe';
+import { provideRouter, Router } from '@angular/router';
+import { of, Subject, throwError } from 'rxjs';
+import {
+  COUNTRY_AUTOPLAY_MS,
+  DEFAULT_LATAM_OVERVIEW,
+  EditorialUniverse,
+  LATAM_COUNTRY_HERO_ASSETS,
+  LATAM_VISUAL_PREVIEW_COUNTRIES,
+  resolveBaseCta,
+  resolveHeroAssetUrl,
+  resolveReadingCta,
+  resolveReadingFitTone,
+  resolveRevealCta,
+  resolveTopicIcon,
+} from './editorial-universe';
 import { HomeService } from '../../services/home';
-import { RecommendedPlatformReading } from '../../models/home.models';
+import {
+  DiscoveryRegionOverview,
+  RecommendedPlatformReading,
+} from '../../models/home.models';
 
 function mockReading(overrides: Partial<RecommendedPlatformReading> = {}): RecommendedPlatformReading {
   return {
@@ -25,69 +40,170 @@ function mockReading(overrides: Partial<RecommendedPlatformReading> = {}): Recom
     coverKey: 'mohan-pasuncha',
     reasonCode: 'DISCOVERY',
     description: 'A woman from Pasuncha shares her last tobacco with a mysterious old traveler.',
+    countryCode: 'CO',
+    discoveryTopic: 'MYTHS_AND_LEGENDS',
     ...overrides,
   };
 }
 
-const FIVE_REAL_READINGS: RecommendedPlatformReading[] = [
+const FIFTEEN_REAL_READINGS: RecommendedPlatformReading[] = Array.from({ length: 15 }, (_, i) =>
   mockReading({
-    readingId: 'reading-mohan',
-    title: 'The Mohán and the Spring of Water',
-    coverKey: 'mohan-pasuncha',
-    editorialLevel: 'B1',
-    description: 'A woman from Pasuncha shares her last tobacco with a mysterious old traveler.',
-    progressStatus: null,
-  }),
-  mockReading({
-    readingId: 'reading-madremonte',
-    title: 'The Madremonte',
-    coverKey: 'madremonte-colombia',
-    editorialLevel: 'B2',
-    description: 'A powerful forest spirit guards rivers, mountains and rural boundaries.',
-    progressStatus: 'IN_PROGRESS',
-  }),
-  mockReading({
-    readingId: 'reading-patasola',
-    title: 'The Patasola',
-    coverKey: 'patasola-colombia',
-    editorialLevel: 'B2',
-    description: 'A beautiful apparition lures men deep into the forest.',
-    progressStatus: 'COMPLETED',
-  }),
-  mockReading({
-    readingId: 'reading-llorona',
-    title: 'La Llorona — The Weeping Woman',
-    coverKey: 'la-llorona-colombia',
-    editorialLevel: 'B2',
-    description: 'A grieving spirit wanders rivers and lonely paths.',
-    progressStatus: null,
-  }),
-  mockReading({
-    readingId: 'reading-candileja',
-    title: 'The Candileja',
-    coverKey: 'candileja-llanos',
-    editorialLevel: 'B1',
-    description: 'An overindulgent grandmother and her two disrespectful grandsons.',
-    progressStatus: null,
-  }),
-];
+    readingId: `reading-${i + 1}`,
+    title: `Reading Title ${i + 1}`,
+    coverKey: `cover-${i + 1}`,
+    editorialLevel: i % 2 === 0 ? 'B1' : 'B2',
+    progressStatus: i === 1 ? 'IN_PROGRESS' : i === 2 ? 'COMPLETED' : null,
+  })
+);
+
+const MOCK_LATAM_OVERVIEW: DiscoveryRegionOverview = {
+  region: {
+    key: 'latin-america',
+    displayName: 'Latinoamérica',
+    subtitle: 'Historias, cultura y lugares de nuestra región.',
+  },
+  countries: [
+    {
+      countryCode: 'CO',
+      displayName: 'Colombia',
+      tagline: 'Historias, lugares, mitos y tradiciones para aprender inglés leyendo.',
+      description: 'Personas extraordinarias. Lugares inolvidables. Historias que trascienden el tiempo.',
+      displayOrder: 1,
+      readingCount: 15,
+      heroImages: [
+        {
+          assetKey: 'editorial/heroes/colombia/hero-colombia-villa-de-leyva.webp',
+          location: 'Villa de Leyva, Boyacá',
+          alt: 'Villa de Leyva, Boyacá',
+          displayOrder: 1,
+        },
+        {
+          assetKey: 'editorial/heroes/colombia/hero-colombia-valle-de-cocora.webp',
+          location: 'Valle de Cocora, Quindío',
+          alt: 'Valle de Cocora, Quindío',
+          displayOrder: 2,
+        },
+      ],
+      topics: [
+        {
+          key: 'MYTHS_AND_LEGENDS',
+          displayName: 'Mitos y leyendas',
+          displayOrder: 1,
+          readingCount: 15,
+        },
+      ],
+    },
+  ],
+};
+
+const MOCK_MULTI_COUNTRY_OVERVIEW: DiscoveryRegionOverview = {
+  region: {
+    key: 'latin-america',
+    displayName: 'Latinoamérica',
+    subtitle: 'Historias, cultura y lugares de nuestra región.',
+  },
+  countries: [
+    {
+      countryCode: 'CO',
+      displayName: 'Colombia',
+      tagline: 'Muchas historias. Un lugar increíble.',
+      description: 'Personas extraordinarias de Colombia.',
+      displayOrder: 1,
+      readingCount: 15,
+      heroImages: [
+        {
+          assetKey: 'editorial/heroes/colombia/hero-colombia-villa-de-leyva.webp',
+          location: 'Villa de Leyva',
+          alt: 'Villa de Leyva',
+          displayOrder: 1,
+        },
+      ],
+      topics: [
+        {
+          key: 'MYTHS_AND_LEGENDS',
+          displayName: 'Mitos y leyendas',
+          displayOrder: 1,
+          readingCount: 15,
+        },
+      ],
+    },
+    {
+      countryCode: 'PE',
+      displayName: 'Perú',
+      tagline: 'Tierra milenaria y misteriosa.',
+      description: 'Cultura andina e historias vivas.',
+      displayOrder: 2,
+      readingCount: 8,
+      heroImages: [
+        {
+          assetKey: 'editorial/heroes/peru/hero-peru-machu-picchu.webp',
+          location: 'Cusco, Perú',
+          alt: 'Machu Picchu',
+          displayOrder: 1,
+        },
+      ],
+      topics: [
+        {
+          key: 'MYTHS_AND_LEGENDS',
+          displayName: 'Mitos incas',
+          displayOrder: 1,
+          readingCount: 8,
+        },
+        {
+          key: 'HISTORY_AND_MEMORY',
+          displayName: 'Historia',
+          displayOrder: 2,
+          readingCount: 5,
+        },
+      ],
+    },
+    {
+      countryCode: 'MX',
+      displayName: 'México',
+      tagline: 'Color, tradición y leyendas ancestrales.',
+      description: 'Voces de la tierra mexica y maya.',
+      displayOrder: 3,
+      readingCount: 12,
+      heroImages: [
+        {
+          assetKey: 'editorial/heroes/mexico/hero-mexico-teotihuacan.webp',
+          location: 'Teotihuacán',
+          alt: 'Pirámides',
+          displayOrder: 1,
+        },
+      ],
+      topics: [
+        {
+          key: 'MYTHS_AND_LEGENDS',
+          displayName: 'Leyendas de México',
+          displayOrder: 1,
+          readingCount: 12,
+        },
+      ],
+    },
+  ],
+};
 
 describe('EditorialUniverse', () => {
   let fixture: ComponentFixture<EditorialUniverse>;
   let component: EditorialUniverse;
   let homeService: {
-    listCollectionReadings: ReturnType<typeof vi.fn>;
-    parseCollectionReadings: ReturnType<typeof vi.fn>;
+    getDiscoveryRegionOverview: ReturnType<typeof vi.fn>;
+    parseDiscoveryRegionOverview: ReturnType<typeof vi.fn>;
+    browsePlatformReadings: ReturnType<typeof vi.fn>;
+    parseBrowsePlatformReadings: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
     homeService = {
-      listCollectionReadings: vi.fn().mockReturnValue(of('<response/>')),
-      parseCollectionReadings: vi.fn().mockReturnValue({
+      getDiscoveryRegionOverview: vi.fn().mockReturnValue(of('<overviewXml/>')),
+      parseDiscoveryRegionOverview: vi.fn().mockReturnValue(MOCK_LATAM_OVERVIEW),
+      browsePlatformReadings: vi.fn().mockReturnValue(of('<browseXml/>')),
+      parseBrowsePlatformReadings: vi.fn().mockReturnValue({
         page: 0,
-        size: 10,
-        totalElements: 5,
-        readings: FIVE_REAL_READINGS,
+        size: 20,
+        totalElements: 15,
+        readings: FIFTEEN_REAL_READINGS,
       }),
     };
 
@@ -103,480 +219,538 @@ describe('EditorialUniverse', () => {
     component = fixture.componentInstance;
   });
 
-  it('renders the Colombia featured banner with titles and quote', () => {
-    fixture.detectChanges();
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Universo destacado');
-    expect(text).toContain('Colombia');
-    expect(text).toContain('Personas extraordinarias');
-    expect(text).toContain('Muchas historias. Un lugar increíble.');
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it('renders all subtopics without fake counts', () => {
+  it('1. loads overview and sets Latin America region title and subtitle', () => {
     fixture.detectChanges();
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain('Mitos y leyendas');
-    expect(text).toContain('Historias reales');
-    expect(text).toContain('Historia y memoria');
-    expect(text).toContain('Cultura y tradiciones');
-    expect(text).toContain('Naturaleza y lugares');
+    expect(homeService.getDiscoveryRegionOverview).toHaveBeenCalledWith('latin-america');
+    expect(homeService.parseDiscoveryRegionOverview).toHaveBeenCalledWith('<overviewXml/>');
+    expect(component.regionName()).toBe('Latinoamérica');
+    expect(component.regionSubtitle()).toBe('Historias, cultura y lugares de nuestra región.');
 
-    expect(text).not.toContain('4 historias');
-    expect(text).not.toContain('6 historias');
+    const titleEl = fixture.nativeElement.querySelector('.latam-region-title');
+    const subEl = fixture.nativeElement.querySelector('.latam-region-subtitle');
+    expect(titleEl.textContent).toContain('Descubre Latinoamérica');
+    expect(subEl.textContent).toContain('Historias, cultura y lugares de nuestra región.');
   });
 
-  it('invokes listCollectionReadings with "colombian-myths-legends" on initialization', () => {
+  it('2. defaults to Colombia (CO) and MYTHS_AND_LEGENDS topic', () => {
     fixture.detectChanges();
-    expect(homeService.listCollectionReadings).toHaveBeenCalledWith('colombian-myths-legends', 0, 20);
-    expect(homeService.parseCollectionReadings).toHaveBeenCalledWith('<response/>');
+    expect(component.activeCountryCode()).toBe('CO');
+    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.activeCountry()?.displayName).toBe('Colombia');
+    expect(component.activeTopic()?.displayName).toBe('Mitos y leyendas');
   });
 
-  it('preserves backend order when rendering the 5 real collection cards', () => {
+  it('3. active country Colombia has readingCount = 15', () => {
     fixture.detectChanges();
-    const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
-    expect(cards).toHaveLength(5);
-
-    const titles = Array.from(cards).map(
-      (c) => (c as HTMLElement).querySelector('.story-title')?.textContent?.trim()
-    );
-    expect(titles).toEqual([
-      'The Mohán and the Spring of Water',
-      'The Madremonte',
-      'The Patasola',
-      'La Llorona — The Weeping Woman',
-      'The Candileja',
-    ]);
+    expect(component.activeCountry()?.readingCount).toBe(15);
   });
 
-  it('renders real shortDescription and resolves coverKey correctly', () => {
+  it('4. renders 4 country pills in preview mode (Colombia, Perú, Ecuador, Argentina) without "Todos"', () => {
     fixture.detectChanges();
-    const firstCard = fixture.nativeElement.querySelector('.colombia-story-card');
-    expect(firstCard.querySelector('.story-summary')?.textContent).toContain(
-      'A woman from Pasuncha shares her last tobacco with a mysterious old traveler.'
-    );
-
-    const img = firstCard.querySelector('.story-cover-img') as HTMLImageElement;
-    expect(img).toBeTruthy();
-    expect(img.getAttribute('src')).toContain('mohan-pasuncha.webp');
+    const pills = fixture.nativeElement.querySelectorAll('.country-pill');
+    expect(pills.length).toBe(4);
+    expect(pills[0].textContent).toContain('Colombia');
+    expect(pills[1].textContent).toContain('Perú');
+    expect(pills[2].textContent).toContain('Ecuador');
+    expect(pills[3].textContent).toContain('Argentina');
+    expect(pills[0].getAttribute('aria-pressed')).toBe('true');
+    expect(fixture.nativeElement.textContent).not.toContain('Todos');
   });
 
-  it('renders correct lifecycle CTA labels for NOT_STARTED, IN_PROGRESS, and COMPLETED', () => {
+  it('5. renders active topic pill for Colombia', () => {
     fixture.detectChanges();
-    const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
-
-    // 1st: NOT_STARTED
-    expect(cards[0].querySelector('.story-cta')?.textContent?.trim()).toBe('Open →');
-    // 2nd: IN_PROGRESS
-    expect(cards[1].querySelector('.story-cta')?.textContent?.trim()).toBe('Continue →');
-    // 3rd: COMPLETED
-    expect(cards[2].querySelector('.story-cta')?.textContent?.trim()).toBe('Re-read →');
+    const topicPill = fixture.nativeElement.querySelector('.topic-selector-group .topic-pill');
+    expect(topicPill).toBeTruthy();
+    expect(topicPill.textContent).toContain('Mitos y leyendas');
+    expect(topicPill.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('renders a clean empty state when backend returns no readings without fake cards', () => {
-    homeService.parseCollectionReadings.mockReturnValue({
+  it('6. calls browsePlatformReadings with CO, MYTHS_AND_LEGENDS, page 0, size 20', () => {
+    fixture.detectChanges();
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledWith({
+      countryCode: 'CO',
+      discoveryTopic: 'MYTHS_AND_LEGENDS',
       page: 0,
-      size: 10,
-      totalElements: 0,
-      readings: [],
+      size: 20,
     });
-    fixture.detectChanges();
-
-    const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
-    expect(cards).toHaveLength(0);
-    expect(fixture.nativeElement.textContent).toContain('No hay historias disponibles en esta colección.');
-    expect(fixture.nativeElement.textContent).not.toContain('The Sombrerón at Night');
   });
 
-  it('renders an error state with retry button on failure without falling back to fake cards', () => {
-    homeService.listCollectionReadings.mockReturnValue(throwError(() => new Error('SOAP network error')));
-    fixture.detectChanges();
-
-    const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
-    expect(cards).toHaveLength(0);
-    expect(fixture.nativeElement.textContent).toContain('No se pudieron cargar las historias.');
-    expect(fixture.nativeElement.textContent).not.toContain('The Sombrerón at Night');
-
-    const retryBtn = fixture.nativeElement.querySelector('.universe-retry-btn');
-    expect(retryBtn).toBeTruthy();
-
-    // Now mock recovery and click retry
-    homeService.listCollectionReadings.mockReturnValue(of('<recovered/>'));
-    retryBtn.click();
-    fixture.detectChanges();
-
-    expect(homeService.listCollectionReadings).toHaveBeenCalledTimes(2);
-    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card')).toHaveLength(5);
-  });
-
-  it('displays upcoming editorial state for non-collection topics without fake readings', () => {
-    fixture.detectChanges();
-    // Click "Historias reales"
-    const pillButtons = fixture.nativeElement.querySelectorAll('.topic-pill');
-    const realStoriesBtn = Array.from(pillButtons).find((btn) =>
-      (btn as HTMLElement).textContent?.includes('Historias reales')
-    ) as HTMLButtonElement;
-    expect(realStoriesBtn).toBeTruthy();
-
-    realStoriesBtn.click();
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card')).toHaveLength(0);
-    expect(fixture.nativeElement.textContent).toContain('Próximamente: nuevas historias de Historias reales');
-    expect(fixture.nativeElement.textContent).not.toContain('The Legend of La Llorona');
-  });
-
-  it('caches collection results and does not refetch when switching between topics', () => {
-    fixture.detectChanges();
-    expect(homeService.listCollectionReadings).toHaveBeenCalledOnce();
-
-    // Switch to upcoming topic
-    component.selectTopic('history');
-    fixture.detectChanges();
-    expect(component.selectedTopicId()).toBe('history');
-    expect(homeService.listCollectionReadings).toHaveBeenCalledOnce();
-
-    // Switch back to myths
-    component.selectTopic('myths');
-    fixture.detectChanges();
-    expect(component.selectedTopicId()).toBe('myths');
-    expect(homeService.listCollectionReadings).toHaveBeenCalledOnce(); // No extra call!
-    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card')).toHaveLength(5);
-  });
-
-  it('shows a notice when clicking the Explorar Colombia CTA', () => {
-    fixture.detectChanges();
-    const cta = fixture.nativeElement.querySelector('.colombia-cta') as HTMLButtonElement;
-    expect(cta).toBeTruthy();
-    expect(cta.textContent).toContain('Explorar Colombia');
-
-    expect(fixture.nativeElement.querySelector('.preview-notice-toast')).toBeNull();
-    cta.click();
-    fixture.detectChanges();
-
-    const toast = fixture.nativeElement.querySelector('.preview-notice-toast');
-    expect(toast).toBeTruthy();
-    expect(toast.textContent).toContain('colección completa de Colombia');
-  });
-
-  it('renders vocab fit indicator on each real collection card', () => {
+  it('7. renders 15 real readings in the rail with valid links and editorial badges', () => {
     fixture.detectChanges();
     const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
-    expect(cards).toHaveLength(5);
+    expect(cards.length).toBe(15);
 
-    // Each card that has a real percentage should show vocab-fit-indicator
+    const firstCard = cards[0] as HTMLElement;
+    expect(firstCard.getAttribute('href')).toBe('/reading/reading-1');
+    expect(firstCard.querySelector('.story-title')?.textContent).toContain('Reading Title 1');
+    expect(firstCard.querySelector('.story-level-badge')?.textContent).toContain('B1');
+  });
+
+  it('8. renders vocabulary fit indicator on each story card', () => {
+    fixture.detectChanges();
+    const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
     for (const card of Array.from(cards)) {
       const fitEl = (card as HTMLElement).querySelector('.vocab-fit-indicator');
-      // mockReading sets vocabularyFitPercentage: 30 for all — indicator must be present
       expect(fitEl).toBeTruthy();
       expect((fitEl as HTMLElement).textContent).toContain('30% vocab fit');
     }
   });
 
-  it('vocab fit uses reasonCode / confidence semantics — DISCOVERY => amber, not green', () => {
-    // Default mock has reasonCode: 'DISCOVERY' and classificationConfidencePercentage: 0
-    fixture.detectChanges();
-    const firstCard = fixture.nativeElement.querySelector('.colombia-story-card');
-    const fitEl = firstCard.querySelector('.vocab-fit-indicator') as HTMLElement;
-    expect(fitEl).toBeTruthy();
-    // discovery class should be applied, not mature
-    expect(fitEl.classList.contains('vocab-fit-indicator--discovery')).toBe(true);
-    expect(fitEl.classList.contains('vocab-fit-indicator--mature')).toBe(false);
+  it('9. starts in AUTO interaction mode', () => {
+    expect(component.interactionMode()).toBe('AUTO');
   });
 
-  it('does not render vocab fit indicator when vocabularyFitPercentage is not finite', () => {
-    homeService.parseCollectionReadings.mockReturnValue({
-      page: 0, size: 10, totalElements: 1,
-      readings: [mockReading({ vocabularyFitPercentage: NaN, reasonCode: null, classificationConfidencePercentage: 0 })],
-    });
+  it('10. switches interactionMode to USER_CONTROLLED on country pill click', () => {
     fixture.detectChanges();
-    const card = fixture.nativeElement.querySelector('.colombia-story-card');
-    // percentage is NaN → indicator renders nothing (conditional @if inside vocabulary-fit-indicator)
-    const fitEl = card?.querySelector('.vocab-fit-indicator');
-    expect(fitEl).toBeNull();
+    const pill = fixture.nativeElement.querySelector('.country-pill') as HTMLButtonElement;
+    pill.click();
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
   });
 
-  it('renders reading.category in metadata and not selectedTopic name', () => {
+  it('11. switches interactionMode to USER_CONTROLLED on topic pill click', () => {
     fixture.detectChanges();
-    const firstCard = fixture.nativeElement.querySelector('.colombia-story-card');
-    const categoryEl = firstCard.querySelector('.story-category');
-    expect(categoryEl).toBeTruthy();
-    expect(categoryEl.textContent?.trim()).toBe('Culture, Arts & Fiction');
-    expect(categoryEl.textContent).not.toBe('Mitos y leyendas');
+    const pill = fixture.nativeElement.querySelector('.topic-selector-group .topic-pill') as HTMLButtonElement;
+    pill.click();
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
   });
 
-  it('renders an aligned horizontal footer containing fit indicator and CTA anchored at the base', () => {
-    fixture.detectChanges();
-    const firstCard = fixture.nativeElement.querySelector('.colombia-story-card');
-    const footer = firstCard.querySelector('.story-footer') as HTMLElement;
-    expect(footer).toBeTruthy();
-    expect(footer.querySelector('.vocab-fit-indicator')).toBeTruthy();
-    expect(footer.querySelector('.story-cta')).toBeTruthy();
-    expect(footer.textContent).toContain('30% vocab fit');
-    expect(footer.textContent).toContain('Open →');
-  });
+  it('12. switches interactionMode to USER_CONTROLLED on hero CTA click and smooth scrolls to #discoveryContent without router navigation', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
 
-  it('renders exactly 5 real collection cards adopting shared reading card structure without fake collections', () => {
-    fixture.detectChanges();
-    const grid = fixture.nativeElement.querySelector('.colombia-stories-grid');
-    expect(grid).toBeTruthy();
-    const cards = grid.querySelectorAll('.colombia-story-card');
-    expect(cards).toHaveLength(5);
+    const scrollSpy = vi.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollSpy;
 
-    for (const card of Array.from(cards) as HTMLElement[]) {
-      expect(card.querySelector('.reading-card-cover')).toBeTruthy();
-      expect(card.querySelector('.reading-card-badge')).toBeTruthy();
-      expect(card.querySelector('.reading-card-category')).toBeTruthy();
-      expect(card.querySelector('.reading-card-title')).toBeTruthy();
-      expect(card.querySelector('.reading-card-summary')).toBeTruthy();
-      expect(card.querySelector('.vocab-fit-indicator')).toBeTruthy();
-      expect(card.querySelector('.story-cta')).toBeTruthy();
+    try {
+      fixture.detectChanges();
+      const cta = fixture.nativeElement.querySelector('.latam-hero-cta') as HTMLButtonElement;
+      expect(cta).toBeTruthy();
+      expect(cta.textContent).toContain('Descubrir Colombia');
+
+      cta.click();
+      expect(component.interactionMode()).toBe('USER_CONTROLLED');
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+      expect(navigateSpy).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
     }
   });
 
-  it('renders pedagogical reveal overlay with real lexical counts without fabricating reason when missing', () => {
+  it('13. switches interactionMode to USER_CONTROLLED on rail scrollStories, touch, and focus', () => {
     fixture.detectChanges();
-    const firstCard = fixture.nativeElement.querySelector('.colombia-story-card');
-    const reveal = firstCard.querySelector('.recommendation-metrics-reveal') as HTMLElement;
-    expect(reveal).toBeTruthy();
-    expect(reveal.textContent).toContain('Fit 30%');
-    expect(reveal.textContent).not.toContain('Compatibility');
-    expect(reveal.textContent).toContain('0 Known words');
-    expect(reveal.textContent).toContain('0 Learning words');
-    expect(reveal.textContent).toContain('252 Words to learn');
-    expect(reveal.textContent).toContain('Open reading →');
+    expect(component.interactionMode()).toBe('AUTO');
 
-    // When reasonCode is null (as returned in real listCollectionReadings response):
-    homeService.parseCollectionReadings.mockReturnValue({
-      page: 0, size: 10, totalElements: 1,
-      readings: [mockReading({ reasonCode: null, knownWords: 5, learningWords: 3, unclassifiedWords: 150 })],
-    });
-    fixture.componentInstance.retryTopicCollection();
-    fixture.detectChanges();
-    const card = fixture.nativeElement.querySelector('.colombia-story-card');
-    const cardReveal = card.querySelector('.recommendation-metrics-reveal');
-    expect(cardReveal.querySelector('.reading-card-reason-reveal')).toBeNull();
-    expect(cardReveal.textContent).toContain('5 Known words');
-    expect(cardReveal.textContent).toContain('3 Learning words');
-    expect(cardReveal.textContent).toContain('150 Words to learn');
+    component.scrollStories('next');
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
+
+    component.interactionMode.set('AUTO');
+    component.onRailTouch();
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
+
+    component.interactionMode.set('AUTO');
+    component.onInteractiveFocus();
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
   });
 
-  it('preserves short CTA on base card while keeping long CTA and Fit label in reveal overlay', () => {
+  it('14. switches interactionMode to USER_CONTROLLED on hero dots click', () => {
     fixture.detectChanges();
-    const cards = fixture.nativeElement.querySelectorAll('.colombia-story-card');
-    expect(cards).toHaveLength(5);
+    const dots = fixture.nativeElement.querySelectorAll('.colombia-banner-dot');
+    expect(dots.length).toBe(2);
 
-    // Card 1: NOT_STARTED
-    const baseCta1 = cards[0].querySelector('.story-footer .story-cta')?.textContent?.trim();
-    const revealCta1 = cards[0].querySelector('.recommendation-metrics-reveal .reading-card-reveal-cta')?.textContent?.trim();
-    expect(baseCta1).toBe('Open →');
-    expect(revealCta1).toBe('Open reading →');
+    (dots[1] as HTMLButtonElement).click();
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
+    expect(component.activeHeroImageIndex()).toBe(1);
+  });
 
-    // Card 2: IN_PROGRESS
-    const baseCta2 = cards[1].querySelector('.story-footer .story-cta')?.textContent?.trim();
-    const revealCta2 = cards[1].querySelector('.recommendation-metrics-reveal .reading-card-reveal-cta')?.textContent?.trim();
-    expect(baseCta2).toBe('Continue →');
-    expect(revealCta2).toBe('Continue reading →');
+  it('15. rotates countries every ~5s in AUTO mode (CO -> PE -> EC -> AR -> CO)', () => {
+    vi.useFakeTimers();
+    fixture.detectChanges();
 
-    // Card 3: COMPLETED
-    const baseCta3 = cards[2].querySelector('.story-footer .story-cta')?.textContent?.trim();
-    const revealCta3 = cards[2].querySelector('.recommendation-metrics-reveal .reading-card-reveal-cta')?.textContent?.trim();
-    expect(baseCta3).toBe('Re-read →');
-    expect(revealCta3).toBe('Re-read →');
+    expect(component.activeCountryCode()).toBe('CO');
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeCountryCode()).toBe('PE');
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeCountryCode()).toBe('EC');
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeCountryCode()).toBe('AR');
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeCountryCode()).toBe('CO');
+  });
 
-    // Fit label in reveal:
-    for (const card of Array.from(cards)) {
-      const reveal = (card as HTMLElement).querySelector('.recommendation-metrics-reveal');
-      expect(reveal?.textContent).toContain('Fit ');
-      expect(reveal?.textContent).not.toContain('Compatibility');
+  it('16. pauses country rotation on banner mouseenter and resumes on mouseleave', () => {
+    vi.useFakeTimers();
+    fixture.detectChanges();
+
+    const banner = fixture.nativeElement.querySelector('.colombia-featured-banner') as HTMLElement;
+    banner.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(component.isHoverPaused()).toBe(true);
+
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS * 2);
+    expect(component.activeCountryCode()).toBe('CO');
+
+    banner.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(component.isHoverPaused()).toBe(false);
+
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeCountryCode()).toBe('PE');
+  });
+
+  it('17. reduced motion disables autoplay rotation', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as any;
+
+    try {
+      const customFixture = TestBed.createComponent(EditorialUniverse);
+      vi.useFakeTimers();
+      customFixture.detectChanges();
+
+      expect(customFixture.componentInstance.activeCountryCode()).toBe('CO');
+      vi.advanceTimersByTime(14000);
+      expect(customFixture.componentInstance.activeCountryCode()).toBe('CO');
+      customFixture.destroy();
+    } finally {
+      window.matchMedia = originalMatchMedia;
     }
   });
 
-  it('adopts the universal standard reading card structure for cross-universe parity', () => {
+  it('18. cancels in-flight subscription when selecting another country or topic', () => {
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
     fixture.detectChanges();
-    const grid = fixture.nativeElement.querySelector('.editorial-stories-grid');
-    expect(grid).toBeTruthy();
 
-    const standardCards = fixture.nativeElement.querySelectorAll('.editorial-story-card');
-    expect(standardCards).toHaveLength(5);
+    const firstSub$ = new Subject<string>();
+    const secondSub$ = new Subject<string>();
+    homeService.browsePlatformReadings
+      .mockReturnValueOnce(firstSub$)
+      .mockReturnValueOnce(secondSub$);
 
-    const firstCard = standardCards[0] as HTMLElement;
-    expect(firstCard.querySelector('.reading-card-cover')).toBeTruthy();
-    expect(firstCard.querySelector('.recommendation-card-body')).toBeTruthy();
-    expect(firstCard.querySelector('.reading-card-metadata')).toBeTruthy();
-    expect(firstCard.querySelector('.reading-card-badge')).toBeTruthy();
-    expect(firstCard.querySelector('.reading-card-title')).toBeTruthy();
-    expect(firstCard.querySelector('.reading-card-desc')).toBeTruthy();
-    expect(firstCard.querySelector('.reading-card-summary')).toBeTruthy();
-    expect(firstCard.querySelector('.reading-card-cta')).toBeTruthy();
+    component.selectCountry('PE');
+    expect(firstSub$.observed).toBe(true);
+
+    component.selectCountry('MX');
+    expect(firstSub$.observed).toBe(false);
+    expect(secondSub$.observed).toBe(true);
   });
 
-  describe('Hero background image carousel', () => {
-    it('renders hero image slides with index 0 active initially', () => {
-      fixture.detectChanges();
-      const slides = fixture.nativeElement.querySelectorAll('.colombia-banner-img-slide');
-      expect(slides.length).toBe(2);
-      expect(slides[0].classList.contains('active')).toBe(true);
-      expect(slides[1].classList.contains('active')).toBe(false);
-      expect(slides[0].style.backgroundImage).toContain('hero-colombia-villa-de-leyva.webp');
-      expect(slides[1].style.backgroundImage).toContain('hero-colombia-valle-de-cocora.webp');
-    });
+  it('19. shows error state on SOAP failure and retries on retry button click', () => {
+    homeService.browsePlatformReadings.mockReturnValueOnce(
+      throwError(() => new Error('SOAP Fault 500'))
+    );
 
-    it('renders synchronized location chip for the active slide', () => {
-      fixture.detectChanges();
-      const locChip = fixture.nativeElement.querySelector('.colombia-location-chip');
-      expect(locChip).toBeTruthy();
-      expect(locChip.textContent).toContain('Villa de Leyva, Boyacá');
-    });
+    fixture.detectChanges();
+    expect(component.readingsError()).toBe('No se pudieron cargar las historias.');
 
-    it('renders discrete indicator dots and allows manual image selection', () => {
-      fixture.detectChanges();
-      const dots = fixture.nativeElement.querySelectorAll('.colombia-banner-dot');
-      expect(dots.length).toBe(2);
-      expect(dots[0].classList.contains('active')).toBe(true);
-      expect(dots[1].classList.contains('active')).toBe(false);
+    const errorEl = fixture.nativeElement.querySelector('.universe-error');
+    expect(errorEl).toBeTruthy();
+    expect(errorEl.textContent).toContain('No se pudieron cargar las historias.');
 
-      // Click second dot
-      dots[1].click();
-      fixture.detectChanges();
+    const retryBtn = errorEl.querySelector('.universe-retry-btn') as HTMLButtonElement;
+    expect(retryBtn).toBeTruthy();
 
-      expect(component.activeImageIndex()).toBe(1);
-      expect(dots[0].classList.contains('active')).toBe(false);
-      expect(dots[1].classList.contains('active')).toBe(true);
+    homeService.browsePlatformReadings.mockReturnValueOnce(of('<newXml/>'));
+    retryBtn.click();
+    fixture.detectChanges();
 
-      const slides = fixture.nativeElement.querySelectorAll('.colombia-banner-img-slide');
-      expect(slides[0].classList.contains('active')).toBe(false);
-      expect(slides[1].classList.contains('active')).toBe(true);
-
-      const locChip = fixture.nativeElement.querySelector('.colombia-location-chip');
-      expect(locChip.textContent).toContain('Valle de Cocora, Quindío');
-    });
-
-    it('pauses rotation on mouse enter and resumes on mouse leave', () => {
-      fixture.detectChanges();
-      expect(component.isPaused()).toBe(false);
-
-      const banner = fixture.nativeElement.querySelector('.colombia-featured-banner');
-      banner.dispatchEvent(new MouseEvent('mouseenter'));
-      fixture.detectChanges();
-      expect(component.isPaused()).toBe(true);
-
-      banner.dispatchEvent(new MouseEvent('mouseleave'));
-      fixture.detectChanges();
-      expect(component.isPaused()).toBe(false);
-    });
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(2);
   });
 
-  describe('Adaptive container queries layout', () => {
-    it('declares the container root and renders all topic pills and reading cards', () => {
-      fixture.detectChanges();
-      const root = fixture.nativeElement.querySelector('.colombia-universe') as HTMLElement;
-      expect(root).toBeTruthy();
-      expect(root.getAttribute('aria-label')).toContain('Colombia');
+  it('20. shows empty state when 0 readings are returned', () => {
+    homeService.parseBrowsePlatformReadings.mockReturnValue({
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      readings: [],
+    });
 
-      const pillsBar = root.querySelector('.topic-pills-bar');
-      expect(pillsBar).toBeTruthy();
-      expect(pillsBar?.children.length).toBe(5);
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain(
+      'No hay historias disponibles para esta selección.'
+    );
+  });
 
-      const storiesGrid = root.querySelector('.colombia-stories-grid');
-      expect(storiesGrid).toBeTruthy();
-      expect(storiesGrid?.querySelectorAll('.colombia-story-card').length).toBe(5);
+  it('21. multi-country fixture support: renders 3 country pills and switches country cleanly', () => {
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
+    fixture.detectChanges();
+
+    const pills = fixture.nativeElement.querySelectorAll('.country-pill');
+    expect(pills.length).toBe(3);
+    expect(pills[0].textContent).toContain('Colombia');
+    expect(pills[1].textContent).toContain('Perú');
+    expect(pills[2].textContent).toContain('México');
+
+    // Select Perú
+    (pills[1] as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(component.activeCountryCode()).toBe('PE');
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
+    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledWith({
+      countryCode: 'PE',
+      discoveryTopic: 'MYTHS_AND_LEGENDS',
+      page: 0,
+      size: 20,
     });
   });
 
-  describe('Carousel rail navigation', () => {
-    it('wraps the stories grid inside a rail-shell', () => {
+  it('22. caches readings and avoids redundant SOAP calls for identical selection', () => {
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
+    fixture.detectChanges();
+
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(1);
+
+    // Switch to Peru
+    component.selectCountry('PE');
+    fixture.detectChanges();
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(2);
+
+    // Switch back to Colombia -> should use cache!
+    component.selectCountry('CO');
+    fixture.detectChanges();
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(2);
+    expect(component.realReadings().length).toBe(15);
+  });
+
+  it('23. tests utility functions: resolveHeroAssetUrl, resolveTopicIcon, CTAs, fitTone', () => {
+    expect(resolveHeroAssetUrl('editorial/heroes/colombia/hero.webp')).toBe(
+      '/assets/editorial/heroes/colombia/hero.webp'
+    );
+    expect(resolveHeroAssetUrl('/assets/editorial/heroes/colombia/hero.webp')).toBe(
+      '/assets/editorial/heroes/colombia/hero.webp'
+    );
+    expect(resolveHeroAssetUrl('https://cdn.example.com/hero.webp')).toBe(
+      'https://cdn.example.com/hero.webp'
+    );
+    expect(resolveHeroAssetUrl(null)).toBe('');
+
+    expect(resolveTopicIcon('MYTHS_AND_LEGENDS')).toBe('🌙');
+    expect(resolveTopicIcon('REAL_STORIES')).toBe('👥');
+    expect(resolveTopicIcon('HISTORY_AND_MEMORY')).toBe('🏛️');
+    expect(resolveTopicIcon('UNKNOWN')).toBe('📖');
+
+    expect(resolveBaseCta('COMPLETED')).toBe('Re-read →');
+    expect(resolveBaseCta('IN_PROGRESS')).toBe('Continue →');
+    expect(resolveBaseCta(null)).toBe('Open →');
+
+    expect(resolveRevealCta('COMPLETED')).toBe('Re-read →');
+    expect(resolveRevealCta('IN_PROGRESS')).toBe('Continue reading →');
+    expect(resolveRevealCta(null)).toBe('Open reading →');
+    expect(resolveReadingCta(null)).toBe('Open reading →');
+
+    const reading = mockReading({ reasonCode: 'DISCOVERY', classificationConfidencePercentage: 0 });
+    expect(resolveReadingFitTone(reading)).toBe('discovery');
+  });
+
+  it('24. resolves the 4 official LatAm WebP hero assets correctly and connects defaults', () => {
+    expect(
+      resolveHeroAssetUrl(LATAM_COUNTRY_HERO_ASSETS['CO'].assetKey)
+    ).toBe('/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp');
+
+    expect(
+      resolveHeroAssetUrl(LATAM_COUNTRY_HERO_ASSETS['PE'].assetKey)
+    ).toBe('/assets/editorial/heroes/hero-latam-peru-machu-picchu.webp');
+
+    expect(
+      resolveHeroAssetUrl(LATAM_COUNTRY_HERO_ASSETS['EC'].assetKey)
+    ).toBe('/assets/editorial/heroes/hero-latam-ecuador-volcan-nevado.webp');
+
+    expect(
+      resolveHeroAssetUrl(LATAM_COUNTRY_HERO_ASSETS['AR'].assetKey)
+    ).toBe('/assets/editorial/heroes/hero-latam-argentina-patagonia.webp');
+  });
+
+  it('25. synchronizes active country chip, hero location, CTA, and text during AUTO rotation', () => {
+    vi.useFakeTimers();
+    fixture.detectChanges();
+
+    const getActivePill = () => fixture.nativeElement.querySelector('.country-pill.topic-pill-active');
+    const getCta = () => fixture.nativeElement.querySelector('.latam-hero-cta');
+    const getLocation = () => fixture.nativeElement.querySelector('.colombia-location-chip');
+
+    // Initial: CO
+    expect(getActivePill()?.textContent).toContain('Colombia');
+    expect(getCta()?.textContent).toContain('Descubrir Colombia');
+    expect(component.activeCountry()?.displayName).toBe('Colombia');
+
+    // 5s -> PE
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    fixture.detectChanges();
+    expect(component.activeCountryCode()).toBe('PE');
+    expect(getActivePill()?.textContent).toContain('Perú');
+    expect(getCta()?.textContent).toContain('Descubrir Perú');
+    expect(getLocation()?.textContent).toContain('Machu Picchu, Cusco');
+    expect(fixture.nativeElement.textContent).toContain('Próximamente, nuevas historias de Perú.');
+
+    // 10s -> EC
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    fixture.detectChanges();
+    expect(component.activeCountryCode()).toBe('EC');
+    expect(getActivePill()?.textContent).toContain('Ecuador');
+    expect(getCta()?.textContent).toContain('Descubrir Ecuador');
+    expect(getLocation()?.textContent).toContain('Andes ecuatorianos');
+    expect(fixture.nativeElement.textContent).toContain('Próximamente, nuevas historias de Ecuador.');
+
+    // 15s -> AR
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    fixture.detectChanges();
+    expect(component.activeCountryCode()).toBe('AR');
+    expect(getActivePill()?.textContent).toContain('Argentina');
+    expect(getCta()?.textContent).toContain('Descubrir Argentina');
+    expect(getLocation()?.textContent).toContain('Patagonia, Argentina');
+    expect(fixture.nativeElement.textContent).toContain('Próximamente, nuevas historias de Argentina.');
+
+    // 20s -> CO
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    fixture.detectChanges();
+    expect(component.activeCountryCode()).toBe('CO');
+    expect(getActivePill()?.textContent).toContain('Colombia');
+    expect(getCta()?.textContent).toContain('Descubrir Colombia');
+  });
+
+  it('26. switches interactionMode to USER_CONTROLLED on clicking Perú, permanently stopping autoplay', () => {
+    vi.useFakeTimers();
+    fixture.detectChanges();
+
+    const pills = fixture.nativeElement.querySelectorAll('.country-pill');
+    expect(pills.length).toBe(4);
+
+    // Click Perú
+    (pills[1] as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(component.activeCountryCode()).toBe('PE');
+    expect(component.interactionMode()).toBe('USER_CONTROLLED');
+
+    // Advancing timers should NOT rotate country anymore
+    vi.advanceTimersByTime(21000);
+    fixture.detectChanges();
+    expect(component.activeCountryCode()).toBe('PE');
+    expect(component.activeCountry()?.displayName).toBe('Perú');
+  });
+
+  it('27. PE, EC, and AR show NO Colombian readings, NO fake readings, hide topics, and show compact upcoming status without calling browsePlatformReadings', () => {
+    fixture.detectChanges();
+    // browsePlatformReadings was called once for Colombia on init
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(1);
+
+    // 1. Perú
+    component.selectCountry('PE');
+    fixture.detectChanges();
+
+    expect(component.realReadings().length).toBe(0);
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(1); // No new SOAP call!
+    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.topic-selector-group')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Próximamente, nuevas historias de Perú.');
+
+    // 2. Ecuador
+    component.selectCountry('EC');
+    fixture.detectChanges();
+
+    expect(component.realReadings().length).toBe(0);
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(1); // No new SOAP call!
+    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.topic-selector-group')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Próximamente, nuevas historias de Ecuador.');
+
+    // 3. Argentina
+    component.selectCountry('AR');
+    fixture.detectChanges();
+
+    expect(component.realReadings().length).toBe(0);
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(1); // No new SOAP call!
+    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card').length).toBe(0);
+    expect(fixture.nativeElement.querySelector('.topic-selector-group')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Próximamente, nuevas historias de Argentina.');
+  });
+
+  it('28. switching from a preview country back to Colombia restores 15 real readings and Mitos y leyendas topic cleanly', () => {
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(15);
+
+    // Select Perú
+    component.selectCountry('PE');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(0);
+    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card').length).toBe(0);
+
+    // Select Colombia back
+    component.selectCountry('CO');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(15);
+    expect(fixture.nativeElement.querySelectorAll('.colombia-story-card').length).toBe(15);
+    expect(fixture.nativeElement.querySelector('.topic-selector-group')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.topic-selector-group')?.textContent).toContain('Mitos y leyendas');
+  });
+
+  it('29. contextual CTA smooth-scrolls to #discoveryContent without navigating away from Home', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    const scrollSpy = vi.fn();
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollSpy;
+
+    try {
       fixture.detectChanges();
-      const railShell = fixture.nativeElement.querySelector('.colombia-stories-container .rail-shell');
-      expect(railShell).toBeTruthy();
-      expect(railShell.querySelector('.colombia-stories-grid')).toBeTruthy();
-    });
-
-    it('renders next button with aria-label="Next stories" when overflow exists', () => {
-      fixture.detectChanges();
-      component.railHasOverflow.set(true);
-      component.railAtStart.set(true);
-      component.railAtEnd.set(false);
+      component.selectCountry('PE');
       fixture.detectChanges();
 
-      const nextBtn = fixture.nativeElement.querySelector('.rail-arrow-next') as HTMLButtonElement;
-      const prevBtn = fixture.nativeElement.querySelector('.rail-arrow-previous');
+      const cta = fixture.nativeElement.querySelector('.latam-hero-cta') as HTMLButtonElement;
+      expect(cta.textContent).toContain('Descubrir Perú');
 
-      expect(nextBtn).toBeTruthy();
-      expect(nextBtn.getAttribute('aria-label')).toBe('Next stories');
-      expect(prevBtn).toBeFalsy();
-    });
+      cta.click();
+      expect(component.interactionMode()).toBe('USER_CONTROLLED');
+      expect(scrollSpy).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+      expect(navigateSpy).not.toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    }
+  });
 
-    it('renders previous button with aria-label="Previous stories" when rail has advanced', () => {
-      fixture.detectChanges();
-      component.railHasOverflow.set(true);
-      component.railAtStart.set(false);
-      component.railAtEnd.set(false);
-      fixture.detectChanges();
+  it('30. single-country custom overview rotates hero images when countries length is 1', () => {
+    const singleCountryOverview: DiscoveryRegionOverview = {
+      region: { key: 'latam', displayName: 'Latinoamérica', subtitle: 'Historias' },
+      countries: [
+        {
+          countryCode: 'CO',
+          displayName: 'Colombia',
+          tagline: 'Tagline',
+          description: 'Desc',
+          displayOrder: 1,
+          readingCount: 15,
+          heroImages: [
+            { assetKey: 'editorial/heroes/hero1.webp', location: 'Loc 1', displayOrder: 1 },
+            { assetKey: 'editorial/heroes/hero2.webp', location: 'Loc 2', displayOrder: 2 },
+          ],
+          topics: [{ key: 'MYTHS', displayName: 'Mitos', displayOrder: 1, readingCount: 15 }],
+        },
+      ],
+    };
 
-      const nextBtn = fixture.nativeElement.querySelector('.rail-arrow-next');
-      const prevBtn = fixture.nativeElement.querySelector('.rail-arrow-previous') as HTMLButtonElement;
+    fixture.componentRef.setInput('customOverview', singleCountryOverview);
+    vi.useFakeTimers();
+    fixture.detectChanges();
 
-      expect(prevBtn).toBeTruthy();
-      expect(prevBtn.getAttribute('aria-label')).toBe('Previous stories');
-      expect(nextBtn).toBeTruthy();
-    });
-
-    it('hides next button when rail reaches end', () => {
-      fixture.detectChanges();
-      component.railHasOverflow.set(true);
-      component.railAtStart.set(false);
-      component.railAtEnd.set(true);
-      fixture.detectChanges();
-
-      const nextBtn = fixture.nativeElement.querySelector('.rail-arrow-next');
-      const prevBtn = fixture.nativeElement.querySelector('.rail-arrow-previous');
-
-      expect(nextBtn).toBeFalsy();
-      expect(prevBtn).toBeTruthy();
-    });
-
-    it('hides both buttons when there is no overflow', () => {
-      fixture.detectChanges();
-      component.railHasOverflow.set(false);
-      component.railAtStart.set(true);
-      component.railAtEnd.set(true);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('.rail-arrow-next')).toBeFalsy();
-      expect(fixture.nativeElement.querySelector('.rail-arrow-previous')).toBeFalsy();
-    });
-
-    it('delegates clicks on navigation buttons to scrollStories', () => {
-      fixture.detectChanges();
-      component.railHasOverflow.set(true);
-      component.railAtStart.set(false);
-      component.railAtEnd.set(false);
-      fixture.detectChanges();
-
-      const scrollSpy = vi.spyOn(component, 'scrollStories').mockImplementation(() => {});
-
-      const nextBtn = fixture.nativeElement.querySelector('.rail-arrow-next') as HTMLButtonElement;
-      nextBtn.click();
-      expect(scrollSpy).toHaveBeenCalledWith('next');
-
-      const prevBtn = fixture.nativeElement.querySelector('.rail-arrow-previous') as HTMLButtonElement;
-      prevBtn.click();
-      expect(scrollSpy).toHaveBeenCalledWith('previous');
-    });
-
-    it('updates position signals during onStoriesScroll event', () => {
-      fixture.detectChanges();
-      const mockElement = {
-        scrollWidth: 2000,
-        clientWidth: 1000,
-        scrollLeft: 500,
-      } as HTMLElement;
-
-      component.onStoriesScroll({ currentTarget: mockElement } as unknown as Event);
-
-      expect(component.railHasOverflow()).toBe(true);
-      expect(component.railAtStart()).toBe(false);
-      expect(component.railAtEnd()).toBe(false);
-    });
+    expect(component.countries().length).toBe(1);
+    expect(component.activeHeroImageIndex()).toBe(0);
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeHeroImageIndex()).toBe(1);
+    vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
+    expect(component.activeHeroImageIndex()).toBe(0);
   });
 });

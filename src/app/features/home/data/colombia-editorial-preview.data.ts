@@ -40,6 +40,8 @@ export interface EditorialUniverseData {
 
 export type ColombiaEditorialUniverse = EditorialUniverseData;
 
+export const COLOMBIAN_MYTHS_COLLECTION_KEY = 'colombian-myths-legends';
+
 export const COLOMBIA_EDITORIAL_PREVIEW: EditorialUniverseData = {
   key: 'colombia',
   name: 'Colombia',
@@ -59,7 +61,7 @@ export const COLOMBIA_EDITORIAL_PREVIEW: EditorialUniverseData = {
     },
   ],
   topics: [
-    { id: 'myths', name: 'Mitos y leyendas', icon: '🌙', collectionKey: 'colombian-myths-legends' },
+    { id: 'myths', name: 'Mitos y leyendas', icon: '🌙', collectionKey: COLOMBIAN_MYTHS_COLLECTION_KEY },
     { id: 'real-stories', name: 'Historias reales', icon: '👥' },
     { id: 'history', name: 'Historia y memoria', icon: '🏛️' },
     { id: 'culture', name: 'Cultura y tradiciones', icon: '👒' },

@@ -29,6 +29,61 @@ export interface RecommendedPlatformReading {
   coverKey: string | null;
   reasonCode?: RecommendationReasonCode | null;
   description?: string | null;
+  countryCode?: string | null;
+  discoveryTopic?: string | null;
+}
+
+export interface DiscoveryHeroImage {
+  assetKey: string;
+  location?: string | null;
+  alt?: string | null;
+  displayOrder: number;
+}
+
+export interface DiscoveryTopicSummary {
+  key: string;
+  displayName: string;
+  displayOrder: number;
+  readingCount: number;
+}
+
+export interface DiscoveryCountrySummary {
+  countryCode: string;
+  displayName: string;
+  tagline: string;
+  description: string;
+  displayOrder: number;
+  readingCount: number;
+  heroImages: DiscoveryHeroImage[];
+  topics: DiscoveryTopicSummary[];
+}
+
+export interface DiscoveryRegionDetails {
+  key: string;
+  displayName: string;
+  subtitle?: string | null;
+}
+
+export interface DiscoveryRegionOverview {
+  region: DiscoveryRegionDetails;
+  countries: DiscoveryCountrySummary[];
+}
+
+export interface BrowsePlatformReadingsFilters {
+  collectionKey?: string | null;
+  category?: string | null;
+  editorialLevel?: EditorialLevel | null;
+  countryCode?: string | null;
+  discoveryTopic?: string | null;
+  page?: number;
+  size?: number;
+}
+
+export interface BrowsePlatformReadingsPage {
+  page: number;
+  size: number;
+  totalElements: number;
+  readings: RecommendedPlatformReading[];
 }
 
 export interface PlatformReadingRecommendationsPage {
@@ -44,6 +99,7 @@ export interface ReadingCollection {
   description: string;
   displayOrder: number;
   coverKey: string | null;
+  readingCount?: number | null;
 }
 
 export interface CollectionReadingsPage {

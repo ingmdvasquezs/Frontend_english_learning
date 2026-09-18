@@ -17,15 +17,14 @@
 .explore-editorial-shell {
   position: relative;
   width: 100%;
+  margin: var(--home-section-gap, 1.5rem) 0;
   container-type: inline-size;
   container-name: explore-shell;
   background: var(--editorial-shell-bg, #eee8de);
   border: 1px solid var(--app-border);
-  border-radius: 1.25rem;
-  padding: 1.25rem 1.4rem 1.4rem;
+  border-radius: var(--reading-card-radius, 6px);
+  padding: 1.25rem 1rem 1.4rem;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-  margin-top: var(--home-section-gap, 1.5rem);
-  margin-bottom: var(--home-section-gap, 1.5rem);
   box-sizing: border-box;
 }
 
@@ -40,18 +39,10 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.22);
 }
 
-@media (min-width: 1024px) {
-  .explore-editorial-shell {
-    width: calc(100% + 2.8rem);
-    margin-inline: -1.4rem;
-    padding: 1.25rem 1.4rem 1.4rem;
-  }
-}
-
 @media (max-width: 639px) {
   .explore-editorial-shell {
     padding: 0.85rem 0.85rem 1.15rem;
-    border-radius: 1rem;
+    border-radius: var(--reading-card-radius, 6px);
   }
 }
 
