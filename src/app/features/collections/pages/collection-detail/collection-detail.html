@@ -1,0 +1,135 @@
+<div class="collection-detail-page">
+  <!-- Navegación de retorno -->
+  <nav class="detail-nav" aria-label="Navegación de retorno">
+    <a routerLink="/home" class="back-link">
+      <span aria-hidden="true">←</span> Volver a Inicio
+    </a>
+  </nav>
+
+  @if (collectionLoading()) {
+    <div class="collection-loading" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Cargando información de la colección...</p>
+    </div>
+  } @else if (collectionNotFound()) {
+    <div class="collection-not-found" role="alert">
+      <h2 class="not-found-title">Colección no disponible</h2>
+      <p class="not-found-desc">
+        La colección solicitada no existe o no se encuentra disponible actualmente.
+      </p>
+      <a routerLink="/home" class="editorial-btn">Volver a Inicio</a>
+    </div>
+  } @else {
+    <!-- Hero Editorial de la Colección -->
+    <header class="collection-hero app-card">
+      <div class="hero-media">
+        @if (heroImageUrl(); as url) {
+          <img [src]="url" [alt]="'Portada de ' + title()" class="hero-img" />
+        } @else {
+          <div class="hero-fallback" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+              <path d="M6 6h10M6 10h10"/>
+            </svg>
+            <span class="fallback-tag">Colección Editorial</span>
+          </div>
+        }
+      </div>
+
+      <div class="hero-body">
+        <div class="hero-top-row">
+          <span class="hero-eyebrow">
+            @if (isLatinAmerica()) {
+              Región editorial
+            } @else if (isNew()) {
+              Catálogo reciente
+            } @else {
+              Colección editorial
+            }
+          </span>
+          <span class="hero-count-badge">{{ countLabel() }}</span>
+        </div>
+        <h1 class="hero-title">{{ title() }}</h1>
+        <p class="hero-description">{{ description() }}</p>
+      </div>
+    </header>
+
+    <!-- Filtros de la Colección -->
+    <section class="detail-filters-section" aria-label="Filtros de lecturas">
+      <app-collection-filters
+        [showCountryFilter]="isLatinAmerica()"
+        [countries]="latamCountries()"
+        [selectedCountry]="selectedCountry()"
+        [showTopicFilter]="isLatinAmerica()"
+        [topics]="activeTopics()"
+        [selectedTopic]="selectedTopic()"
+        [selectedLevel]="selectedLevel()"
+        (countryChange)="onCountryChange($event)"
+        (topicChange)="onTopicChange($event)"
+        (levelChange)="onLevelChange($event)"
+        (clear)="onClearFilters()"
+      />
+    </section>
+
+    <!-- Grid de Lecturas de la Colección -->
+    <section class="collection-readings-section" aria-labelledby="collection-readings-heading">
+      <div class="section-heading-row">
+        <h2 id="collection-readings-heading" class="section-title">Lecturas disponibles</h2>
+        <span class="results-count">{{ countLabel() }}</span>
+      </div>
+
+      @if (readingsLoading()) {
+        <div class="catalog-loading" aria-live="polite">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p>Cargando lecturas...</p>
+        </div>
+      } @else if (readingsError(); as errorMsg) {
+        <div class="catalog-error" role="alert">
+          <p class="error-msg">{{ errorMsg }}</p>
+          <button type="button" class="editorial-btn" (click)="fetchReadings()">Reintentar</button>
+        </div>
+      } @else if (readings().length === 0) {
+        <div class="catalog-empty" role="status">
+          <h3 class="empty-title">No hay lecturas disponibles con los filtros seleccionados.</h3>
+          <p class="empty-desc">Prueba limpiando los filtros para ver todas las lecturas disponibles.</p>
+          @if (selectedLevel() !== null || (isLatinAmerica() && selectedCountry() !== null)) {
+            <button type="button" class="editorial-btn" (click)="onClearFilters()">
+              Ver todas las lecturas
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="readings-grid">
+          @for (item of readings(); track item.readingId) {
+            <app-home-reading-card [reading]="item" />
+          }
+        </div>
+
+        <!-- Paginación -->
+        @if (totalPages() > 1) {
+          <nav class="pagination-nav" aria-label="Paginación de lecturas">
+            <button
+              type="button"
+              class="pagination-btn"
+              [disabled]="currentPage() === 0"
+              (click)="onPageChange(currentPage() - 1)"
+            >
+              ← Anterior
+            </button>
+            <span class="pagination-info">
+              Página {{ currentPage() + 1 }} de {{ totalPages() }}
+            </span>
+            <button
+              type="button"
+              class="pagination-btn"
+              [disabled]="currentPage() >= totalPages() - 1"
+              (click)="onPageChange(currentPage() + 1)"
+            >
+              Siguiente →
+            </button>
+          </nav>
+        }
+      }
+    </section>
+  }
+</div>

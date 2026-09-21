@@ -753,4 +753,82 @@ describe('EditorialUniverse', () => {
     vi.advanceTimersByTime(COUNTRY_AUTOPLAY_MS);
     expect(component.activeHeroImageIndex()).toBe(0);
   });
+
+  it('31. initializes from latinAmerica input with 0 extra SOAP calls, seeds cache, and respects defaultTopicKey', () => {
+    const initialReadings = [
+      mockReading({ readingId: 'seed-1', title: 'Seeded Story', countryCode: 'CO', discoveryTopic: 'MYTHS_AND_LEGENDS' }),
+    ];
+    const mockLatamData = {
+      region: { key: 'latin-america', displayName: 'Latinoamérica', subtitle: 'Descubre nuestra región' },
+      countries: [
+        {
+          countryCode: 'CO',
+          displayName: 'Colombia',
+          tagline: 'Tagline CO',
+          description: 'Desc CO',
+          displayOrder: 1,
+          readingCount: 15,
+          heroImages: [],
+          topics: [
+            { key: 'MYTHS_AND_LEGENDS', displayName: 'Mitos y leyendas', displayOrder: 1, readingCount: 15 },
+            { key: 'REAL_STORIES', displayName: 'Historias reales', displayOrder: 2, readingCount: 5 },
+          ],
+        },
+      ],
+      defaultCountryCode: 'CO',
+      defaultTopicKey: 'MYTHS_AND_LEGENDS',
+      readings: initialReadings,
+    };
+
+    fixture.componentRef.setInput('latinAmerica', mockLatamData);
+    fixture.detectChanges();
+
+    // 0 extra SOAP calls!
+    expect(homeService.getDiscoveryRegionOverview).not.toHaveBeenCalled();
+    expect(homeService.browsePlatformReadings).not.toHaveBeenCalled();
+
+    expect(component.activeCountryCode()).toBe('CO');
+    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.realReadings()).toHaveLength(1);
+    expect(component.realReadings()[0].readingId).toBe('seed-1');
+
+    // Ver todas link points to /collections/latin-america?country=CO
+    const verTodasLink = fixture.nativeElement.querySelector('.latam-more-link') as HTMLAnchorElement;
+    expect(verTodasLink).toBeTruthy();
+    expect(verTodasLink.getAttribute('href')).toBe('/collections/latin-america?country=CO');
+  });
+
+  it('32. respects backend defaultTopicKey and does NOT force first topic if defaultTopicKey differs', () => {
+    const initialReadings = [
+      mockReading({ readingId: 'seed-hist', title: 'History Story', countryCode: 'CO', discoveryTopic: 'HISTORY_AND_MEMORY' }),
+    ];
+    const mockLatamData = {
+      region: { key: 'latin-america', displayName: 'Latinoamérica', subtitle: 'Descubre nuestra región' },
+      countries: [
+        {
+          countryCode: 'CO',
+          displayName: 'Colombia',
+          tagline: 'Tagline CO',
+          description: 'Desc CO',
+          displayOrder: 1,
+          readingCount: 15,
+          heroImages: [],
+          topics: [
+            { key: 'MYTHS_AND_LEGENDS', displayName: 'Mitos y leyendas', displayOrder: 1, readingCount: 10 },
+            { key: 'HISTORY_AND_MEMORY', displayName: 'Historia', displayOrder: 2, readingCount: 5 },
+          ],
+        },
+      ],
+      defaultCountryCode: 'CO',
+      defaultTopicKey: 'HISTORY_AND_MEMORY',
+      readings: initialReadings,
+    };
+
+    fixture.componentRef.setInput('latinAmerica', mockLatamData);
+    fixture.detectChanges();
+
+    expect(component.activeCountryCode()).toBe('CO');
+    expect(component.activeTopicKey()).toBe('HISTORY_AND_MEMORY');
+    expect(homeService.browsePlatformReadings).not.toHaveBeenCalled();
+  });
 });

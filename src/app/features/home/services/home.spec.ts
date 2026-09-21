@@ -388,6 +388,161 @@ describe('HomeService', () => {
     expect(page.readings[0].vocabularyFitPercentage).toBe(88.5);
   });
 
+  it('sends browsePlatformReadings request with sort CREATED_AT_DESC', () => {
+    service.browsePlatformReadings({
+      sort: 'CREATED_AT_DESC',
+      page: 0,
+      size: 12,
+    }).subscribe();
+
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.body).toContain('<read:sort>CREATED_AT_DESC</read:sort>');
+    expect(request.request.body).toContain('<read:page>0</read:page>');
+    expect(request.request.body).toContain('<read:size>12</read:size>');
+    request.flush('<response/>');
+  });
+
+  it('sends getDiscoveryHome request with max limits', () => {
+    service.getDiscoveryHome(10, 12, 8).subscribe();
+
+    const request = httpTesting.expectOne('/ws');
+    expect(request.request.headers.get('Authorization')).toBe('Bearer token');
+    expect(request.request.body).toContain('<read:getDiscoveryHomeRequest>');
+    expect(request.request.body).toContain('<read:maxContinueReading>10</read:maxContinueReading>');
+    expect(request.request.body).toContain('<read:maxForYou>12</read:maxForYou>');
+    expect(request.request.body).toContain('<read:maxShelfReadings>8</read:maxShelfReadings>');
+    request.flush('<response/>');
+  });
+
+  it('parses getDiscoveryHome response with continueReading, forYou, latinAmerica and shelves', () => {
+    const xml = `
+      <read:getDiscoveryHomeResponse xmlns:read="http://soap.com/english-reading/readings">
+        <read:continueReading>
+          <read:readingId>cr-1</read:readingId>
+          <read:title>Continue Reading 1</read:title>
+          <read:origin>PLATFORM</read:origin>
+          <read:progressStatus>IN_PROGRESS</read:progressStatus>
+          <read:coverKey>cr-cover</read:coverKey>
+          <read:editorialLevel>B1</read:editorialLevel>
+          <read:category>Culture</read:category>
+          <read:startedAt>2026-09-20T10:00:00</read:startedAt>
+          <read:shortDescription>Short desc</read:shortDescription>
+          <read:progressPercentage>45</read:progressPercentage>
+        </read:continueReading>
+        <read:forYou>
+          <read:readingId>fy-1</read:readingId>
+          <read:title>For You 1</read:title>
+          <read:language>en</read:language>
+          <read:editorialLevel>A2</read:editorialLevel>
+          <read:category>Daily Life</read:category>
+          <read:uniqueWords>120</read:uniqueWords>
+          <read:knownWords>80</read:knownWords>
+          <read:learningWords>10</read:learningWords>
+          <read:explicitNewWords>5</read:explicitNewWords>
+          <read:ignoredWords>2</read:ignoredWords>
+          <read:unclassifiedWords>23</read:unclassifiedWords>
+          <read:vocabularyFitPercentage>85</read:vocabularyFitPercentage>
+          <read:classificationConfidencePercentage>90</read:classificationConfidencePercentage>
+          <read:reasonCode>HIGH_VOCABULARY_MATCH</read:reasonCode>
+        </read:forYou>
+        <read:latinAmerica>
+          <read:region>
+            <read:key>latin-america</read:key>
+            <read:displayName>Latinoamérica</read:displayName>
+            <read:subtitle>Historias de nuestra región</read:subtitle>
+          </read:region>
+          <read:countries>
+            <read:countryCode>CO</read:countryCode>
+            <read:displayName>Colombia</read:displayName>
+            <read:tagline>Tierra de historias</read:tagline>
+            <read:description>Desc Colombia</read:description>
+            <read:displayOrder>1</read:displayOrder>
+            <read:readingCount>15</read:readingCount>
+            <read:heroImages>
+              <read:assetKey>cocora.webp</read:assetKey>
+              <read:displayOrder>1</read:displayOrder>
+            </read:heroImages>
+            <read:topics>
+              <read:key>MYTHS_AND_LEGENDS</read:key>
+              <read:displayName>Mitos y leyendas</read:displayName>
+              <read:displayOrder>1</read:displayOrder>
+              <read:readingCount>15</read:readingCount>
+            </read:topics>
+          </read:countries>
+          <read:defaultCountryCode>CO</read:defaultCountryCode>
+          <read:defaultTopicKey>MYTHS_AND_LEGENDS</read:defaultTopicKey>
+          <read:readings>
+            <read:readingId>latam-1</read:readingId>
+            <read:title>El Sombrerón</read:title>
+            <read:language>en</read:language>
+            <read:editorialLevel>B1</read:editorialLevel>
+            <read:category>Culture</read:category>
+            <read:uniqueWords>200</read:uniqueWords>
+            <read:knownWords>140</read:knownWords>
+            <read:learningWords>20</read:learningWords>
+            <read:explicitNewWords>10</read:explicitNewWords>
+            <read:ignoredWords>5</read:ignoredWords>
+            <read:unclassifiedWords>25</read:unclassifiedWords>
+            <read:vocabularyFitPercentage>80</read:vocabularyFitPercentage>
+            <read:classificationConfidencePercentage>85</read:classificationConfidencePercentage>
+            <read:countryCode>CO</read:countryCode>
+            <read:discoveryTopic>MYTHS_AND_LEGENDS</read:discoveryTopic>
+          </read:readings>
+        </read:latinAmerica>
+        <read:shelves>
+          <read:key>nature-places</read:key>
+          <read:title>Naturaleza y Lugares</read:title>
+          <read:description>Explora el mundo natural</read:description>
+          <read:displayOrder>1</read:displayOrder>
+          <read:coverKey>nature-cover</read:coverKey>
+          <read:type>GENERIC</read:type>
+          <read:totalReadings>10</read:totalReadings>
+          <read:readings>
+            <read:readingId>nature-1</read:readingId>
+            <read:title>Yellowstone</read:title>
+            <read:language>en</read:language>
+            <read:editorialLevel>B2</read:editorialLevel>
+            <read:category>Nature</read:category>
+            <read:uniqueWords>300</read:uniqueWords>
+            <read:knownWords>220</read:knownWords>
+            <read:learningWords>25</read:learningWords>
+            <read:explicitNewWords>15</read:explicitNewWords>
+            <read:ignoredWords>10</read:ignoredWords>
+            <read:unclassifiedWords>30</read:unclassifiedWords>
+            <read:vocabularyFitPercentage>75</read:vocabularyFitPercentage>
+            <read:classificationConfidencePercentage>92</read:classificationConfidencePercentage>
+          </read:readings>
+        </read:shelves>
+      </read:getDiscoveryHomeResponse>
+    `;
+
+    const result = service.parseDiscoveryHome(xml);
+    expect(result.continueReading).toHaveLength(1);
+    expect(result.continueReading[0].readingId).toBe('cr-1');
+    expect(result.continueReading[0].progressPercentage).toBe(45);
+
+    expect(result.forYou).toHaveLength(1);
+    expect(result.forYou[0].readingId).toBe('fy-1');
+    expect(result.forYou[0].reasonCode).toBe('HIGH_VOCABULARY_MATCH');
+
+    expect(result.latinAmerica).not.toBeNull();
+    expect(result.latinAmerica!.defaultCountryCode).toBe('CO');
+    expect(result.latinAmerica!.defaultTopicKey).toBe('MYTHS_AND_LEGENDS');
+    expect(result.latinAmerica!.region.displayName).toBe('Latinoamérica');
+    expect(result.latinAmerica!.countries).toHaveLength(1);
+    expect(result.latinAmerica!.countries[0].countryCode).toBe('CO');
+    expect(result.latinAmerica!.readings).toHaveLength(1);
+    expect(result.latinAmerica!.readings[0].readingId).toBe('latam-1');
+
+    expect(result.shelves).toHaveLength(1);
+    expect(result.shelves[0].key).toBe('nature-places');
+    expect(result.shelves[0].title).toBe('Naturaleza y Lugares');
+    expect(result.shelves[0].totalReadings).toBe(10);
+    expect(result.shelves[0].readings).toHaveLength(1);
+    expect(result.shelves[0].readings[0].title).toBe('Yellowstone');
+  });
+
   function pageXml(readings: string, totalElements = 0): string {
     return `
       <read:recommendPlatformReadingsResponse xmlns:read="http://soap.com/english-reading/readings">

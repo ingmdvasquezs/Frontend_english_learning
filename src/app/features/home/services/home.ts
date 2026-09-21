@@ -16,6 +16,9 @@ import {
   DiscoveryTopicSummary,
   BrowsePlatformReadingsFilters,
   BrowsePlatformReadingsPage,
+  DiscoveryHome,
+  LatinAmericaDiscovery,
+  DiscoveryShelf,
 } from '../models/home.models';
 import { parseReadingProgressStatus } from '../../../shared/models/reading-progress-status';
 import { escapeXml } from '../../../shared/utils/xml-utils';
@@ -27,6 +30,16 @@ export class HomeService {
 
   private readonly soapUrl = '/ws';
   private readonly namespace = 'http://soap.com/english-reading/readings';
+
+  getDiscoveryHome(maxContinueReading = 10, maxForYou = 12, maxShelfReadings = 8) {
+    return this.postSoap(`
+      <read:getDiscoveryHomeRequest>
+        <read:maxContinueReading>${maxContinueReading}</read:maxContinueReading>
+        <read:maxForYou>${maxForYou}</read:maxForYou>
+        <read:maxShelfReadings>${maxShelfReadings}</read:maxShelfReadings>
+      </read:getDiscoveryHomeRequest>
+    `);
+  }
 
   recommendPlatformReadings(page = 0, size = 12) {
     return this.postSoap(`
@@ -54,7 +67,17 @@ export class HomeService {
     const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
     const readings: ContinueReadingItem[] = Array.from(
       xml.getElementsByTagNameNS(this.namespace, 'readings')
-    ).map((element) => ({
+    ).map((element) => this.parseContinueReadingItem(element));
+    return {
+      page: this.getRequiredNumber(xml, 'page'),
+      size: this.getRequiredNumber(xml, 'size'),
+      totalElements: this.getRequiredNumber(xml, 'totalElements'),
+      readings,
+    };
+  }
+
+  parseContinueReadingItem(element: Element): ContinueReadingItem {
+    return {
       readingId: this.getRequiredValue(element, 'readingId'),
       title: this.getRequiredValue(element, 'title'),
       origin: this.getReadingOrigin(element),
@@ -67,12 +90,6 @@ export class HomeService {
         this.getOptionalValue(element, 'shortDescription') ??
         this.getOptionalValue(element, 'description'),
       progressPercentage: this.getOptionalNumber(element, 'progressPercentage'),
-    }));
-    return {
-      page: this.getRequiredNumber(xml, 'page'),
-      size: this.getRequiredNumber(xml, 'size'),
-      totalElements: this.getRequiredNumber(xml, 'totalElements'),
-      readings,
     };
   }
 
@@ -138,42 +155,115 @@ export class HomeService {
       xml.getElementsByTagNameNS(this.namespace, 'countries')
     );
 
-    const countries: DiscoveryCountrySummary[] = countryElements.map((countryEl) => {
-      const heroImageElements = Array.from(
-        countryEl.getElementsByTagNameNS(this.namespace, 'heroImages')
-      );
-      const heroImages: DiscoveryHeroImage[] = heroImageElements.map((imgEl) => ({
-        assetKey: this.getRequiredValue(imgEl, 'assetKey'),
-        location: this.getOptionalValue(imgEl, 'location'),
-        alt: this.getOptionalValue(imgEl, 'alt'),
-        displayOrder: this.getRequiredNumber(imgEl, 'displayOrder'),
-      })).sort((a, b) => a.displayOrder - b.displayOrder);
-
-      const topicElements = Array.from(
-        countryEl.getElementsByTagNameNS(this.namespace, 'topics')
-      );
-      const topics: DiscoveryTopicSummary[] = topicElements.map((topicEl) => ({
-        key: this.getRequiredValue(topicEl, 'key'),
-        displayName: this.getRequiredValue(topicEl, 'displayName'),
-        displayOrder: this.getRequiredNumber(topicEl, 'displayOrder'),
-        readingCount: this.getRequiredNumber(topicEl, 'readingCount'),
-      })).sort((a, b) => a.displayOrder - b.displayOrder);
-
-      return {
-        countryCode: this.getRequiredValue(countryEl, 'countryCode'),
-        displayName: this.getDirectChildValue(countryEl, 'displayName') ?? this.getRequiredValue(countryEl, 'displayName'),
-        tagline: this.getRequiredValue(countryEl, 'tagline'),
-        description: this.getRequiredValue(countryEl, 'description'),
-        displayOrder: this.getRequiredNumber(countryEl, 'displayOrder'),
-        readingCount: this.getRequiredNumber(countryEl, 'readingCount'),
-        heroImages,
-        topics,
-      };
-    }).sort((a, b) => a.displayOrder - b.displayOrder);
+    const countries: DiscoveryCountrySummary[] = countryElements
+      .map((countryEl) => this.parseDiscoveryCountrySummary(countryEl))
+      .sort((a, b) => a.displayOrder - b.displayOrder);
 
     return {
       region,
       countries,
+    };
+  }
+
+  parseDiscoveryCountrySummary(countryEl: Element): DiscoveryCountrySummary {
+    const heroImageElements = Array.from(
+      countryEl.getElementsByTagNameNS(this.namespace, 'heroImages')
+    );
+    const heroImages: DiscoveryHeroImage[] = heroImageElements.map((imgEl) => ({
+      assetKey: this.getRequiredValue(imgEl, 'assetKey'),
+      location: this.getOptionalValue(imgEl, 'location'),
+      alt: this.getOptionalValue(imgEl, 'alt'),
+      displayOrder: this.getRequiredNumber(imgEl, 'displayOrder'),
+    })).sort((a, b) => a.displayOrder - b.displayOrder);
+
+    const topicElements = Array.from(
+      countryEl.getElementsByTagNameNS(this.namespace, 'topics')
+    );
+    const topics: DiscoveryTopicSummary[] = topicElements.map((topicEl) => ({
+      key: this.getRequiredValue(topicEl, 'key'),
+      displayName: this.getRequiredValue(topicEl, 'displayName'),
+      displayOrder: this.getRequiredNumber(topicEl, 'displayOrder'),
+      readingCount: this.getRequiredNumber(topicEl, 'readingCount'),
+    })).sort((a, b) => a.displayOrder - b.displayOrder);
+
+    return {
+      countryCode: this.getRequiredValue(countryEl, 'countryCode'),
+      displayName: this.getDirectChildValue(countryEl, 'displayName') ?? this.getRequiredValue(countryEl, 'displayName'),
+      tagline: this.getRequiredValue(countryEl, 'tagline'),
+      description: this.getRequiredValue(countryEl, 'description'),
+      displayOrder: this.getRequiredNumber(countryEl, 'displayOrder'),
+      readingCount: this.getRequiredNumber(countryEl, 'readingCount'),
+      heroImages,
+      topics,
+    };
+  }
+
+  parseDiscoveryHome(responseXml: string): DiscoveryHome {
+    const xml = new DOMParser().parseFromString(responseXml, 'text/xml');
+
+    const continueReading: ContinueReadingItem[] = Array.from(
+      xml.getElementsByTagNameNS(this.namespace, 'continueReading')
+    ).map((element) => this.parseContinueReadingItem(element));
+
+    const forYou: RecommendedPlatformReading[] = Array.from(
+      xml.getElementsByTagNameNS(this.namespace, 'forYou')
+    ).map((element) => this.parseRecommendedReading(element));
+
+    const latinAmericaEl = xml.getElementsByTagNameNS(this.namespace, 'latinAmerica')[0];
+    let latinAmerica: LatinAmericaDiscovery | null = null;
+    if (latinAmericaEl) {
+      const regionEl = latinAmericaEl.getElementsByTagNameNS(this.namespace, 'region')[0];
+      if (!regionEl) {
+        throw new Error('Invalid SOAP response: missing region in latinAmerica');
+      }
+      const region: DiscoveryRegionDetails = {
+        key: this.getRequiredValue(regionEl, 'key'),
+        displayName: this.getRequiredValue(regionEl, 'displayName'),
+        subtitle: this.getOptionalValue(regionEl, 'subtitle'),
+      };
+      const countries = Array.from(
+        latinAmericaEl.getElementsByTagNameNS(this.namespace, 'countries')
+      )
+        .map((el) => this.parseDiscoveryCountrySummary(el))
+        .sort((a, b) => a.displayOrder - b.displayOrder);
+
+      const defaultCountryCode = this.getRequiredValue(latinAmericaEl, 'defaultCountryCode');
+      const defaultTopicKey = this.getOptionalValue(latinAmericaEl, 'defaultTopicKey');
+
+      const readings = Array.from(
+        latinAmericaEl.getElementsByTagNameNS(this.namespace, 'readings')
+      ).map((el) => this.parseRecommendedReading(el));
+
+      latinAmerica = {
+        region,
+        countries,
+        defaultCountryCode,
+        defaultTopicKey,
+        readings,
+      };
+    }
+
+    const shelfElements = Array.from(
+      xml.getElementsByTagNameNS(this.namespace, 'shelves')
+    );
+    const shelves: DiscoveryShelf[] = shelfElements.map((shelfEl) => ({
+      key: this.getRequiredValue(shelfEl, 'key'),
+      title: this.getRequiredValue(shelfEl, 'title'),
+      description: this.getOptionalValue(shelfEl, 'description') ?? '',
+      displayOrder: this.getRequiredNumber(shelfEl, 'displayOrder'),
+      coverKey: this.getOptionalValue(shelfEl, 'coverKey'),
+      type: this.getRequiredValue(shelfEl, 'type'),
+      totalReadings: this.getRequiredNumber(shelfEl, 'totalReadings'),
+      readings: Array.from(
+        shelfEl.getElementsByTagNameNS(this.namespace, 'readings')
+      ).map((el) => this.parseRecommendedReading(el)),
+    })).sort((a, b) => a.displayOrder - b.displayOrder);
+
+    return {
+      continueReading,
+      forYou,
+      latinAmerica,
+      shelves,
     };
   }
 
@@ -193,6 +283,9 @@ export class HomeService {
         : '',
       filters.discoveryTopic
         ? `<read:discoveryTopic>${escapeXml(filters.discoveryTopic)}</read:discoveryTopic>`
+        : '',
+      filters.sort
+        ? `<read:sort>${escapeXml(filters.sort)}</read:sort>`
         : '',
       `<read:page>${filters.page ?? 0}</read:page>`,
       `<read:size>${filters.size ?? 20}</read:size>`,

@@ -1,0 +1,51 @@
+﻿<section class="discovery-shelf-section section-block" [attr.aria-labelledby]="'shelf-heading-' + shelf().key">
+  <div class="section-heading-row">
+    <div class="section-heading-main">
+      <h3 [id]="'shelf-heading-' + shelf().key" class="section-title">{{ shelf().title }}</h3>
+      @if (shelf().description; as desc) {
+        <p class="section-subtitle">{{ desc }}</p>
+      }
+    </div>
+    <a [routerLink]="['/collections', shelf().key]" class="section-more-link">
+      Ver todas <span aria-hidden="true">→</span>
+    </a>
+  </div>
+
+  <div class="rail-shell">
+    @if (railHasOverflow() && !railAtStart()) {
+      <button
+        type="button"
+        [attr.aria-label]="'Ver anteriores lecturas de ' + shelf().title"
+        (click)="scrollRail('previous')"
+        class="rail-arrow rail-arrow-previous"
+      >‹</button>
+    }
+    <div
+      #shelfRail
+      class="shelf-carousel recommendations-carousel"
+      role="region"
+      [attr.aria-label]="'Lecturas de ' + shelf().title"
+      tabindex="0"
+      (scroll)="onRailScroll($event)"
+    >
+      @for (card of shelfCards(); track card.reading.readingId) {
+        @let reading = card.reading;
+        <app-home-reading-card
+          [reading]="reading"
+          [description]="card.description"
+          [primaryMetric]="card.compatibilityLabel"
+          [vocabularyFitPercentage]="card.vocabularyFitPercentage"
+          [revealMetrics]="card.revealMetricsEn"
+        />
+      }
+    </div>
+    @if (railHasOverflow() && !railAtEnd()) {
+      <button
+        type="button"
+        [attr.aria-label]="'Ver siguientes lecturas de ' + shelf().title"
+        (click)="scrollRail('next')"
+        class="rail-arrow rail-arrow-next"
+      >›</button>
+    }
+  </div>
+</section>

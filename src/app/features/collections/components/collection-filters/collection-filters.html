@@ -1,0 +1,74 @@
+<div class="collection-filters" aria-label="Filtros de la colección">
+  <!-- Filtro por País (especial para Latinoamérica) -->
+  @if (showCountryFilter() && countries().length > 0) {
+    <div class="filter-group filter-group-countries" role="group" aria-label="Filtrar por país">
+      <span class="filter-group-label">País:</span>
+      <div class="filter-pills-row">
+        @for (c of countries(); track c.code) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedCountry() === c.code"
+            (click)="onSelectCountry(c.code)"
+            [attr.aria-pressed]="selectedCountry() === c.code"
+          >
+            {{ c.name }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Filtro por Tema (especial para Latinoamérica) -->
+  @if (showTopicFilter() && topics().length > 0) {
+    <div class="filter-group filter-group-topics" role="group" aria-label="Filtrar por tema">
+      <span class="filter-group-label">Tema:</span>
+      <div class="filter-pills-row">
+        @for (t of topics(); track t.key) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.active]="selectedTopic() === t.key"
+            (click)="onSelectTopic(t.key)"
+            [attr.aria-pressed]="selectedTopic() === t.key"
+          >
+            {{ t.name }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Filtro por Nivel CEFR -->
+  <div class="filter-group filter-group-levels" role="group" aria-label="Filtrar por nivel CEFR">
+    <span class="filter-group-label">Nivel:</span>
+    <div class="filter-pills-row">
+      <button
+        type="button"
+        class="filter-pill filter-pill-compact"
+        [class.active]="selectedLevel() === null"
+        (click)="onSelectLevel(null)"
+        [attr.aria-pressed]="selectedLevel() === null"
+      >
+        Todos
+      </button>
+      @for (lvl of levels; track lvl) {
+        <button
+          type="button"
+          class="filter-pill filter-pill-compact"
+          [class.active]="selectedLevel() === lvl"
+          (click)="onSelectLevel(lvl)"
+          [attr.aria-pressed]="selectedLevel() === lvl"
+        >
+          {{ lvl }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (hasActiveFilters()) {
+    <button type="button" class="filter-clear-btn" (click)="onClear()">
+      Limpiar filtros ×
+    </button>
+  }
+</div>

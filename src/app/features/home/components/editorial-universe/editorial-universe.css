@@ -19,6 +19,36 @@
   margin-bottom: 0.15rem;
 }
 
+.latam-region-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.latam-region-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.latam-more-link {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.15s ease, color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.latam-more-link:hover {
+  transform: translateX(2px);
+  color: var(--app-accent);
+}
+
 .latam-region-title {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(1.4rem, 2.2vw, 1.85rem);

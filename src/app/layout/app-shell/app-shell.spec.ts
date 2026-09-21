@@ -51,14 +51,18 @@ describe('AppShell', () => {
     expect(root.querySelector('.brand-tagline')).toBeTruthy();
   });
 
-  it('renders the Explorar navigation link', async () => {
+  it('does NOT render the Explorar navigation link, keeping only Inicio, Mi biblioteca, and Mi vocabulario', async () => {
     const profile = { profile: signal({ name:'Test', alias:null, age:null, nativeLanguage:null, learningLanguage:'en', email:'t@t.com' }), loadProfile:vi.fn(), clearProfile:vi.fn() };
     await TestBed.configureTestingModule({ imports:[AppShell], providers:[provideRouter([{path:'home',component:EmptyPage}]),{provide:Auth,useValue:{logout:vi.fn()}},{provide:ProfileService,useValue:profile}] }).compileComponents();
     const fixture = TestBed.createComponent(AppShell); fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement;
     const exploreLink = root.querySelector('.nav-explore-link');
-    expect(exploreLink).toBeTruthy();
-    expect(exploreLink?.textContent).toContain('Explorar');
+    expect(exploreLink).toBeNull();
+    expect(root.querySelector('a[href="/explore"]')).toBeNull();
+    expect(root.textContent).not.toContain('Explorar');
+
+    const navLabels = Array.from(root.querySelectorAll('.nav-links .nav-label')).map((el) => el.textContent?.trim());
+    expect(navLabels).toEqual(['Inicio', 'Mi biblioteca', 'Mi vocabulario']);
   });
 
   it('starts in non-immersive mode by default', async () => {

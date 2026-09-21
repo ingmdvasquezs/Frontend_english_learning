@@ -5,10 +5,21 @@
 >
   <!-- Cabecera Editorial del Bloque: Descubre Latinoamérica -->
   <div class="latam-region-header">
-    <h3 class="latam-region-title">Descubre {{ regionName() }}</h3>
-    @if (regionSubtitle(); as sub) {
-      <p class="latam-region-subtitle">{{ sub }}</p>
-    }
+    <div class="latam-region-header-row">
+      <div class="latam-region-header-main">
+        <h3 class="latam-region-title">Descubre {{ regionName() }}</h3>
+        @if (regionSubtitle(); as sub) {
+          <p class="latam-region-subtitle">{{ sub }}</p>
+        }
+      </div>
+      <a
+        [routerLink]="['/collections', 'latin-america']"
+        [queryParams]="{ country: activeCountryCode() }"
+        class="section-more-link latam-more-link"
+      >
+        Ver todas <span aria-hidden="true">→</span>
+      </a>
+    </div>
   </div>
 
   <!-- Banner Destacado País -->

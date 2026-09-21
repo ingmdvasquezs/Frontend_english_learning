@@ -1,7 +1,14 @@
 import { Component, DestroyRef, ElementRef, HostListener, OnInit, QueryList, ViewChild, ViewChildren, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ContinueReadingPage, ReadingCollection, RecommendedPlatformReading } from '../../models/home.models';
+import {
+  ContinueReadingPage,
+  ReadingCollection,
+  RecommendedPlatformReading,
+  DiscoveryHome,
+  LatinAmericaDiscovery,
+  DiscoveryShelf,
+} from '../../models/home.models';
 import { HomeService } from '../../services/home';
 import {
   calculateKnownPercentage,
@@ -17,6 +24,7 @@ import { HomeReadingCard } from '../../components/home-reading-card/home-reading
 
 import { EditorialHero } from '../../components/editorial-hero/editorial-hero';
 import { EditorialUniverse } from '../../components/editorial-universe/editorial-universe';
+import { DiscoveryShelfComponent } from '../../components/discovery-shelf/discovery-shelf';
 import { EditorialHeroSlide } from '../../models/editorial-hero.models';
 import { COLOMBIA_EDITORIAL_PREVIEW } from '../../data/colombia-editorial-preview.data';
 
@@ -39,7 +47,7 @@ interface CollectionState {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, HomeReadingCard, EditorialHero, EditorialUniverse],
+  imports: [RouterLink, HomeReadingCard, EditorialHero, EditorialUniverse, DiscoveryShelfComponent],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -178,6 +186,12 @@ export class Home implements OnInit {
       };
     })
   );
+  readonly discoveryHome = signal<DiscoveryHome | null>(null);
+  readonly latinAmerica = signal<LatinAmericaDiscovery | null>(null);
+  readonly shelves = signal<DiscoveryShelf[]>([]);
+  readonly homeLoading = signal<boolean>(true);
+  readonly homeError = signal<string | null>(null);
+
   readonly continueReadingPage = signal<ContinueReadingPage | null>(null);
   readonly continueReadingLoading = signal(true);
   readonly continueReadingError = signal<string | null>(null);
@@ -228,9 +242,7 @@ export class Home implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadRecommendations();
-    this.loadContinueReading();
-    this.loadCollections();
+    this.loadDiscoveryHome();
     this.activatedRoute.fragment.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((fragment) => {
       if (fragment) {
         setTimeout(() => {
@@ -239,6 +251,66 @@ export class Home implements OnInit {
         }, 400);
       }
     });
+  }
+
+  loadDiscoveryHome(): void {
+    if (typeof this.homeService.getDiscoveryHome === 'function') {
+      this.homeLoading.set(true);
+      this.homeError.set(null);
+      this.continueReadingLoading.set(true);
+      this.continueReadingError.set(null);
+      this.recommendationsLoading.set(true);
+      this.recommendationsError.set(null);
+
+      this.homeService.getDiscoveryHome(10, this.recommendationsPageSize, 8).subscribe({
+        next: (responseXml) => {
+          try {
+            const discovery = this.homeService.parseDiscoveryHome(responseXml);
+            this.discoveryHome.set(discovery);
+
+            this.continueReadingPage.set({
+              page: 0,
+              size: 10,
+              totalElements: discovery.continueReading.length,
+              readings: discovery.continueReading,
+            });
+            this.continueReadingLoading.set(false);
+
+            const forYou = discovery.forYou.slice(0, this.recommendationsHomeLimit);
+            this.recommendations.set(forYou);
+            this.recommendationsPageNumber.set(0);
+            this.recommendationsHasMore.set(
+              forYou.length < this.recommendationsHomeLimit &&
+              discovery.forYou.length >= this.recommendationsPageSize
+            );
+            this.recommendationsLoading.set(false);
+
+            this.latinAmerica.set(discovery.latinAmerica);
+            this.shelves.set(discovery.shelves);
+            this.homeLoading.set(false);
+          } catch {
+            this.homeError.set('No se pudo interpretar el catálogo de inicio.');
+            this.continueReadingError.set('No se pudieron interpretar las lecturas en progreso');
+            this.recommendationsError.set('No se pudieron interpretar las recomendaciones');
+            this.homeLoading.set(false);
+            this.continueReadingLoading.set(false);
+            this.recommendationsLoading.set(false);
+          }
+        },
+        error: () => {
+          this.homeError.set('No se pudo cargar el catálogo de inicio.');
+          this.continueReadingError.set('No se pudieron cargar las lecturas en progreso');
+          this.recommendationsError.set('No se pudieron cargar las recomendaciones');
+          this.homeLoading.set(false);
+          this.continueReadingLoading.set(false);
+          this.recommendationsLoading.set(false);
+        },
+      });
+    } else {
+      this.loadRecommendations();
+      this.loadContinueReading();
+      this.loadCollections();
+    }
   }
 
   @HostListener('window:resize')

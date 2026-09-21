@@ -22,9 +22,31 @@ export const routes: Routes = [
       import('./layout/app-shell/app-shell').then((m) => m.AppShell),
     children: [
       {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'home',
+      },
+      {
         path: 'home',
         loadComponent: () =>
           import('./features/home/pages/home/home').then((m) => m.Home),
+      },
+      {
+        path: 'collections/:slug',
+        loadComponent: () =>
+          import('./features/collections/pages/collection-detail/collection-detail').then(
+            (m) => m.CollectionDetail
+          ),
+      },
+      {
+        path: 'explore/collections/:collectionKey',
+        redirectTo: ({ params }) => `/collections/${params['collectionKey']}`,
+        pathMatch: 'full',
+      },
+      {
+        path: 'explore',
+        redirectTo: '/home',
+        pathMatch: 'full',
       },
       {
         path: 'library',

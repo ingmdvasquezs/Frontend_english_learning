@@ -69,12 +69,39 @@ export interface DiscoveryRegionOverview {
   countries: DiscoveryCountrySummary[];
 }
 
+export interface LatinAmericaDiscovery {
+  region: DiscoveryRegionDetails;
+  countries: DiscoveryCountrySummary[];
+  defaultCountryCode: string;
+  defaultTopicKey?: string | null;
+  readings: RecommendedPlatformReading[];
+}
+
+export interface DiscoveryShelf {
+  key: string;
+  title: string;
+  description: string;
+  displayOrder: number;
+  coverKey: string | null;
+  type: string;
+  totalReadings: number;
+  readings: RecommendedPlatformReading[];
+}
+
+export interface DiscoveryHome {
+  continueReading: ContinueReadingItem[];
+  forYou: RecommendedPlatformReading[];
+  latinAmerica: LatinAmericaDiscovery | null;
+  shelves: DiscoveryShelf[];
+}
+
 export interface BrowsePlatformReadingsFilters {
   collectionKey?: string | null;
   category?: string | null;
   editorialLevel?: EditorialLevel | null;
   countryCode?: string | null;
   discoveryTopic?: string | null;
+  sort?: 'DEFAULT' | 'CREATED_AT_DESC' | null;
   page?: number;
   size?: number;
 }

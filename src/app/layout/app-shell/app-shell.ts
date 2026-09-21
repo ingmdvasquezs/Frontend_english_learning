@@ -47,15 +47,6 @@ export class AppShell implements OnInit {
 
   closeDrawer(): void { this.drawerOpen.set(false); }
 
-  navigateToExplore(): void {
-    this.closeDrawer();
-    if (this.router.url.startsWith('/home')) {
-      const el = typeof document !== 'undefined' ? document.getElementById('explore-stories-heading') : null;
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
-    }
-    void this.router.navigate(['/home'], { fragment: 'explore-stories-heading' });
-  }
-
   logout(): void {
     this.profileService.clearProfile();
     this.auth.logout();

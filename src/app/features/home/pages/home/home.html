@@ -189,19 +189,21 @@
           <h2 id="explore-stories-heading" class="section-title">Explora historias</h2>
           <p class="section-subtitle">Descubre lecturas por lugar, tema o perspectiva.</p>
         </div>
-        <a routerLink="/explore" class="section-more-link">
-          See all collections <span aria-hidden="true">→</span>
-        </a>
       </div>
 
-      <!-- Universo temático destacado: Colombia -->
-      <app-editorial-universe />
+      <!-- Universo temático destacado: Latinoamérica -->
+      <app-editorial-universe [latinAmerica]="latinAmerica()" />
     </section>
 
-    <!-- Colecciones dinámicas de la plataforma -->
-    @if (collectionsLoading()) {
-      <p class="mt-6 border-t border-[var(--app-border)] pt-5 text-[14px] text-[var(--app-muted)]">Cargando colecciones...</p>
-    }
+    <!-- Estanterías de descubrimiento dinámicas (Discovery Shelves) -->
+    @if (discoveryHome()) {
+      @for (shelf of shelves(); track shelf.key) {
+        <app-discovery-shelf [shelf]="shelf" />
+      }
+    } @else {
+      @if (collectionsLoading()) {
+        <p class="mt-6 border-t border-[var(--app-border)] pt-5 text-[14px] text-[var(--app-muted)]">Cargando colecciones...</p>
+      }
       @for (collection of visibleCollections(); track collection.key) {
         @let state = collectionContent(collection.key);
         @if (state.loading || state.error || state.readings.length > 0) {
@@ -240,5 +242,6 @@
           </div>
         }
       }
+    }
   </main>
 </div>

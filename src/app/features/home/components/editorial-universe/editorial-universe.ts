@@ -21,6 +21,7 @@ import {
   DiscoveryHeroImage,
   DiscoveryRegionOverview,
   DiscoveryTopicSummary,
+  LatinAmericaDiscovery,
   RecommendedPlatformReading,
 } from '../../models/home.models';
 import { ReadingProgressStatus } from '../../../../shared/models/reading-progress-status';
@@ -223,6 +224,9 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
   readonly railAtStart = signal<boolean>(true);
   readonly railAtEnd = signal<boolean>(false);
 
+  /** Input principal desde DiscoveryHome */
+  readonly latinAmerica = input<LatinAmericaDiscovery | null>(null);
+
   /** Opcional: permite inyectar o sobreescribir el overview desde tests */
   readonly customOverview = input<DiscoveryRegionOverview | null>(null);
 
@@ -247,7 +251,16 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
 
   // Computeds data-driven
   readonly effectiveOverview = computed<DiscoveryRegionOverview>(() => {
-    return this.customOverview() ?? this.overview();
+    const custom = this.customOverview();
+    if (custom) return custom;
+    const latam = this.latinAmerica();
+    if (latam) {
+      return {
+        region: latam.region,
+        countries: latam.countries,
+      };
+    }
+    return this.overview();
   });
 
   readonly region = computed(() => this.effectiveOverview().region);
@@ -259,7 +272,8 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
     if (custom) {
       return custom.countries;
     }
-    const baseCountries = this.overview().countries;
+    const latam = this.latinAmerica();
+    const baseCountries = latam ? latam.countries : this.overview().countries;
     const existingCodes = new Set(baseCountries.map((c) => c.countryCode));
     const preview = LATAM_VISUAL_PREVIEW_COUNTRIES.filter(
       (c) => !existingCodes.has(c.countryCode)
@@ -309,8 +323,26 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
   });
 
   ngOnInit(): void {
-    this.loadRegionOverview();
+    const latam = this.latinAmerica();
+    if (latam) {
+      this.initFromLatinAmerica(latam);
+    } else {
+      this.loadRegionOverview();
+    }
     this.initAutoplayTimer();
+  }
+
+  private initFromLatinAmerica(latam: LatinAmericaDiscovery): void {
+    const defaultCountry = latam.defaultCountryCode;
+    const country = latam.countries.find((c) => c.countryCode === defaultCountry);
+    const defaultTopic =
+      latam.defaultTopicKey ??
+      (country?.topics[0]?.key || '');
+    this.activeCountryCode.set(defaultCountry);
+    this.activeTopicKey.set(defaultTopic);
+    const cacheKey = `${defaultCountry}|${defaultTopic || 'ALL'}`;
+    this.readingsCache.set(cacheKey, latam.readings);
+    this.realReadings.set(latam.readings);
   }
 
   ngAfterViewInit(): void {

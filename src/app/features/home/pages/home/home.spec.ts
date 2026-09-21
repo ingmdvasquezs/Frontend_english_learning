@@ -36,6 +36,8 @@ describe('Home', () => {
     parseDiscoveryRegionOverview: ReturnType<typeof vi.fn>;
     browsePlatformReadings: ReturnType<typeof vi.fn>;
     parseBrowsePlatformReadings: ReturnType<typeof vi.fn>;
+    getDiscoveryHome?: ReturnType<typeof vi.fn>;
+    parseDiscoveryHome?: ReturnType<typeof vi.fn>;
   };
   let libraryService: {
     listUserReadings: ReturnType<typeof vi.fn>;
@@ -1689,10 +1691,9 @@ describe('Home', () => {
     const expRow = fixture.nativeElement.querySelector('section[aria-labelledby="explore-stories-heading"] .section-heading-row');
     expect(expRow).toBeTruthy();
     const expMain = expRow.querySelector('.section-heading-main');
-    expect(expMain).toBeTruthy();
     expect(expMain.querySelector('#explore-stories-heading')?.textContent).toContain('Explora historias');
     expect(expMain.querySelector('.section-subtitle')?.textContent).toContain('Descubre lecturas por lugar');
-    expect(expRow.querySelector('.section-more-link')).toBeTruthy();
+    expect(expRow.querySelector('.section-more-link')).toBeNull();
   });
 
   it('boxes the entire explore stories section and editorial universe in a styled shell', () => {
@@ -1703,5 +1704,145 @@ describe('Home', () => {
     expect(shell.querySelector('#explore-stories-heading')?.textContent).toContain('Explora historias');
     expect(shell.querySelector('.explore-shell-header')).toBeTruthy();
     expect(shell.querySelector('app-editorial-universe')).toBeTruthy();
+  });
+
+  it('loads discovery home via getDiscoveryHome when provided, rendering shelves and passing latinAmerica', () => {
+    const discoveryResponse = of('<discoveryXml/>');
+    homeService.getDiscoveryHome = vi.fn().mockReturnValue(discoveryResponse);
+    homeService.parseDiscoveryHome = vi.fn().mockReturnValue({
+      continueReading: [
+        continueReadingItem('cr-disc-1', 'PLATFORM', 'Discovery Continue Story'),
+      ],
+      forYou: [
+        recommendedReading({ readingId: 'fy-disc-1', title: 'Discovery For You Story' }),
+      ],
+      latinAmerica: {
+        region: { key: 'latin-america', displayName: 'Latinoamérica', subtitle: 'Descubre' },
+        countries: [],
+        defaultCountryCode: 'CO',
+        defaultTopicKey: 'MYTHS_AND_LEGENDS',
+        readings: [],
+      },
+      shelves: [
+        {
+          key: 'nature-places',
+          title: 'Naturaleza y Lugares',
+          description: 'Descubre la naturaleza',
+          displayOrder: 1,
+          coverKey: 'nature-cover',
+          type: 'GENERIC',
+          totalReadings: 5,
+          readings: [
+            recommendedReading({ readingId: 'shelf-read-1', title: 'Yellowstone Wonders' }),
+          ],
+        },
+      ],
+    });
+
+    const testFixture = TestBed.createComponent(Home);
+    testFixture.detectChanges();
+
+    expect(homeService.getDiscoveryHome).toHaveBeenCalledWith(10, 12, 8);
+    expect(testFixture.nativeElement.textContent).toContain('Discovery Continue Story');
+    expect(testFixture.nativeElement.textContent).toContain('Discovery For You Story');
+    expect(testFixture.nativeElement.textContent).toContain('Naturaleza y Lugares');
+
+    const shelfComp = testFixture.nativeElement.querySelector('app-discovery-shelf');
+    expect(shelfComp).toBeTruthy();
+    expect(shelfComp.textContent).toContain('Yellowstone Wonders');
+  });
+
+  it('renders no discovery shelves when shelves array is empty in getDiscoveryHome', () => {
+    const discoveryResponse = of('<discoveryXml/>');
+    homeService.getDiscoveryHome = vi.fn().mockReturnValue(discoveryResponse);
+    homeService.parseDiscoveryHome = vi.fn().mockReturnValue({
+      continueReading: [],
+      forYou: [
+        recommendedReading({ readingId: 'fy-disc-1', title: 'Discovery For You Story' }),
+      ],
+      latinAmerica: null,
+      shelves: [],
+    });
+
+    const testFixture = TestBed.createComponent(Home);
+    testFixture.detectChanges();
+
+    expect(homeService.getDiscoveryHome).toHaveBeenCalledWith(10, 12, 8);
+    const shelfComp = testFixture.nativeElement.querySelector('app-discovery-shelf');
+    expect(shelfComp).toBeNull();
+  });
+
+  it('A & B: Home does NOT render "See all collections" and contains 0 links to /explore', () => {
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent;
+    expect(text).not.toContain('See all collections');
+
+    const exploreLinks = fixture.nativeElement.querySelectorAll('a[href="/explore"], a[ng-reflect-router-link="/explore"]');
+    expect(exploreLinks.length).toBe(0);
+
+    const allLinks: HTMLAnchorElement[] = Array.from(fixture.nativeElement.querySelectorAll('a'));
+    const matchingExplore = allLinks.filter((a) => {
+      const href = a.getAttribute('href') || '';
+      const routerLink = a.getAttribute('ng-reflect-router-link') || a.getAttribute('routerlink') || '';
+      return href === '/explore' || routerLink === '/explore';
+    });
+    expect(matchingExplore.length).toBe(0);
+  });
+
+  it('C, D & E: Preserves Latin America and DiscoveryShelf "Ver todas" CTAs pointing to /collections/*', () => {
+    const discoveryResponse = of('<discoveryXml/>');
+    homeService.getDiscoveryHome = vi.fn().mockReturnValue(discoveryResponse);
+    homeService.parseDiscoveryHome = vi.fn().mockReturnValue({
+      continueReading: [],
+      forYou: [],
+      latinAmerica: {
+        region: { key: 'latin-america', displayName: 'Latinoamérica', subtitle: 'Sub' },
+        countries: [
+          {
+            countryCode: 'CO',
+            displayName: 'Colombia',
+            tagline: 'Tagline',
+            description: 'Desc',
+            displayOrder: 1,
+            readingCount: 5,
+            heroImages: [],
+            topics: [{ key: 'MYTHS_AND_LEGENDS', displayName: 'Mitos', displayOrder: 1, readingCount: 5 }],
+          },
+        ],
+        defaultCountryCode: 'CO',
+        defaultTopicKey: 'MYTHS_AND_LEGENDS',
+        readings: [],
+      },
+      shelves: [
+        {
+          key: 'classics',
+          title: 'Clásicos',
+          description: 'Obras maestras',
+          displayOrder: 1,
+          coverKey: null,
+          totalReadings: 10,
+          readings: [],
+        },
+      ],
+    });
+
+    const testFixture = TestBed.createComponent(Home);
+    testFixture.detectChanges();
+
+    // Latin America "Ver todas" CTA
+    const latamLink = testFixture.nativeElement.querySelector('.latam-more-link');
+    expect(latamLink).toBeTruthy();
+    expect(latamLink.textContent).toContain('Ver todas');
+    const latamRouterLink = latamLink.getAttribute('ng-reflect-router-link') || latamLink.getAttribute('href');
+    expect(latamRouterLink).toContain('/collections/latin-america');
+    expect(latamRouterLink).toContain('country=CO');
+
+    // DiscoveryShelf "Ver todas" CTA
+    const shelfLink = testFixture.nativeElement.querySelector('app-discovery-shelf .section-more-link');
+    expect(shelfLink).toBeTruthy();
+    expect(shelfLink.textContent).toContain('Ver todas');
+    const shelfRouterLink = shelfLink.getAttribute('href') || shelfLink.getAttribute('ng-reflect-router-link');
+    expect(shelfRouterLink).toContain('/collections/classics');
   });
 });
