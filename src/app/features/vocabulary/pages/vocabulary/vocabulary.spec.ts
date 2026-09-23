@@ -13,6 +13,7 @@ describe('Vocabulary Component', () => {
   let vocabularyServiceMock: {
     listUserVocabulary: ReturnType<typeof vi.fn>;
     setVocabularyStatus: ReturnType<typeof vi.fn>;
+    prepareVocabularyReview: ReturnType<typeof vi.fn>;
   };
   let wordInteractionMock: {
     selectWord: ReturnType<typeof vi.fn>;
@@ -68,6 +69,18 @@ describe('Vocabulary Component', () => {
     vocabularyServiceMock = {
       listUserVocabulary: vi.fn(() => of(samplePageData)),
       setVocabularyStatus: vi.fn(() => of('LEARNING')),
+      prepareVocabularyReview: vi.fn(() =>
+        of({
+          dueCount: 3,
+          totalReviewableCount: 15,
+          dailyLimit: 15,
+          dailyBaseCompleted: 0,
+          dailyBaseRemaining: 15,
+          pendingLearningCount: 0,
+          dailyComplete: false,
+          entries: [],
+        })
+      ),
     };
 
     wordInteractionMock = {
@@ -343,7 +356,7 @@ describe('Vocabulary Component', () => {
       of({
         ...samplePageData,
         entries: [
-          { ...samplePageData.entries[0], status: 'KNOWN' },
+          { ...samplePageData.entries[0], status: 'IGNORED' },
           samplePageData.entries[1],
         ],
       })
@@ -370,14 +383,14 @@ describe('Vocabulary Component', () => {
       }
     );
 
-    component.onStatusSelected('KNOWN');
+    component.onStatusSelected('IGNORED');
 
     expect(wordInteractionMock.saveStatus).toHaveBeenCalledWith(
-      'KNOWN',
+      'IGNORED',
       'en',
       expect.any(Function)
     );
-    expect(component.entries()[0].status).toBe('KNOWN');
+    expect(component.entries()[0].status).toBe('IGNORED');
     expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalled();
   });
 
@@ -483,22 +496,298 @@ describe('Vocabulary Component', () => {
     expect(compiled.textContent).toContain('No tienes palabras nuevas guardadas.');
   });
 
-  it('calls setVocabularyStatus and reloads vocabulary on quickChangeStatus', () => {
-    fixture.detectChanges();
-    vocabularyServiceMock.listUserVocabulary.mockClear();
+  describe('FASE 14.3.9: Reader-only KNOWN enforcement in Vocabulary', () => {
+    it('calls setVocabularyStatus and reloads vocabulary on quickChangeStatus with LEARNING', () => {
+      fixture.detectChanges();
+      vocabularyServiceMock.listUserVocabulary.mockClear();
 
-    const entry = samplePageData.entries[0];
-    const event = new MouseEvent('click');
-    vi.spyOn(event, 'stopPropagation');
+      const entry = samplePageData.entries[0];
+      const event = new MouseEvent('click');
+      vi.spyOn(event, 'stopPropagation');
 
-    component.quickChangeStatus(entry, 'KNOWN', event);
+      component.quickChangeStatus(entry, 'LEARNING', event);
 
-    expect(event.stopPropagation).toHaveBeenCalled();
-    expect(vocabularyServiceMock.setVocabularyStatus).toHaveBeenCalledWith(
-      'serendipity',
-      'en',
-      'KNOWN'
-    );
-    expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalled();
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(vocabularyServiceMock.setVocabularyStatus).toHaveBeenCalledWith(
+        'serendipity',
+        'en',
+        'LEARNING'
+      );
+      expect(vocabularyServiceMock.listUserVocabulary).toHaveBeenCalled();
+    });
+
+    it('blocks quickChangeStatus with KNOWN (does not call setVocabularyStatus)', () => {
+      fixture.detectChanges();
+      vocabularyServiceMock.listUserVocabulary.mockClear();
+
+      const entry = samplePageData.entries[0];
+      const event = new MouseEvent('click');
+      vi.spyOn(event, 'stopPropagation');
+
+      component.quickChangeStatus(entry, 'KNOWN', event);
+
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(vocabularyServiceMock.setVocabularyStatus).not.toHaveBeenCalled();
+      expect(vocabularyServiceMock.listUserVocabulary).not.toHaveBeenCalled();
+    });
+
+    it('blocks onStatusSelected with KNOWN (does not call wordInteraction.saveStatus)', () => {
+      wordInteractionMock.selectedToken.mockReturnValue({
+        value: 'serendipity',
+        normalizedValue: 'serendipity',
+        type: 'WORD',
+        status: 'LEARNING',
+      });
+
+      component.onStatusSelected('KNOWN');
+
+      expect(wordInteractionMock.saveStatus).not.toHaveBeenCalled();
+    });
+
+    it('allows onStatusSelected with LEARNING on a KNOWN word (KNOWN -> LEARNING supported)', () => {
+      wordInteractionMock.selectedToken.mockReturnValue({
+        value: 'ephemeral',
+        normalizedValue: 'ephemeral',
+        type: 'WORD',
+        status: 'KNOWN',
+      });
+
+      component.onStatusSelected('LEARNING');
+
+      expect(wordInteractionMock.saveStatus).toHaveBeenCalledWith(
+        'LEARNING',
+        'en',
+        expect.any(Function)
+      );
+    });
+
+    it('does NOT render "Ya la conozco" button in DOM for NEW entries', () => {
+      const newEntryData = {
+        page: 0,
+        size: 10,
+        totalElements: 1,
+        summary: { totalCount: 1, newCount: 1, learningCount: 0, knownCount: 0, ignoredCount: 0 },
+        entries: [
+          {
+            entryId: 'e-new',
+            wordId: 'w-new',
+            word: 'incipient',
+            language: 'en',
+            status: 'NEW' as const,
+            firstSeenAt: '2026-09-01T12:00:00Z',
+          },
+        ],
+      };
+      vocabularyServiceMock.listUserVocabulary.mockReturnValue(of(newEntryData));
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.textContent).toContain('Aprender');
+      expect(compiled.textContent).toContain('Ignorar');
+      expect(compiled.textContent).not.toContain('Ya la conozco');
+    });
+
+    it('exposes popoverDisabledStatuses as [KNOWN]', () => {
+      expect(component.popoverDisabledStatuses).toEqual(['KNOWN']);
+    });
+  });
+
+  describe('Review CTA Dynamic State (FASE 14.3.6.3)', () => {
+    it('A. fresh account: dailyBaseCompleted=0, pendingLearningCount=0, dailyComplete=false, entries available => "Repasar palabras"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 5,
+          totalReviewableCount: 15,
+          dailyLimit: 15,
+          dailyBaseCompleted: 0,
+          dailyBaseRemaining: 15,
+          pendingLearningCount: 0,
+          dailyComplete: false,
+          entries: [
+            {
+              wordId: 'w-1',
+              word: 'serendipity',
+              language: 'en',
+              status: 'LEARNING',
+              ratingOptions: [],
+            },
+          ],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('NEW');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).not.toBeNull();
+      expect(ctaLink?.textContent).toContain('Repasar palabras');
+    });
+
+    it('B. session backend exists but 0 cards worked => "Repasar palabras"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 15,
+          totalReviewableCount: 15,
+          dailyLimit: 15,
+          dailyBaseCompleted: 0,
+          dailyBaseRemaining: 15,
+          pendingLearningCount: 0,
+          dailyComplete: false,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('NEW');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).not.toBeNull();
+      expect(ctaLink?.textContent).toContain('Repasar palabras');
+    });
+
+    it('C. 1 card worked: dailyBaseCompleted=1, dailyComplete=false => "Continuar repaso"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 14,
+          totalReviewableCount: 15,
+          dailyLimit: 15,
+          dailyBaseCompleted: 1,
+          dailyBaseRemaining: 14,
+          pendingLearningCount: 0,
+          dailyComplete: false,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('IN_PROGRESS');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).not.toBeNull();
+      expect(ctaLink?.textContent).toContain('Continuar repaso');
+    });
+
+    it('D. 10 of 15 worked: dailyBaseCompleted=10, dailyComplete=false => "Continuar repaso"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 5,
+          totalReviewableCount: 15,
+          dailyLimit: 15,
+          dailyBaseCompleted: 10,
+          dailyBaseRemaining: 5,
+          pendingLearningCount: 0,
+          dailyComplete: false,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('IN_PROGRESS');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).not.toBeNull();
+      expect(ctaLink?.textContent).toContain('Continuar repaso');
+    });
+
+    it('E. base complete + Again/Hard pending: dailyBaseCompleted=15, dailyBaseRemaining=0, pendingLearningCount=2, dailyComplete=false => "Continuar repaso"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 2,
+          totalReviewableCount: 15,
+          dailyLimit: 15,
+          dailyBaseCompleted: 15,
+          dailyBaseRemaining: 0,
+          pendingLearningCount: 2,
+          dailyComplete: false,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('IN_PROGRESS');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).not.toBeNull();
+      expect(ctaLink?.textContent).toContain('Continuar repaso');
+    });
+
+    it('F. dailyComplete=true, pending=0 => "Repaso de hoy completado"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 0,
+          totalReviewableCount: 0,
+          dailyLimit: 15,
+          dailyBaseCompleted: 15,
+          dailyBaseRemaining: 0,
+          pendingLearningCount: 0,
+          dailyComplete: true,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('COMPLETED');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const disabledBtn = compiled.querySelector('button:disabled');
+      expect(disabledBtn).not.toBeNull();
+      expect(disabledBtn?.textContent).toContain('Repaso de hoy completado');
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).toBeNull();
+    });
+
+    it('G. migration day 31 completed + 12 pending: dailyBaseCompleted=31, dailyLimit=15, pendingLearningCount=12, dailyComplete=false => "Continuar repaso"', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 12,
+          totalReviewableCount: 43,
+          dailyLimit: 15,
+          dailyBaseCompleted: 31,
+          dailyBaseRemaining: 0,
+          pendingLearningCount: 12,
+          dailyComplete: false,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('IN_PROGRESS');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).not.toBeNull();
+      expect(ctaLink?.textContent).toContain('Continuar repaso');
+    });
+
+    it('shows EMPTY state (disabled button "Repasar palabras") when no reviewable words exist', () => {
+      vocabularyServiceMock.prepareVocabularyReview.mockReturnValue(
+        of({
+          dueCount: 0,
+          totalReviewableCount: 0,
+          dailyLimit: 15,
+          dailyBaseCompleted: 0,
+          dailyBaseRemaining: 0,
+          pendingLearningCount: 0,
+          dailyComplete: false,
+          entries: [],
+        })
+      );
+      component.loadVocabulary();
+      fixture.detectChanges();
+
+      expect(component.reviewCtaState()).toBe('EMPTY');
+      const compiled = fixture.nativeElement as HTMLElement;
+      const disabledBtn = compiled.querySelector('button:disabled');
+      expect(disabledBtn).not.toBeNull();
+      expect(disabledBtn?.textContent).toContain('Repasar palabras');
+      const ctaLink = compiled.querySelector('a[routerLink="/vocabulary/review"]');
+      expect(ctaLink).toBeNull();
+    });
   });
 });

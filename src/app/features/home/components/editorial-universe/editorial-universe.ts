@@ -86,6 +86,13 @@ export function resolveTopicIcon(topicKey?: string | null): string {
 
 export const COUNTRY_AUTOPLAY_MS = 5000;
 
+/**
+ * UI-only sentinel value for "no topic filter — show all readings for the country".
+ * Never sent to the backend. When activeTopicKey === TOPIC_ALL_KEY, discoveryTopic
+ * is omitted from browsePlatformReadings so the backend returns the full country catalog.
+ */
+export const TOPIC_ALL_KEY = 'ALL';
+
 export const LATAM_COUNTRY_HERO_ASSETS: Record<string, DiscoveryHeroImage> = {
   CO: {
     assetKey: 'editorial/heroes/hero-latam-colombia-valle-de-cocora.webp',
@@ -237,7 +244,7 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
   readonly overviewError = signal<string | null>(null);
 
   readonly activeCountryCode = signal<string>('CO');
-  readonly activeTopicKey = signal<string>('MYTHS_AND_LEGENDS');
+  readonly activeTopicKey = signal<string>(TOPIC_ALL_KEY);
   readonly activeHeroImageIndex = signal<number>(0);
   readonly isHoverPaused = signal<boolean>(false);
 
@@ -301,10 +308,11 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
   });
 
   readonly activeTopic = computed<DiscoveryTopicSummary | null>(() => {
+    const key = this.activeTopicKey();
+    if (key === TOPIC_ALL_KEY) return null;
     const topics = this.activeTopics();
     if (topics.length === 0) return null;
-    const key = this.activeTopicKey();
-    return topics.find((t) => t.key === key) ?? topics[0];
+    return topics.find((t) => t.key === key) ?? null;
   });
 
   readonly heroImages = computed<DiscoveryHeroImage[]>(() => {
@@ -334,14 +342,24 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
 
   private initFromLatinAmerica(latam: LatinAmericaDiscovery): void {
     const defaultCountry = latam.defaultCountryCode;
-    const country = latam.countries.find((c) => c.countryCode === defaultCountry);
-    const defaultTopic =
-      latam.defaultTopicKey ??
-      (country?.topics[0]?.key || '');
     this.activeCountryCode.set(defaultCountry);
+
+    // Determine the initial topic key.
+    // If backend provided a defaultTopicKey, honor it. Otherwise default to ALL.
+    const defaultTopic = latam.defaultTopicKey ?? TOPIC_ALL_KEY;
     this.activeTopicKey.set(defaultTopic);
-    const cacheKey = `${defaultCountry}|${defaultTopic || 'ALL'}`;
-    this.readingsCache.set(cacheKey, latam.readings);
+
+    // Seed the cache ONLY for the specific topic the Home preview represents.
+    // IMPORTANT: Never cache the seed under COUNTRY|ALL.
+    // The Home seed is a limited preview (bounded by maxShelfReadings).
+    // If the user selects ALL, syncReadings() must browse the full catalog.
+    if (defaultTopic !== TOPIC_ALL_KEY) {
+      const cacheKey = `${defaultCountry}|${defaultTopic}`;
+      this.readingsCache.set(cacheKey, latam.readings);
+    }
+
+    // Display the seed readings immediately as an optimistic initial render,
+    // but syncReadings() will be called if the user later changes topic or country.
     this.realReadings.set(latam.readings);
   }
 
@@ -469,10 +487,10 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
     if (this.activeCountryCode() === countryCode) return;
     this.activeCountryCode.set(countryCode);
     this.activeHeroImageIndex.set(0);
-    const country = this.countries().find((c) => c.countryCode === countryCode);
-    if (country && country.topics.length > 0) {
-      this.activeTopicKey.set(country.topics[0].key);
-    }
+    // Always reset topic to ALL when switching countries.
+    // Topics are country-bound — inheriting a topic from the previous country
+    // would silently filter content in the new country.
+    this.activeTopicKey.set(TOPIC_ALL_KEY);
     this.syncReadings();
   }
 
@@ -485,12 +503,11 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
 
   retryReadings(): void {
     const country = this.activeCountry();
+    if (!country) return;
     const topic = this.activeTopic();
-    if (country && topic) {
-      const cacheKey = `${country.countryCode}|${topic.key}`;
-      this.readingsCache.delete(cacheKey);
-      this.syncReadings();
-    }
+    const cacheKey = topic ? `${country.countryCode}|${topic.key}` : `${country.countryCode}|${TOPIC_ALL_KEY}`;
+    this.readingsCache.delete(cacheKey);
+    this.syncReadings();
   }
 
   private prefersReducedMotion(): boolean {
@@ -511,10 +528,9 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
           if (firstCountry) {
             if (this.interactionMode() === 'AUTO') {
               this.activeCountryCode.set(firstCountry.countryCode);
-              const firstTopic = firstCountry.topics[0];
-              if (firstTopic) {
-                this.activeTopicKey.set(firstTopic.key);
-              }
+              // Default to ALL so the user sees all readings for the country,
+              // not just the first topic's subset.
+              this.activeTopicKey.set(TOPIC_ALL_KEY);
             }
           }
           this.syncReadings();
@@ -534,8 +550,7 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
 
   private syncReadings(): void {
     const country = this.activeCountry();
-    const topic = this.activeTopic();
-    if (!country || !topic || this.isUpcomingCountry()) {
+    if (!country || this.isUpcomingCountry()) {
       this.activeRequestSub?.unsubscribe();
       this.realReadings.set([]);
       this.readingsLoading.set(false);
@@ -543,7 +558,14 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
       return;
     }
 
-    const cacheKey = `${country.countryCode}|${topic.key}`;
+    // activeTopic() is null when activeTopicKey === TOPIC_ALL_KEY.
+    // In that case, discoveryTopic is intentionally omitted from the browse call
+    // so the backend returns all readings for the country.
+    const topic = this.activeTopic();
+    const cacheKey = topic
+      ? `${country.countryCode}|${topic.key}`
+      : `${country.countryCode}|${TOPIC_ALL_KEY}`;
+
     if (this.readingsCache.has(cacheKey)) {
       this.realReadings.set(this.readingsCache.get(cacheKey)!);
       this.readingsLoading.set(false);
@@ -559,7 +581,7 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
     this.activeRequestSub = this.homeService
       .browsePlatformReadings({
         countryCode: country.countryCode,
-        discoveryTopic: topic.key,
+        discoveryTopic: topic?.key,   // undefined when ALL — backend returns full country catalog
         page: 0,
         size: 20,
       })
@@ -604,9 +626,8 @@ export class EditorialUniverse implements OnInit, AfterViewInit {
         const nextCountry = countries[nextIdx];
         this.activeCountryCode.set(nextCountry.countryCode);
         this.activeHeroImageIndex.set(0);
-        if (nextCountry.topics.length > 0) {
-          this.activeTopicKey.set(nextCountry.topics[0].key);
-        }
+        // Reset to ALL so the autoplay preview shows the full country catalog.
+        this.activeTopicKey.set(TOPIC_ALL_KEY);
         this.syncReadings();
       } else {
         // Single-country rotation: rotate hero images

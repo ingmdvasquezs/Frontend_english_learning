@@ -9,7 +9,7 @@ import {
   ComprehensionAttemptResult,
 } from '../../models/reader.models';
 import { ReaderService } from '../../services/reader';
-import { Reader } from './reader';
+import { Reader, isTechnicalSectionTitle } from './reader';
 import { NarrationService } from '../../../../shared/narration/narration.service';
 
 describe('Reader page', () => {
@@ -1423,6 +1423,133 @@ describe('Reader page', () => {
       expect(component.quizAvailable()).toBe(false);
       expect(fixture.nativeElement.textContent).toContain('Lectura terminada');
       expect(fixture.nativeElement.textContent).not.toContain('Comprobar mi comprensión');
+    });
+  });
+
+  // ─── isTechnicalSectionTitle guard ──────────────────────────────────────────
+
+  describe('isTechnicalSectionTitle()', () => {
+    it.each([
+      'id-idp140489363296560',
+      'id-123',
+      'id_456',
+      '#fragment',
+      '#chapter_1',
+      'chapter01.xhtml',
+      'OEBPS/ch01.xhtml',
+      'oebps/text/part1.xhtml',
+      'htmltoc',
+      'HTMLTOC',
+      'urn:uuid:550e8400-e29b-41d4-a716-446655440000',
+      'content.html',
+      'intro.xml',
+      'toc.ncx',
+      'toc.opf',
+      'chapter1',
+      'chapter01',
+      'CHAPTER01',
+    ])('hides technical title: "%s"', (title) => {
+      expect(isTechnicalSectionTitle(title)).toBe(true);
+    });
+
+    it.each([
+      'Scene II',
+      'Chapter III',
+      'Act I',
+      'The Forest of Arden',
+      'Part 1',
+      'Prologue',
+      'Introduction',
+      'Chapter One',
+      'SCENE IV',
+      'Part Two',
+    ])('shows human-readable title: "%s"', (title) => {
+      expect(isTechnicalSectionTitle(title)).toBe(false);
+    });
+
+    it('returns false for null', () => expect(isTechnicalSectionTitle(null)).toBe(false));
+    it('returns false for undefined', () => expect(isTechnicalSectionTitle(undefined)).toBe(false));
+    it('returns false for empty string', () => expect(isTechnicalSectionTitle('')).toBe(false));
+    it('returns false for whitespace-only string', () => expect(isTechnicalSectionTitle('   ')).toBe(false));
+  });
+
+  // ─── sectionTitle computed signal ───────────────────────────────────────────
+
+  describe('sectionTitle computed signal', () => {
+    it('returns null when readerData has no sectionTitle', () => {
+      fixture.detectChanges();
+      loadResponse.next('<response/>');
+      fixture.detectChanges();
+      expect(component.sectionTitle()).toBeNull();
+    });
+
+    it('returns "Scene II" and renders it in the DOM', () => {
+      service.parseReaderData.mockReturnValue({ ...readerData(), sectionTitle: 'Scene II' });
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      expect(component.sectionTitle()).toBe('Scene II');
+      expect(fixture.nativeElement.textContent).toContain('Scene II');
+    });
+
+    it('returns "Chapter III" and renders it in the DOM', () => {
+      service.parseReaderData.mockReturnValue({ ...readerData(), sectionTitle: 'Chapter III' });
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      expect(component.sectionTitle()).toBe('Chapter III');
+      expect(fixture.nativeElement.textContent).toContain('Chapter III');
+    });
+
+    it('suppresses "id-idp140489363296560" — not rendered in DOM', () => {
+      service.parseReaderData.mockReturnValue({ ...readerData(), sectionTitle: 'id-idp140489363296560' });
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      expect(component.sectionTitle()).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('id-idp140489363296560');
+    });
+
+    it('suppresses "chapter01.xhtml" — not rendered in DOM', () => {
+      service.parseReaderData.mockReturnValue({ ...readerData(), sectionTitle: 'chapter01.xhtml' });
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      expect(component.sectionTitle()).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('chapter01.xhtml');
+    });
+
+    it('renders only "Parte X de Y" when sectionTitle is null and reading has multiple parts', () => {
+      service.parseReaderData.mockReturnValue({ ...multiPartReaderData(), sectionTitle: null });
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      expect(component.sectionTitle()).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain('Parte 1 de');
+      expect(fixture.nativeElement.querySelector('.reader-section-title')).toBeNull();
+    });
+
+    it('renders section title "Act I" AND "Parte X de Y" together in a multi-part reading', () => {
+      service.parseReaderData.mockReturnValue({ ...multiPartReaderData(), sectionTitle: 'Act I' });
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      expect(component.sectionTitle()).toBe('Act I');
+      const el = fixture.nativeElement.querySelector('.reader-section-title') as HTMLElement;
+      expect(el).not.toBeNull();
+      expect(el.textContent?.trim()).toBe('Act I');
+      expect(fixture.nativeElement.textContent).toContain('Parte 1 de');
+    });
+  });
+
+  // ─── CSS / navigation regression — Pedro Animala structure ──────────────────
+
+  describe('CSS / navigation regression', () => {
+    it('preserves whitespace-pre-wrap on <article> to keep Pedro Animala paragraph spacing', () => {
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      const article = fixture.nativeElement.querySelector('article') as HTMLElement;
+      expect(article).not.toBeNull();
+      expect(article.className).toContain('whitespace-pre-wrap');
+    });
+
+    it('Anterior/Siguiente remain functional after CSS changes', () => {
+      service.parseReaderData.mockReturnValue(multiPartReaderData());
+      fixture.detectChanges(); loadResponse.next('<response/>'); fixture.detectChanges();
+      const nav = fixture.nativeElement.querySelector('[aria-label="Navegación de la lectura"]') as HTMLElement;
+      const [prevBtn, nextBtn] = Array.from(nav.querySelectorAll('button')) as HTMLButtonElement[];
+      expect(prevBtn.disabled).toBe(true);
+      expect(nextBtn.disabled).toBe(false);
+      nextBtn.click(); fixture.detectChanges();
+      expect(component.currentPartIndex()).toBe(1);
+      expect(prevBtn.disabled).toBe(false);
     });
   });
 });

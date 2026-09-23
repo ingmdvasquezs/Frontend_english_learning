@@ -59,6 +59,11 @@
   color: var(--app-accent);
 }
 
+.badge-learn-ahead {
+  background: color-mix(in srgb, #0284c7 15%, transparent);
+  color: #0284c7;
+}
+
 .size-selector-btn {
   min-width: 4rem;
   min-height: 2.75rem;
@@ -81,6 +86,31 @@
   min-width: 14rem;
   min-height: 3rem;
   cursor: pointer;
+}
+
+.rating-btn {
+  min-height: 4.75rem;
+  cursor: pointer;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+}
+
+.rating-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.06);
+}
+
+.rating-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-again:hover:not(:disabled) {
+  border-color: var(--app-danger);
+  background-color: color-mix(in srgb, var(--app-danger) 8%, var(--app-surface-elevated));
+}
+
+.btn-good:hover:not(:disabled) {
+  border-color: var(--app-success);
+  background-color: color-mix(in srgb, var(--app-success) 8%, var(--app-surface-elevated));
 }
 
 .assessment-btn {

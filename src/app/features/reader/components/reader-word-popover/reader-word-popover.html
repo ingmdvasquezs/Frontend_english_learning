@@ -30,8 +30,8 @@
       @for (status of statuses(); track status) {
         <button
           type="button"
-          (click)="statusSelected.emit(status)"
-          [disabled]="savingStatus()"
+          (click)="selectStatus(status)"
+          [disabled]="savingStatus() || isStatusDisabled(status)"
           [attr.aria-pressed]="selectedStatus() === status"
           class="rounded-lg px-3 py-2 text-left text-[14px] font-medium uppercase transition hover:bg-[var(--app-active)] disabled:cursor-not-allowed disabled:opacity-50"
           [class.bg-[var(--app-active)]]="selectedStatus() === status"

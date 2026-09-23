@@ -244,32 +244,61 @@ describe('VocabularyService', () => {
       expect(req.request.body).toContain('<read:size>20</read:size>');
     });
 
-    it('defaults to size 10 when not specified', () => {
+    it('defaults to size 15 when not specified', () => {
       service.prepareVocabularyReview().subscribe();
 
       const req = httpMock.expectOne('/ws');
-      expect(req.request.body).toContain('<read:size>10</read:size>');
+      expect(req.request.body).toContain('<read:size>15</read:size>');
     });
 
-    it('parses valid prepareVocabularyReview response including due KNOWN words and dueCount', () => {
+    it('parses valid prepareVocabularyReview response including due KNOWN words, learnAheadEntries, and dailyComplete metadata', () => {
       const xml = `
         <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
           <soapenv:Body>
             <read:prepareVocabularyReviewResponse xmlns:read="http://soap.com/english-reading/readings">
               <read:dueCount>5</read:dueCount>
               <read:totalReviewableCount>12</read:totalReviewableCount>
+              <read:dailyLimit>15</read:dailyLimit>
+              <read:dailyBaseCompleted>3</read:dailyBaseCompleted>
+              <read:dailyBaseRemaining>12</read:dailyBaseRemaining>
+              <read:pendingLearningCount>2</read:pendingLearningCount>
+              <read:dailyComplete>false</read:dailyComplete>
               <read:entries>
                 <read:wordId>w-1</read:wordId>
                 <read:word>ephemeral</read:word>
                 <read:language>en</read:language>
                 <read:status>LEARNING</read:status>
+                <read:srsState>LEARNING</read:srsState>
+                <read:ratingOptions>
+                  <read:rating>AGAIN</read:rating>
+                  <read:nextReviewAt>2026-09-18T16:40:00Z</read:nextReviewAt>
+                  <read:intervalSeconds>600</read:intervalSeconds>
+                </read:ratingOptions>
+                <read:ratingOptions>
+                  <read:rating>HARD</read:rating>
+                  <read:nextReviewAt>2026-09-19T04:30:00Z</read:nextReviewAt>
+                  <read:intervalSeconds>43200</read:intervalSeconds>
+                </read:ratingOptions>
               </read:entries>
               <read:entries>
                 <read:wordId>w-2</read:wordId>
                 <read:word>resilient</read:word>
                 <read:language>en</read:language>
                 <read:status>KNOWN</read:status>
+                <read:srsState>REVIEW</read:srsState>
               </read:entries>
+              <read:learnAheadEntries>
+                <read:wordId>w-3</read:wordId>
+                <read:word>wanderlust</read:word>
+                <read:language>en</read:language>
+                <read:status>LEARNING</read:status>
+                <read:srsState>LEARNING</read:srsState>
+                <read:ratingOptions>
+                  <read:rating>GOOD</read:rating>
+                  <read:nextReviewAt>2026-09-18T17:00:00Z</read:nextReviewAt>
+                  <read:intervalSeconds>1200</read:intervalSeconds>
+                </read:ratingOptions>
+              </read:learnAheadEntries>
             </read:prepareVocabularyReviewResponse>
           </soapenv:Body>
         </soapenv:Envelope>
@@ -278,18 +307,50 @@ describe('VocabularyService', () => {
       const result = service.parsePreparedReviewSession(xml);
       expect(result.dueCount).toBe(5);
       expect(result.totalReviewableCount).toBe(12);
+      expect(result.dailyLimit).toBe(15);
+      expect(result.dailyBaseCompleted).toBe(3);
+      expect(result.dailyBaseRemaining).toBe(12);
+      expect(result.pendingLearningCount).toBe(2);
+      expect(result.dailyComplete).toBe(false);
       expect(result.entries.length).toBe(2);
+      expect(result.learnAheadEntries?.length).toBe(1);
       expect(result.entries[0]).toEqual({
         wordId: 'w-1',
         word: 'ephemeral',
         language: 'en',
         status: 'LEARNING',
+        srsState: 'LEARNING',
+        ratingOptions: [
+          { rating: 'AGAIN', nextReviewAt: '2026-09-18T16:40:00Z', intervalSeconds: 600 },
+          { rating: 'HARD', nextReviewAt: '2026-09-19T04:30:00Z', intervalSeconds: 43200 },
+        ],
+        baseOrder: null,
+        pendingQueueSequence: null,
+        nextReviewAt: null,
       });
       expect(result.entries[1]).toEqual({
         wordId: 'w-2',
         word: 'resilient',
         language: 'en',
         status: 'KNOWN',
+        srsState: 'REVIEW',
+        ratingOptions: [],
+        baseOrder: null,
+        pendingQueueSequence: null,
+        nextReviewAt: null,
+      });
+      expect(result.learnAheadEntries?.[0]).toEqual({
+        wordId: 'w-3',
+        word: 'wanderlust',
+        language: 'en',
+        status: 'LEARNING',
+        srsState: 'LEARNING',
+        ratingOptions: [
+          { rating: 'GOOD', nextReviewAt: '2026-09-18T17:00:00Z', intervalSeconds: 1200 },
+        ],
+        baseOrder: null,
+        pendingQueueSequence: null,
+        nextReviewAt: null,
       });
     });
 
@@ -309,6 +370,7 @@ describe('VocabularyService', () => {
       expect(result.dueCount).toBe(0);
       expect(result.totalReviewableCount).toBe(0);
       expect(result.entries).toEqual([]);
+      expect(result.learnAheadEntries).toEqual([]);
     });
 
     it('throws SOAP Fault if returned by backend', () => {
@@ -329,23 +391,40 @@ describe('VocabularyService', () => {
   });
 
   describe('recordVocabularyReview', () => {
-    it('generates recordVocabularyReview request with wordId and assessment', () => {
-      service.recordVocabularyReview('w-99', 'FORGOT').subscribe();
+    it('generates recordVocabularyReview request with wordId and rating', () => {
+      service.recordVocabularyReview('w-99', 'AGAIN').subscribe();
 
       const req = httpMock.expectOne('/ws');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toContain('<read:recordVocabularyReviewRequest>');
       expect(req.request.body).toContain('<read:wordId>w-99</read:wordId>');
-      expect(req.request.body).toContain('<read:assessment>FORGOT</read:assessment>');
+      expect(req.request.body).toContain('<read:rating>AGAIN</read:rating>');
     });
 
-    it('parses recordVocabularyReview response with updated status', () => {
+    it('parses recordVocabularyReview response with updated status, SRS V2 metadata, and ratingOptions in entry', () => {
       const xml = `
         <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
           <soapenv:Body>
             <read:recordVocabularyReviewResponse xmlns:read="http://soap.com/english-reading/readings">
-              <read:wordId>w-99</read:wordId>
-              <read:status>LEARNING</read:status>
+              <read:entry>
+                <read:wordId>w-99</read:wordId>
+                <read:status>LEARNING</read:status>
+                <read:srsState>REVIEW</read:srsState>
+                <read:nextReviewAt>2026-09-22T10:00:00Z</read:nextReviewAt>
+                <read:intervalSeconds>345600</read:intervalSeconds>
+                <read:stability>4.5</read:stability>
+                <read:difficulty>3.2</read:difficulty>
+                <read:ratingOptions>
+                  <read:rating>AGAIN</read:rating>
+                  <read:nextReviewAt>2026-09-22T10:10:00Z</read:nextReviewAt>
+                  <read:intervalSeconds>600</read:intervalSeconds>
+                </read:ratingOptions>
+                <read:ratingOptions>
+                  <read:rating>GOOD</read:rating>
+                  <read:nextReviewAt>2026-09-29T10:00:00Z</read:nextReviewAt>
+                  <read:intervalSeconds>604800</read:intervalSeconds>
+                </read:ratingOptions>
+              </read:entry>
             </read:recordVocabularyReviewResponse>
           </soapenv:Body>
         </soapenv:Envelope>
@@ -354,6 +433,22 @@ describe('VocabularyService', () => {
       const result = service.parseRecordedReviewResult(xml);
       expect(result.wordId).toBe('w-99');
       expect(result.status).toBe('LEARNING');
+      expect(result.srsState).toBe('REVIEW');
+      expect(result.nextReviewAt).toBe('2026-09-22T10:00:00Z');
+      expect(result.intervalSeconds).toBe(345600);
+      expect(result.stability).toBe(4.5);
+      expect(result.difficulty).toBe(3.2);
+      expect(result.ratingOptions?.length).toBe(2);
+      expect(result.ratingOptions?.[0]).toEqual({
+        rating: 'AGAIN',
+        nextReviewAt: '2026-09-22T10:10:00Z',
+        intervalSeconds: 600,
+      });
+      expect(result.ratingOptions?.[1]).toEqual({
+        rating: 'GOOD',
+        nextReviewAt: '2026-09-29T10:00:00Z',
+        intervalSeconds: 604800,
+      });
     });
 
     it('throws SOAP Fault on record failure', () => {
@@ -383,6 +478,12 @@ describe('VocabularyService', () => {
       expect(req.request.body).toContain('<read:word>wanderlust</read:word>');
       expect(req.request.body).toContain('<read:language>en</read:language>');
       expect(req.request.body).toContain('<read:status>LEARNING</read:status>');
+    });
+
+    it('throws error if status is KNOWN (FASE 14.3.9: Reader-only KNOWN rule)', () => {
+      expect(() => service.setVocabularyStatus('wanderlust', 'en', 'KNOWN')).toThrowError(
+        'VocabularyStatus.KNOWN can only be established from Reader'
+      );
     });
   });
 });

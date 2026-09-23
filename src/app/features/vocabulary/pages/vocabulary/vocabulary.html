@@ -5,7 +5,7 @@
       <p class="page-subtitle">Palabras que has descubierto y su estado de aprendizaje.</p>
     </div>
     <div class="flex items-center gap-3">
-      @if (reviewAvailable()) {
+      @if (reviewCtaState() === 'NEW') {
         <a
           routerLink="/vocabulary/review"
           class="btn-review inline-flex items-center gap-2 rounded-lg bg-[var(--app-accent)] px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
@@ -17,6 +17,31 @@
           </svg>
           <span>Repasar palabras</span>
         </a>
+      } @else if (reviewCtaState() === 'IN_PROGRESS') {
+        <a
+          routerLink="/vocabulary/review"
+          class="btn-review inline-flex items-center gap-2 rounded-lg bg-[var(--app-accent)] px-4 py-2 text-sm font-medium text-white shadow-xs transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
+          aria-label="Continuar repaso de palabras"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="m9 10 2 2 4-4"/>
+          </svg>
+          <span>Continuar repaso</span>
+        </a>
+      } @else if (reviewCtaState() === 'COMPLETED') {
+        <button
+          type="button"
+          disabled
+          class="btn-review inline-flex items-center gap-2 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-4 py-2 text-sm font-medium text-[var(--app-muted)] opacity-60 cursor-not-allowed"
+          title="Has terminado tu repaso de hoy."
+          aria-label="Repaso de hoy completado"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>Repaso de hoy completado</span>
+        </button>
       } @else {
         <button
           type="button"
@@ -235,15 +260,6 @@
                       <span class="text-[var(--app-border)]" aria-hidden="true">•</span>
                       <button
                         type="button"
-                        (click)="quickChangeStatus(entry, 'KNOWN', $event)"
-                        class="text-[var(--app-success)] hover:underline"
-                        title="Ya la conozco"
-                      >
-                        Ya la conozco
-                      </button>
-                      <span class="text-[var(--app-border)]" aria-hidden="true">•</span>
-                      <button
-                        type="button"
                         (click)="quickChangeStatus(entry, 'IGNORED', $event)"
                         class="text-[var(--app-muted)] hover:underline"
                         title="Ignorar palabra"
@@ -322,6 +338,7 @@
       [definitionsOpen]="wordInteraction.definitionsOpen()"
       [selectedStatus]="wordInteraction.selectedStatus()"
       [statuses]="wordInteraction.statuses"
+      [disabledStatuses]="popoverDisabledStatuses"
       (closed)="closePopover()"
       (audioPlayed)="wordInteraction.playAudio($event)"
       (definitionsToggled)="wordInteraction.toggleDefinitions($event)"

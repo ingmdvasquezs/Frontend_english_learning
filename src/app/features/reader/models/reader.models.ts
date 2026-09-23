@@ -11,6 +11,7 @@ export interface ReaderData {
   progressStatus: ReadingProgressStatus | null;
   currentPartOrdinal?: number | null;
   paginationVersion?: number | null;
+  sectionTitle?: string | null;
   tokens: ReaderToken[];
 }
 

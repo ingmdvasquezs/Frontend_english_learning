@@ -22,6 +22,9 @@
       </header>
 
       @if (currentPart(); as part) {
+        @if (sectionTitle(); as title) {
+          <div class="reader-section-title" aria-label="Sección">{{ title }}</div>
+        }
         @if (parts().length > 1) {
           <div class="text-part-heading" aria-live="polite">Parte {{ part.ordinal }} de {{ part.totalParts }}</div>
         }

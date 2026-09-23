@@ -16,6 +16,7 @@ import { ReaderToken } from '../../../../shared/models/reader-token';
 import { ReaderWordPopover } from '../../../reader/components/reader-word-popover/reader-word-popover';
 import { ReaderWordInteraction } from '../../../reader/services/reader-word-interaction';
 import {
+  PreparedReviewSession,
   UserVocabularyPage,
   VocabularyEntry,
   VocabularyFilter,
@@ -51,16 +52,60 @@ export class Vocabulary implements OnInit {
   readonly pageSize = 10;
   readonly selectedFilter = signal<VocabularyFilter>('LEARNING');
   readonly activeSearchTerm = signal('');
+  readonly reviewPreparation = signal<PreparedReviewSession | null>(null);
 
   readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly popoverDisabledStatuses: readonly VocabularyStatus[] = ['KNOWN'];
 
   readonly totalPages = computed(() =>
     Math.max(1, Math.ceil(this.totalElements() / this.pageSize))
   );
   readonly hasEntries = computed(() => this.entries().length > 0);
-  readonly reviewAvailable = computed(
-    () => this.summary().totalCount > 0
-  );
+
+  readonly reviewCtaState = computed<'NEW' | 'IN_PROGRESS' | 'COMPLETED' | 'EMPTY'>(() => {
+    const totalCount = this.summary().totalCount;
+    if (totalCount === 0) {
+      return 'EMPTY';
+    }
+
+    const prep = this.reviewPreparation();
+    if (prep) {
+      const dailyComplete = !!prep.dailyComplete;
+      const dailyBaseCompleted = prep.dailyBaseCompleted ?? 0;
+      const pendingLearningCount = prep.pendingLearningCount ?? 0;
+
+      // COMPLETED: dailyComplete == true AND pendingLearningCount == 0
+      if (dailyComplete && pendingLearningCount === 0) {
+        return 'COMPLETED';
+      }
+
+      // IN PROGRESS: dailyComplete == false AND (dailyBaseCompleted > 0 OR pendingLearningCount > 0)
+      const isStarted = dailyBaseCompleted > 0 || pendingLearningCount > 0;
+      if (!dailyComplete && isStarted) {
+        return 'IN_PROGRESS';
+      }
+
+      // NEW / NOT STARTED or EMPTY: check if reviewable words exist
+      const hasReviewableWords =
+        (prep.dueCount ?? 0) > 0 ||
+        (prep.totalReviewableCount ?? 0) > 0 ||
+        (prep.entries?.length ?? 0) > 0 ||
+        (prep.learnAheadEntries?.length ?? 0) > 0 ||
+        (prep.dailyBaseRemaining ?? 0) > 0;
+
+      if (!hasReviewableWords) {
+        return 'EMPTY';
+      }
+
+      return 'NEW';
+    }
+
+    return 'NEW';
+  });
+
+  readonly reviewAvailable = computed(() => {
+    return this.reviewCtaState() === 'NEW' || this.reviewCtaState() === 'IN_PROGRESS';
+  });
   readonly isGlobalEmpty = computed(
     () =>
       !this.loading() &&
@@ -120,9 +165,22 @@ export class Vocabulary implements OnInit {
     this.loadVocabulary();
   }
 
+  refreshReviewState(): void {
+    if (this.vocabularyService.prepareVocabularyReview) {
+      this.vocabularyService
+        .prepareVocabularyReview(15)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (prep) => this.reviewPreparation.set(prep),
+          error: () => this.reviewPreparation.set(null),
+        });
+    }
+  }
+
   loadVocabulary(): void {
     this.loading.set(true);
     this.error.set(null);
+    this.refreshReviewState();
 
     const currentFilter = this.selectedFilter();
     const filter: VocabularyStatus | null =
@@ -194,6 +252,9 @@ export class Vocabulary implements OnInit {
     event?: Event
   ): void {
     event?.stopPropagation();
+    if (newStatus === 'KNOWN') {
+      return;
+    }
     this.vocabularyService
       .setVocabularyStatus(entry.word, entry.language, newStatus)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -218,6 +279,9 @@ export class Vocabulary implements OnInit {
   }
 
   onStatusSelected(newStatus: VocabularyStatus): void {
+    if (newStatus === 'KNOWN') {
+      return;
+    }
     const selected = this.wordInteraction.selectedToken();
     if (!selected) return;
 

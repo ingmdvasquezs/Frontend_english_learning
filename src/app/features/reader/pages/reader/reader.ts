@@ -23,6 +23,34 @@ import { NarrationService } from '../../../../shared/narration/narration.service
 import { createNarrationTokenMap, findNarrationWordTokenIndex } from '../../../../shared/narration/narration-token-map';
 import { TEXT_PAGINATION_VERSION, createReadingParts } from '../../utils/reading-parts';
 
+/**
+ * Defense-in-depth guard: returns true when a section title looks like a
+ * machine-generated EPUB identifier rather than a human-readable heading.
+ *
+ * Examples that return true  → hidden:
+ *   id-idp140489363296560, id-123, #fragment,
+ *   chapter01.xhtml, OEBPS/ch01.xhtml, htmltoc, urn:uuid:...
+ *
+ * Examples that return false → shown:
+ *   Scene II, Chapter III, Act I, The Forest of Arden, Part 1
+ *
+ * NOTE: the backend's DocumentSectionTitleSanitizer is the primary guard.
+ * This is a secondary, frontend-only layer.
+ */
+export function isTechnicalSectionTitle(title: string | null | undefined): boolean {
+  if (!title || title.trim() === '') return false;
+  const t = title.trim();
+  return (
+    /^id[-_]/i.test(t) ||                            // id-idp..., id_123
+    t.startsWith('#') ||                              // #fragment, #chapter_1
+    /\.(x?html?|xml|opf|ncx)$/i.test(t) ||          // *.xhtml, *.html, *.xml
+    /^OEBPS\//i.test(t) ||                           // OEBPS/ch01.xhtml
+    /^htmltoc$/i.test(t) ||                          // htmltoc
+    /^urn:/i.test(t) ||                              // urn:uuid:...
+    /^chapter\d+$/i.test(t)                          // chapter01, chapter1 (slug, no space or roman)
+  );
+}
+
 @Component({
   selector: 'app-reader',
   imports: [RouterLink, ReaderTokenStream, ReaderWordPopover, ReaderNarrationControls],
@@ -64,6 +92,11 @@ export class Reader implements OnInit {
   readonly activeNarrationTokenIndex = computed(() =>
     findNarrationWordTokenIndex(this.narrationContent().ranges,this.narration.currentCharacterIndex())
   );
+  /** Section/chapter title from the EPUB, sanitized by isTechnicalSectionTitle. Null when absent or technical. */
+  readonly sectionTitle = computed(() => {
+    const raw = this.readerData()?.sectionTitle;
+    return raw && !isTechnicalSectionTitle(raw) ? raw : null;
+  });
 
   readonly quizAvailable = signal<boolean>(false);
   readonly quizAvailabilityLoading = signal<boolean>(false);

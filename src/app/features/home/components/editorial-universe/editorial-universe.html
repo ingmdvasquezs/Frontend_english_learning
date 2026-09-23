@@ -113,6 +113,15 @@
         <div class="discovery-filter-group topic-selector-group">
           <span class="discovery-group-label sr-only" id="topics-label">Temas</span>
           <div class="topic-pills-bar" role="toolbar" aria-labelledby="topics-label" aria-label="Temas">
+            <button
+              type="button"
+              class="topic-pill"
+              [class.topic-pill-active]="activeTopicKey() === 'ALL'"
+              [attr.aria-pressed]="activeTopicKey() === 'ALL'"
+              (click)="selectTopic('ALL')"
+            >
+              <span class="topic-name">Todas</span>
+            </button>
             @for (topic of activeTopics(); track topic.key) {
               <button
                 type="button"

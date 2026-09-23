@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { escapeXml } from '../utils/xml-utils';
 
 export interface DictionaryDefinition {
   definition: string;
@@ -30,16 +31,18 @@ export class DictionaryService {
   private readonly soapUrl = '/ws';
   private readonly namespace =
     'http://soap.com/english-reading/readings';
+  private readonly soapNamespace =
+    'http://schemas.xmlsoap.org/soap/envelope/';
 
   lookupWord(word: string) {
     const body = `
       <soapenv:Envelope
-          xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-          xmlns:read="http://soap.com/english-reading/readings">
+          xmlns:soapenv="${this.soapNamespace}"
+          xmlns:read="${this.namespace}">
         <soapenv:Header/>
         <soapenv:Body>
           <read:lookupWordRequest>
-            <read:word>${word}</read:word>
+            <read:word>${escapeXml(word)}</read:word>
           </read:lookupWordRequest>
         </soapenv:Body>
       </soapenv:Envelope>
@@ -59,33 +62,45 @@ export class DictionaryService {
     const parser = new DOMParser();
     const xml = parser.parseFromString(responseXml, 'text/xml');
 
+    const fault =
+      xml.getElementsByTagNameNS(this.soapNamespace, 'Fault')[0] ??
+      Array.from(xml.getElementsByTagName('*')).find((el) => el.localName === 'Fault');
+    if (fault) {
+      const faultString =
+        Array.from(fault.getElementsByTagName('*'))
+          .find((el) => el.localName === 'faultstring')
+          ?.textContent?.trim() ?? 'SOAP Fault';
+      throw new Error(`SOAP Fault: ${faultString}`);
+    }
+
     const getFirstValue = (
       parent: Element | Document,
       name: string
     ): string | null => {
-      return (
-        parent.getElementsByTagNameNS(
-          this.namespace,
-          name
-        )[0]?.textContent ?? null
-      );
+      const element =
+        parent.getElementsByTagNameNS(this.namespace, name)[0] ??
+        parent.getElementsByTagName(name)[0] ??
+        Array.from(parent.getElementsByTagName('*')).find(
+          (el) => el.localName === name
+        );
+      return element?.textContent?.trim() ?? null;
     };
 
-    const meaningElements = Array.from(
-      xml.getElementsByTagNameNS(
-        this.namespace,
-        'meanings'
-      )
-    );
+    const meaningElements =
+      xml.getElementsByTagNameNS(this.namespace, 'meanings').length > 0
+        ? Array.from(xml.getElementsByTagNameNS(this.namespace, 'meanings'))
+        : Array.from(xml.getElementsByTagName('*')).filter(
+            (el) => el.localName === 'meanings'
+          );
 
     const meanings: DictionaryMeaning[] = meaningElements.map(
       (meaningElement) => {
-        const definitionElements = Array.from(
-          meaningElement.getElementsByTagNameNS(
-            this.namespace,
-            'definitions'
-          )
-        );
+        const definitionElements =
+          meaningElement.getElementsByTagNameNS(this.namespace, 'definitions').length > 0
+            ? Array.from(meaningElement.getElementsByTagNameNS(this.namespace, 'definitions'))
+            : Array.from(meaningElement.getElementsByTagName('*')).filter(
+                (el) => el.localName === 'definitions'
+              );
 
         const definitions: DictionaryDefinition[] =
           definitionElements.map((definitionElement) => ({

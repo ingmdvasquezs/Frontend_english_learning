@@ -124,6 +124,7 @@ export class ReaderService {
       ),
       currentPartOrdinal: this.getOptionalInteger(xml, 'currentPartOrdinal'),
       paginationVersion: this.getOptionalInteger(xml, 'paginationVersion'),
+      sectionTitle: this.getOptionalValue(xml, 'sectionTitle'),
       tokens,
     };
   }

@@ -86,6 +86,47 @@ describe('ReaderWordPopover', () => {
     expect(popover.getAttribute('aria-label')).toBe('Word details and status');
   });
 
+  describe('FASE 14.3.9: disabledStatuses and guarded selectStatus', () => {
+    it('renders disabled button with disabled attribute when status is in disabledStatuses', () => {
+      fixture.componentRef.setInput('disabledStatuses', ['KNOWN']);
+      fixture.detectChanges();
+
+      const statusButtons = fixture.nativeElement.querySelectorAll('button[aria-pressed]') as NodeListOf<HTMLButtonElement>;
+      const knownBtn = statusButtons[2]; // 'I KNOW IT'
+      expect(knownBtn.textContent?.trim()).toBe('I KNOW IT');
+      expect(knownBtn.disabled).toBe(true);
+      expect(knownBtn.className).toContain('disabled:cursor-not-allowed');
+      expect(knownBtn.className).toContain('disabled:opacity-50');
+
+      // Other buttons remain enabled
+      const learningBtn = statusButtons[1];
+      expect(learningBtn.disabled).toBe(false);
+    });
+
+    it('blocks programmatic selectStatus call when status is disabled (does not emit)', () => {
+      fixture.componentRef.setInput('disabledStatuses', ['KNOWN']);
+      fixture.detectChanges();
+
+      const statusSpy = vi.fn();
+      fixture.componentInstance.statusSelected.subscribe(statusSpy);
+
+      fixture.componentInstance.selectStatus('KNOWN');
+      expect(statusSpy).not.toHaveBeenCalled();
+
+      // Enabled status emits normally
+      fixture.componentInstance.selectStatus('LEARNING');
+      expect(statusSpy).toHaveBeenCalledWith('LEARNING');
+    });
+
+    it('emits KNOWN when disabledStatuses is empty (default in Reader / DocumentReader)', () => {
+      const statusSpy = vi.fn();
+      fixture.componentInstance.statusSelected.subscribe(statusSpy);
+
+      fixture.componentInstance.selectStatus('KNOWN');
+      expect(statusSpy).toHaveBeenCalledWith('KNOWN');
+    });
+  });
+
   function token(): ReaderToken {
     return {
       value: 'garden',

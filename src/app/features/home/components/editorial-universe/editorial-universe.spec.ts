@@ -7,6 +7,7 @@ import {
   EditorialUniverse,
   LATAM_COUNTRY_HERO_ASSETS,
   LATAM_VISUAL_PREVIEW_COUNTRIES,
+  TOPIC_ALL_KEY,
   resolveBaseCta,
   resolveHeroAssetUrl,
   resolveReadingCta,
@@ -236,12 +237,13 @@ describe('EditorialUniverse', () => {
     expect(subEl.textContent).toContain('Historias, cultura y lugares de nuestra región.');
   });
 
-  it('2. defaults to Colombia (CO) and MYTHS_AND_LEGENDS topic', () => {
+  it('2. defaults to Colombia (CO) and ALL topics (no topic filter by default)', () => {
     fixture.detectChanges();
     expect(component.activeCountryCode()).toBe('CO');
-    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
     expect(component.activeCountry()?.displayName).toBe('Colombia');
-    expect(component.activeTopic()?.displayName).toBe('Mitos y leyendas');
+    // activeTopic() is null when ALL — no topic filter active
+    expect(component.activeTopic()).toBeNull();
   });
 
   it('3. active country Colombia has readingCount = 15', () => {
@@ -261,19 +263,25 @@ describe('EditorialUniverse', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Todos');
   });
 
-  it('5. renders active topic pill for Colombia', () => {
+  it('5. renders "Todas" as first topic pill (active by default) followed by country topics', () => {
     fixture.detectChanges();
-    const topicPill = fixture.nativeElement.querySelector('.topic-selector-group .topic-pill');
-    expect(topicPill).toBeTruthy();
-    expect(topicPill.textContent).toContain('Mitos y leyendas');
-    expect(topicPill.getAttribute('aria-pressed')).toBe('true');
+    const topicPills = fixture.nativeElement.querySelectorAll('.topic-selector-group .topic-pill');
+    expect(topicPills.length).toBeGreaterThan(0);
+    // First pill must be "Todas" and must be active
+    const todasPill = topicPills[0];
+    expect(todasPill.textContent).toContain('Todas');
+    expect(todasPill.getAttribute('aria-pressed')).toBe('true');
+    // Colombia has Mitos y leyendas as its only topic — it must appear but NOT be active
+    const mitosPill = topicPills[1];
+    expect(mitosPill.textContent).toContain('Mitos y leyendas');
+    expect(mitosPill.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('6. calls browsePlatformReadings with CO, MYTHS_AND_LEGENDS, page 0, size 20', () => {
+  it('6. calls browsePlatformReadings with CO, no discoveryTopic (ALL mode), page 0, size 20', () => {
     fixture.detectChanges();
     expect(homeService.browsePlatformReadings).toHaveBeenCalledWith({
       countryCode: 'CO',
-      discoveryTopic: 'MYTHS_AND_LEGENDS',
+      discoveryTopic: undefined,
       page: 0,
       size: 20,
     });
@@ -482,7 +490,7 @@ describe('EditorialUniverse', () => {
     );
   });
 
-  it('21. multi-country fixture support: renders 3 country pills and switches country cleanly', () => {
+  it('21. multi-country fixture support: renders 3 country pills and resets topic to ALL on country switch', () => {
     fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
     fixture.detectChanges();
 
@@ -498,10 +506,12 @@ describe('EditorialUniverse', () => {
 
     expect(component.activeCountryCode()).toBe('PE');
     expect(component.interactionMode()).toBe('USER_CONTROLLED');
-    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+    // Topic must reset to ALL when switching countries
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+    expect(component.activeTopic()).toBeNull();
     expect(homeService.browsePlatformReadings).toHaveBeenCalledWith({
       countryCode: 'PE',
-      discoveryTopic: 'MYTHS_AND_LEGENDS',
+      discoveryTopic: undefined,
       page: 0,
       size: 20,
     });
@@ -831,4 +841,206 @@ describe('EditorialUniverse', () => {
     expect(component.activeTopicKey()).toBe('HISTORY_AND_MEMORY');
     expect(homeService.browsePlatformReadings).not.toHaveBeenCalled();
   });
+
+  // ── New tests for TOPIC_ALL_KEY / "Todas" behavior ────────────────────────
+
+  it('A. "Todas" pill is the first topic option in the topic bar', () => {
+    fixture.detectChanges();
+    const topicPills = fixture.nativeElement.querySelectorAll('.topic-selector-group .topic-pill');
+    expect(topicPills.length).toBeGreaterThan(0);
+    expect(topicPills[0].textContent).toContain('Todas');
+  });
+
+  it('B. selecting a country resets topic to ALL (Todas) and browsePlatformReadings omits discoveryTopic', () => {
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
+    fixture.detectChanges();
+
+    // Start at CO (ALL by default)
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+
+    // Select a topic first
+    component.selectTopic('MYTHS_AND_LEGENDS');
+    fixture.detectChanges();
+    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+
+    // Switch to México → topic must reset to ALL
+    component.selectCountry('MX');
+    fixture.detectChanges();
+
+    expect(component.activeCountryCode()).toBe('MX');
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+    expect(component.activeTopic()).toBeNull();
+
+    const calls = homeService.browsePlatformReadings.mock.calls;
+    const mxCall = calls.find((c: unknown[]) => (c[0] as { countryCode: string }).countryCode === 'MX');
+    expect(mxCall).toBeDefined();
+    expect((mxCall![0] as { discoveryTopic: unknown }).discoveryTopic).toBeUndefined();
+  });
+
+  it('C. selecting a topic filters correctly, and returning to Todas restores full country browse', () => {
+    const fiveReadings = Array.from({ length: 5 }, (_, i) =>
+      mockReading({ readingId: `mx-${i}`, title: `MX Story ${i}`, countryCode: 'MX' })
+    );
+    const oneReading = [mockReading({ readingId: 'mx-myth-1', title: 'MX Myth', countryCode: 'MX', discoveryTopic: 'MYTHS_AND_LEGENDS' })];
+
+    // mock sequence: 1st call = CO|ALL (init), 2nd = MX|ALL, 3rd = MX|MYTHS
+    homeService.parseBrowsePlatformReadings
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 15, readings: FIFTEEN_REAL_READINGS }) // CO|ALL on init
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 5, readings: fiveReadings })           // MX|ALL
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 1, readings: oneReading });            // MX|MYTHS
+
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
+    fixture.detectChanges(); // triggers CO|ALL browse
+
+    // Force MX with ALL
+    component.selectCountry('MX');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(5);
+
+    // Select MYTHS_AND_LEGENDS
+    component.selectTopic('MYTHS_AND_LEGENDS');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(1);
+
+    // Return to Todas → uses cache (MX|ALL was cached) → no extra browse call
+    const callsBefore = homeService.browsePlatformReadings.mock.calls.length;
+    component.selectTopic(TOPIC_ALL_KEY);
+    fixture.detectChanges();
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+    expect(component.realReadings().length).toBe(5);
+    // No additional SOAP call — hit the cache
+    expect(homeService.browsePlatformReadings.mock.calls.length).toBe(callsBefore);
+  });
+
+  it('D. changing country from México+topic to Colombia resets to Todas', () => {
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
+    fixture.detectChanges();
+
+    component.selectCountry('MX');
+    fixture.detectChanges();
+    component.selectTopic('MYTHS_AND_LEGENDS');
+    fixture.detectChanges();
+    expect(component.activeTopicKey()).toBe('MYTHS_AND_LEGENDS');
+
+    // Switch to Colombia
+    component.selectCountry('CO');
+    fixture.detectChanges();
+
+    expect(component.activeCountryCode()).toBe('CO');
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+    expect(component.activeTopic()).toBeNull();
+  });
+
+  it('E. cache for COUNTRY|ALL is separate from COUNTRY|topic — no cross-contamination', () => {
+    const allReadings = Array.from({ length: 5 }, (_, i) =>
+      mockReading({ readingId: `mx-all-${i}`, countryCode: 'MX' })
+    );
+    const mythReadings = [mockReading({ readingId: 'mx-myth', countryCode: 'MX', discoveryTopic: 'MYTHS_AND_LEGENDS' })];
+
+    // mock sequence: 1st = CO|ALL (init), 2nd = MX|ALL, 3rd = MX|MYTHS
+    homeService.parseBrowsePlatformReadings
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 15, readings: FIFTEEN_REAL_READINGS }) // CO|ALL
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 5, readings: allReadings })            // MX|ALL
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 1, readings: mythReadings });          // MX|MYTHS
+
+    fixture.componentRef.setInput('customOverview', MOCK_MULTI_COUNTRY_OVERVIEW);
+    fixture.detectChanges(); // triggers CO|ALL browse
+
+    // MX|ALL
+    component.selectCountry('MX');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(5);
+
+    // MX|MYTHS
+    component.selectTopic('MYTHS_AND_LEGENDS');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(1);
+
+    // Back to ALL — must serve cached 5, NOT 1
+    component.selectTopic(TOPIC_ALL_KEY);
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(5);
+  });
+
+  it('F. Colombia browse initially omits discoveryTopic when ALL is default (no SOAP topic element)', () => {
+    fixture.detectChanges();
+    const [firstCall] = homeService.browsePlatformReadings.mock.calls;
+    expect(firstCall[0]).toEqual({
+      countryCode: 'CO',
+      discoveryTopic: undefined,
+      page: 0,
+      size: 20,
+    });
+  });
+
+  it('G. seed preview from Home does NOT get cached as CO|ALL — selecting a topic and returning to Todas triggers full Browse', () => {
+    // Simulate Home delivering 3 preview readings when defaultTopicKey is null.
+    // This seed is displayed optimistically but NOT cached under CO|ALL.
+    const seedReadings = Array.from({ length: 3 }, (_, i) =>
+      mockReading({ readingId: `seed-${i}`, countryCode: 'CO' })
+    );
+    // Backend has 15 total readings for CO without topic filter (what ALL should show)
+    const fullReadings = Array.from({ length: 15 }, (_, i) =>
+      mockReading({ readingId: `full-${i}`, countryCode: 'CO' })
+    );
+    const mythsReadings = [mockReading({ readingId: 'myths-1', countryCode: 'CO', discoveryTopic: 'MYTHS_AND_LEGENDS' })];
+
+    // mock sequence: 1st call = CO|MYTHS (when user selects topic), 2nd = CO|ALL (when user returns to Todas)
+    homeService.parseBrowsePlatformReadings
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 1, readings: mythsReadings })  // CO|MYTHS
+      .mockReturnValueOnce({ page: 0, size: 20, totalElements: 15, readings: fullReadings });  // CO|ALL
+
+    const mockLatamData = {
+      region: { key: 'latin-america', displayName: 'Latinoamérica', subtitle: 'Descubre' },
+      countries: [
+        {
+          countryCode: 'CO',
+          displayName: 'Colombia',
+          tagline: 'T',
+          description: 'D',
+          displayOrder: 1,
+          readingCount: 15,
+          heroImages: [],
+          topics: [
+            { key: 'MYTHS_AND_LEGENDS', displayName: 'Mitos y leyendas', displayOrder: 1, readingCount: 15 },
+          ],
+        },
+      ],
+      defaultCountryCode: 'CO',
+      // defaultTopicKey is null → component defaults to ALL, seed is NOT cached under CO|ALL
+      defaultTopicKey: null,
+      readings: seedReadings,
+    };
+
+    fixture.componentRef.setInput('latinAmerica', mockLatamData);
+    fixture.detectChanges();
+
+    // Initial state: seed renders optimistically (3 readings), no SOAP calls made
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+    expect(component.realReadings().length).toBe(3);
+    expect(homeService.browsePlatformReadings).not.toHaveBeenCalled();
+
+    // User selects a specific topic → 1 reading
+    component.selectTopic('MYTHS_AND_LEGENDS');
+    fixture.detectChanges();
+    expect(component.realReadings().length).toBe(1);
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(1);
+
+    // User returns to Todas → CO|ALL is NOT in cache (seed was not cached there)
+    // → a fresh Browse is required to load the full 15-reading catalog
+    component.selectTopic(TOPIC_ALL_KEY);
+    fixture.detectChanges();
+
+    expect(component.activeTopicKey()).toBe(TOPIC_ALL_KEY);
+    expect(homeService.browsePlatformReadings).toHaveBeenCalledTimes(2);
+    expect(homeService.browsePlatformReadings).toHaveBeenLastCalledWith({
+      countryCode: 'CO',
+      discoveryTopic: undefined,
+      page: 0,
+      size: 20,
+    });
+    // UI shows full 15 readings — NOT the 3 from the optimistic seed
+    expect(component.realReadings().length).toBe(15);
+  });
 });
+

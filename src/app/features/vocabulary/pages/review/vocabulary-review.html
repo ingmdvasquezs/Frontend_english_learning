@@ -104,101 +104,21 @@
     </div>
   }
 
-  <!-- State 3: Empty State (No words to review) -->
-  @else if (isEmptySession()) {
-    <div class="review-card-container text-center">
-      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--app-active)] text-[var(--app-muted)]">
-        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-          <path d="m9 10 2 2 4-4"/>
-        </svg>
-      </div>
-      <h2 class="mb-2 text-xl font-bold text-[var(--app-text)]">Por ahora no tienes palabras para repasar.</h2>
-      <p class="mb-6 text-sm text-[var(--app-muted)] max-w-md mx-auto">
-        Continúa leyendo y clasificando palabras para crear nuevos repasos.
-      </p>
-      <div class="flex flex-wrap items-center justify-center gap-3">
-        <button
-          type="button"
-          class="btn-primary rounded-lg bg-[var(--app-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
-          (click)="backToVocabulary()"
-        >
-          Volver a Mi vocabulario
-        </button>
-        <a
-          routerLink="/library"
-          class="btn-secondary rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
-        >
-          Explorar lecturas
-        </a>
-      </div>
-    </div>
-  }
-
-  <!-- State 4: Session Completed Summary -->
-  @else if (completed()) {
-    <div class="review-card-container text-center" role="region" aria-label="Resumen de sesión">
-      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-[var(--app-success)]">
-        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-      </div>
-      <h2 class="mb-1 text-2xl font-bold text-[var(--app-text)]">Sesión completada</h2>
-      <p class="mb-6 text-sm text-[var(--app-muted)]">
-        Has repasado {{ totalWords() }} {{ totalWords() === 1 ? 'palabra' : 'palabras' }}.
-      </p>
-
-      <!-- Summary metrics breakdown -->
-      <div class="mb-8 grid grid-cols-3 gap-3 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-4">
-        <div class="flex flex-col items-center">
-          <span class="text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider">No la recordé</span>
-          <span class="mt-1 text-2xl font-bold text-[var(--app-danger)]">{{ forgotCount() }}</span>
-        </div>
-        <div class="flex flex-col items-center border-x border-[var(--app-border)]">
-          <span class="text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider">Me costó</span>
-          <span class="mt-1 text-2xl font-bold text-[var(--app-learning)]">{{ struggledCount() }}</span>
-        </div>
-        <div class="flex flex-col items-center">
-          <span class="text-xs font-semibold text-[var(--app-muted)] uppercase tracking-wider">La recordé</span>
-          <span class="mt-1 text-2xl font-bold text-[var(--app-success)]">{{ rememberedCount() }}</span>
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-        <button
-          type="button"
-          class="btn-primary w-full sm:w-auto rounded-lg bg-[var(--app-accent)] px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
-          (click)="backToVocabulary()"
-        >
-          Volver a Mi vocabulario
-        </button>
-        <button
-          type="button"
-          class="btn-secondary w-full sm:w-auto rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
-          (click)="resetToSelector()"
-        >
-          Iniciar otro repaso
-        </button>
-      </div>
-    </div>
-  }
-
-  <!-- State 5: Active Flashcard Review -->
+  <!-- State 3: Active Flashcard Review (Priority for eligible cards now) -->
   @else if (currentCard(); as card) {
     <!-- Review Header and Progress -->
     <header class="mb-4">
       <div class="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
         <div class="flex items-center gap-2">
-          <span>Repaso de vocabulario</span>
+          <span>Repaso de hoy</span>
           @if (dueCount() > 0) {
-            <span class="text-[var(--app-muted)] font-normal">({{ dueCount() }} pendientes de repaso)</span>
+            <span class="text-[var(--app-muted)] font-normal">({{ dueCount() }} pendientes)</span>
           }
         </div>
-        @if (card.isReinforcement) {
-          <span aria-live="polite" class="text-[var(--app-accent)] font-bold">Refuerzo</span>
+        @if (card.isAgainRepeat || card.isReinforcement || card.isLearnAhead) {
+          <span aria-live="polite" class="text-[var(--app-accent)] font-bold">Repetición</span>
         } @else {
-          <span aria-live="polite">Palabra {{ card.baseWordNumber }} de {{ baseTotalWords() }}</span>
+          <span aria-live="polite">Palabra {{ displayCompleted() }} de {{ displayDailyLimit() }}</span>
         }
       </div>
 
@@ -206,9 +126,9 @@
       <div
         class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--app-border)]"
         role="progressbar"
-        [attr.aria-valuenow]="card.baseWordNumber"
-        aria-valuemin="1"
-        [attr.aria-valuemax]="baseTotalWords()"
+        [attr.aria-valuenow]="displayCompleted()"
+        aria-valuemin="0"
+        [attr.aria-valuemax]="displayDailyLimit()"
         aria-label="Progreso de la sesión"
       >
         <div
@@ -224,10 +144,10 @@
       aria-labelledby="current-word-title"
     >
       <!-- Word and Status Header -->
-      <div class="mb-6 text-center">
+      <div class="mb-4 text-center">
         <div class="mb-3 inline-block">
-          @if (card.isReinforcement) {
-            <span class="status-badge badge-reinforcement">Refuerzo</span>
+          @if (card.isAgainRepeat || card.isReinforcement || card.isLearnAhead) {
+            <span class="status-badge badge-reinforcement">Repetición</span>
           } @else {
             <span class="status-badge {{ getStatusBadgeClass(card.entry.status) }}">
               {{ getStatusLabel(card.entry.status) }}
@@ -235,28 +155,50 @@
           }
         </div>
 
-        @if (card.isReinforcement) {
-          <p class="mb-2 text-sm font-medium text-[var(--app-muted)]">¿La recuerdas ahora?</p>
-        }
-
         <h2
           id="current-word-title"
           class="word-display font-serif text-3xl font-bold tracking-tight text-[var(--app-text)] sm:text-4xl"
         >
           {{ card.entry.word }}
         </h2>
+
+        <!-- Front & Back Side Audio (Visible before and after reveal only when audioUrl exists) -->
+        @if (dictionaryWord(); as dict) {
+          @if (dict.audioUrl) {
+            <div class="mt-2.5 flex items-center justify-center gap-2.5">
+              <button
+                type="button"
+                class="audio-btn inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-2.5 py-1 text-xs font-medium text-[var(--app-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] hover:bg-[var(--app-active)]"
+                (click)="playAudio()"
+                aria-label="Escuchar pronunciación de {{ card.entry.word }}"
+                title="Escuchar pronunciación"
+              >
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                </svg>
+                <span class="text-[11px] font-medium">Escuchar</span>
+              </button>
+              @if (audioError()) {
+                <span class="text-xs text-[var(--app-danger)]">{{ audioError() }}</span>
+              }
+            </div>
+          }
+        }
       </div>
 
       <!-- PHASE A: Before Reveal -->
       @if (!revealed()) {
-        <div class="my-6 flex flex-col items-center justify-center">
+        <div class="my-6 flex flex-col items-center justify-center gap-2">
           <button
             type="button"
-            class="btn-reveal inline-flex items-center justify-center rounded-lg bg-[var(--app-accent)] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
+            class="btn-reveal inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--app-accent)] px-6 py-3 text-base font-semibold text-white shadow-sm transition hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]"
             (click)="revealMeaning()"
-            aria-label="Mostrar significado de la palabra"
+            aria-label="Mostrar respuesta"
           >
-            Mostrar significado
+            <span>Mostrar respuesta</span>
+            <kbd class="shortcut-badge-reveal rounded bg-white/20 px-1.5 py-0.5 text-xs font-mono">Espacio</kbd>
           </button>
         </div>
       }
@@ -290,43 +232,17 @@
           <!-- Dictionary Meaning Data -->
           @else if (dictionaryWord(); as dict) {
             <div class="mb-6 space-y-4 text-center sm:text-left">
-              <!-- Phonetic & Manual Audio -->
-              <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                @if (dict.phonetic) {
-                  <span class="font-mono text-sm text-[var(--app-muted)]">/{{ dict.phonetic }}/</span>
-                }
-                @if (dict.audioUrl) {
-                  <button
-                    type="button"
-                    class="audio-btn inline-flex items-center gap-1.5 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-elevated)] px-3 py-1 text-xs font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)]"
-                    (click)="playAudio()"
-                    aria-label="Escuchar pronunciación de {{ card.entry.word }}"
-                  >
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                    </svg>
-                    <span>Pronunciación</span>
-                  </button>
-                }
-                @if (audioError()) {
-                  <span class="text-xs text-[var(--app-danger)]">{{ audioError() }}</span>
-                }
-              </div>
-
-              <!-- Main Translation (only if non-empty) -->
-              @if (dict.translation && dict.translation.trim().length > 0) {
-                <div>
-                  <p class="text-xl font-semibold text-[var(--app-text)]">
-                    {{ dict.translation }}
+              <!-- Main Translation (Spanish Meaning) -->
+              @if (spanishMeaning; as translation) {
+                <div class="text-center">
+                  <p class="text-2xl font-bold text-[var(--app-text)]">
+                    {{ translation }}
                   </p>
                 </div>
               }
 
               <!-- Brief English Definition & Example -->
-              @if (dict.meanings.length > 0 && dict.meanings[0].definitions.length > 0) {
-                @let def = dict.meanings[0].definitions[0];
+              @if (primaryDefinition; as def) {
                 <div class="rounded-lg bg-[var(--app-surface-elevated)] p-4 text-left border border-[var(--app-border)] space-y-3">
                   @if (def.definition) {
                     <div>
@@ -341,9 +257,24 @@
 
                   @if (def.example) {
                     <div class="border-t border-[var(--app-border)] pt-2.5">
-                      <span class="mb-1 block text-xs font-bold uppercase tracking-wider text-[var(--app-muted)]">
-                        Ejemplo
-                      </span>
+                      <div class="flex items-center justify-between mb-1">
+                        <span class="block text-xs font-bold uppercase tracking-wider text-[var(--app-muted)]">
+                          Ejemplo
+                        </span>
+                        <button
+                          type="button"
+                          class="example-audio-btn inline-flex items-center gap-1 rounded-full border border-[var(--app-border)] bg-[var(--app-surface)] px-2.5 py-0.5 text-xs font-medium text-[var(--app-muted)] transition hover:border-[var(--app-accent)] hover:text-[var(--app-accent)] hover:bg-[var(--app-active)]"
+                          (click)="playExampleAudio()"
+                          aria-label="Escuchar ejemplo"
+                          title="Escuchar ejemplo"
+                        >
+                          <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                          </svg>
+                          <span class="text-[11px]">Escuchar</span>
+                        </button>
+                      </div>
                       <p class="text-sm italic text-[var(--app-text)]">
                         "{{ def.example }}"
                       </p>
@@ -359,125 +290,178 @@
             </div>
           }
 
-          <!-- REINFORCEMENT CARD ACTIONS -->
-          @if (card.isReinforcement) {
-            <div class="mt-8 border-t border-[var(--app-border)] pt-6">
-              <h3 class="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--app-muted)]">
-                ¿La recuerdas ahora?
-              </h3>
-              <div
-                class="grid grid-cols-1 sm:grid-cols-2 gap-3"
-                role="group"
-                aria-label="Evaluación de refuerzo"
+          <!-- SRS V2 BINARY RATING BUTTONS (FASE 14.3.8) -->
+          <div class="mt-8 border-t border-[var(--app-border)] pt-6">
+            <h3 class="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-[var(--app-muted)]">
+              Califica tu recuerdo
+            </h3>
+
+            <div
+              class="rating-buttons-grid grid grid-cols-2 gap-4 max-w-md mx-auto"
+              role="group"
+              aria-label="Calificación de recuerdo"
+            >
+              <!-- 1: AGAIN -->
+              <button
+                type="button"
+                class="rating-btn btn-again flex flex-col items-center justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                [disabled]="mutationPending()"
+                (click)="selectRating('AGAIN')"
+                aria-label="Again - Repetir"
               >
+                <span class="rating-interval text-xs font-semibold text-[var(--app-danger)]">
+                  {{ getFormattedInterval('AGAIN') }}
+                </span>
+                <span class="rating-title text-sm font-bold text-[var(--app-danger)] mt-1">Again</span>
+                <span class="rating-sublabel text-[11px] text-[var(--app-muted)]">Repetir</span>
+                <kbd class="shortcut-badge mt-2 inline-block rounded bg-[var(--app-surface)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--app-muted)] border border-[var(--app-border)]">1</kbd>
+              </button>
+
+              <!-- 2: GOOD -->
+              <button
+                type="button"
+                class="rating-btn btn-good flex flex-col items-center justify-between rounded-xl border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                [disabled]="mutationPending()"
+                (click)="selectRating('GOOD')"
+                aria-label="Good - Bien"
+              >
+                <span class="rating-interval text-xs font-semibold text-[var(--app-success)]">
+                  {{ getFormattedInterval('GOOD') }}
+                </span>
+                <span class="rating-title text-sm font-bold text-[var(--app-success)] mt-1">Good</span>
+                <span class="rating-sublabel text-[11px] text-[var(--app-muted)]">Bien</span>
+                <kbd class="shortcut-badge mt-2 inline-block rounded bg-[var(--app-surface)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--app-muted)] border border-[var(--app-border)]">2</kbd>
+              </button>
+            </div>
+
+            <!-- Mutation Pending Indicator -->
+            @if (mutationPending()) {
+              <p class="mt-3 text-center text-xs text-[var(--app-muted)]" aria-live="polite">
+                Guardando respuesta...
+              </p>
+            }
+
+            <!-- Mutation Error Banner -->
+            @if (mutationError()) {
+              <div class="mt-4 rounded-md border border-[var(--app-danger)] bg-[var(--app-surface-elevated)] p-3 text-center" role="alert">
+                <p class="text-xs text-[var(--app-danger)] mb-2">{{ mutationError() }}</p>
                 <button
                   type="button"
-                  class="btn-reinforcement-yes flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-success)] hover:bg-[var(--app-surface)]"
-                  (click)="handleReinforcementAction(true)"
-                  aria-label="Sí, ahora sí"
+                  class="rounded border border-[var(--app-border)] px-3 py-1 text-xs font-semibold text-[var(--app-text)] hover:bg-[var(--app-active)]"
+                  (click)="retryMutation()"
                 >
-                  <span class="text-sm font-bold text-[var(--app-success)]">Sí, ahora sí</span>
-                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Palabra reforzada</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn-reinforcement-no flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-danger)] hover:bg-[var(--app-surface)]"
-                  (click)="handleReinforcementAction(false)"
-                  aria-label="Aún me cuesta"
-                >
-                  <span class="text-sm font-bold text-[var(--app-danger)]">Aún me cuesta</span>
-                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Seguiremos repasando</span>
+                  Reintentar
                 </button>
               </div>
-            </div>
-          }
-
-          <!-- BASE CARD ACTIONS: Immediate Light Feedback for FORGOT -->
-          @else if (forgotFeedbackActive()) {
-            <div class="forgot-feedback-inline mt-8 rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-4 text-center" role="status" aria-live="polite">
-              <p class="text-sm font-medium text-[var(--app-text)]">
-                No la recordaste. No pasa nada.
-              </p>
-              <p class="mt-1 text-xs text-[var(--app-muted)]">
-                Volveremos a repasarla más adelante en esta sesión.
-              </p>
-            </div>
-          }
-
-          <!-- BASE CARD ACTIONS: Standard Assessment -->
-          @else {
-            <div class="mt-8 border-t border-[var(--app-border)] pt-6">
-              <h3 class="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--app-muted)]">
-                ¿Cómo te fue?
-              </h3>
-
-              <div
-                class="grid grid-cols-1 sm:grid-cols-3 gap-3"
-                role="group"
-                aria-label="Autoevaluación de la palabra"
-              >
-                <!-- Assessment 1: FORGOT -->
-                <button
-                  type="button"
-                  class="assessment-btn btn-forgot flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-danger)] hover:bg-[var(--app-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-                  [disabled]="mutationPending()"
-                  (click)="selectAssessment('FORGOT')"
-                  aria-label="No la recordé"
-                >
-                  <span class="text-sm font-bold text-[var(--app-danger)]">No la recordé</span>
-                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Seguir repasando</span>
-                </button>
-
-                <!-- Assessment 2: STRUGGLED -->
-                <button
-                  type="button"
-                  class="assessment-btn btn-struggled flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-learning)] hover:bg-[var(--app-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-                  [disabled]="mutationPending()"
-                  (click)="selectAssessment('STRUGGLED')"
-                  aria-label="Me costó"
-                >
-                  <span class="text-sm font-bold text-[var(--app-learning)]">Me costó</span>
-                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Casi memorizada</span>
-                </button>
-
-                <!-- Assessment 3: REMEMBERED -->
-                <button
-                  type="button"
-                  class="assessment-btn btn-remembered flex flex-col items-center justify-center rounded-lg border border-[var(--app-border)] bg-[var(--app-surface-elevated)] p-3.5 transition hover:border-[var(--app-success)] hover:bg-[var(--app-surface)] disabled:opacity-50 disabled:cursor-not-allowed"
-                  [disabled]="mutationPending()"
-                  (click)="selectAssessment('REMEMBERED')"
-                  aria-label="La recordé"
-                >
-                  <span class="text-sm font-bold text-[var(--app-success)]">La recordé</span>
-                  <span class="mt-0.5 text-xs text-[var(--app-muted)]">Palabra conocida</span>
-                </button>
-              </div>
-
-              <!-- Mutation Pending Indicator -->
-              @if (mutationPending()) {
-                <p class="mt-3 text-center text-xs text-[var(--app-muted)]" aria-live="polite">
-                  Guardando respuesta...
-                </p>
-              }
-
-              <!-- Mutation Error Banner -->
-              @if (mutationError()) {
-                <div class="mt-4 rounded-md border border-[var(--app-danger)] bg-[var(--app-surface-elevated)] p-3 text-center" role="alert">
-                  <p class="text-xs text-[var(--app-danger)] mb-2">{{ mutationError() }}</p>
-                  <button
-                    type="button"
-                    class="rounded border border-[var(--app-border)] px-3 py-1 text-xs font-semibold text-[var(--app-text)] hover:bg-[var(--app-active)]"
-                    (click)="retryMutation()"
-                  >
-                    Reintentar
-                  </button>
-                </div>
-              }
-            </div>
-          }
+            }
+          </div>
         </div>
       }
     </article>
+  }
+
+  <!-- State 4: Waiting for Future Learning -->
+  @else if (isWaitingForFutureLearning()) {
+    <div class="review-card-container text-center" role="region" aria-label="Pausa de repaso">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <h2 class="mb-2 text-2xl font-bold text-[var(--app-text)]">Repasos al día por ahora</h2>
+      @if (nextPendingMinutes(); as mins) {
+        <p class="text-sm font-medium text-[var(--app-text)]">
+          Próximo repaso en {{ mins }} min.
+        </p>
+      } @else {
+        <p class="text-sm font-medium text-[var(--app-text)]">
+          Tienes repeticiones programadas más tarde.
+        </p>
+      }
+      <p class="mt-1 mb-6 text-xs text-[var(--app-muted)]">
+        Has completado todos los repasos disponibles en este momento.
+      </p>
+
+      @if (dailyBaseRemaining() === 0 && dailyBaseCompleted() > 0) {
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <span>Meta diaria de nuevas palabras completada</span>
+        </div>
+      }
+
+      <div class="flex items-center justify-center">
+        <button
+          type="button"
+          class="btn-secondary rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-6 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
+          (click)="backToVocabulary()"
+        >
+          Volver a Mi vocabulario
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- State 5: Session Completed Summary -->
+  @else if (isDailyComplete()) {
+    <div class="review-card-container text-center" role="region" aria-label="Resumen de sesión">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-[var(--app-success)]">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <h2 class="mb-1 text-2xl font-bold text-[var(--app-text)]">Repaso de hoy completado</h2>
+      <p class="text-sm font-medium text-[var(--app-text)]">
+        Has terminado tus palabras de hoy.
+      </p>
+      <p class="mb-6 text-xs text-[var(--app-muted)]">
+        Vuelve mañana para continuar con tu siguiente sesión.
+      </p>
+
+      <div class="flex items-center justify-center">
+        <button
+          type="button"
+          class="btn-primary w-full sm:w-auto rounded-lg bg-[var(--app-accent)] px-8 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+          (click)="backToVocabulary()"
+        >
+          Volver a Mi vocabulario
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- State 6: Empty State (No words to review) -->
+  @else if (isEmptySession()) {
+    <div class="review-card-container text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--app-active)] text-[var(--app-muted)]">
+        <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+          <path d="m9 10 2 2 4-4"/>
+        </svg>
+      </div>
+      <h2 class="mb-2 text-xl font-bold text-[var(--app-text)]">Todo al día</h2>
+      <p class="mb-6 text-sm text-[var(--app-muted)] max-w-md mx-auto">
+        No tienes palabras pendientes de repaso hoy. Continúa leyendo y guardando vocabulario para crear nuevos repasos.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          class="btn-primary rounded-lg bg-[var(--app-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-95"
+          (click)="backToVocabulary()"
+        >
+          Volver a Mi vocabulario
+        </button>
+        <a
+          routerLink="/library"
+          class="btn-secondary rounded-lg border border-[var(--app-border)] bg-[var(--app-surface)] px-5 py-2.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-[var(--app-active)]"
+        >
+          Explorar lecturas
+        </a>
+      </div>
+    </div>
   }
 </main>
 

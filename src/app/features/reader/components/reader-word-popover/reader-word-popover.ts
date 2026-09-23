@@ -28,11 +28,23 @@ export class ReaderWordPopover {
   readonly definitionsOpen = input(false);
   readonly selectedStatus = input<VocabularyStatus | null>(null);
   readonly statuses = input.required<readonly VocabularyStatus[]>();
+  readonly disabledStatuses = input<readonly VocabularyStatus[]>([]);
 
   readonly closed = output<void>();
   readonly audioPlayed = output<string>();
   readonly definitionsToggled = output<MouseEvent>();
   readonly statusSelected = output<VocabularyStatus>();
+
+  isStatusDisabled(status: VocabularyStatus): boolean {
+    return this.disabledStatuses().includes(status);
+  }
+
+  selectStatus(status: VocabularyStatus): void {
+    if (this.isStatusDisabled(status) || this.savingStatus()) {
+      return;
+    }
+    this.statusSelected.emit(status);
+  }
 
   getStatusLabel(status: VocabularyStatus): string {
     const labels: Record<VocabularyStatus, string> = {
