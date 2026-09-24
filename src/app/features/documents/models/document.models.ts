@@ -94,3 +94,57 @@ export interface DocumentVocabularyCompatibility {
   vocabularyFitPercentage: number;
   classificationConfidencePercentage: number;
 }
+
+export interface CreateDocumentUploadRequest {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  checksumSha256: string;
+}
+
+export interface CreateDocumentUploadResponse {
+  uploadId: string;
+  documentId: string;
+  uploadUrl: string;
+  method: string;
+  expiresAt: string;
+  requiredHeaders: Record<string, string>;
+}
+
+export interface ConfirmDocumentUploadRequest {
+  languageOverride?: 'en';
+}
+
+export interface ConfirmDocumentUploadResponse {
+  documentId: string;
+  jobId: string;
+  status: DocumentStatus | string;
+  uploadStatus: 'CONFIRMED' | string;
+}
+
+export interface RefreshUploadAuthorizationResponse {
+  uploadId: string;
+  documentId: string;
+  uploadUrl: string;
+  method: string;
+  expiresAt: string;
+  requiredHeaders: Record<string, string>;
+}
+
+export type DocumentDirectUploadState =
+  | 'IDLE'
+  | 'HASHING'
+  | 'REQUESTING_UPLOAD'
+  | 'UPLOADING'
+  | 'CONFIRMING'
+  | 'PROCESSING'
+  | 'READY'
+  | 'FAILED';
+
+export type UploadErrorPhase =
+  | 'HASH_FAILED'
+  | 'CREATE_INTENT_FAILED'
+  | 'UPLOAD_FAILED'
+  | 'PRESIGN_EXPIRED'
+  | 'CONFIRM_FAILED'
+  | 'PROCESSING_FAILED';

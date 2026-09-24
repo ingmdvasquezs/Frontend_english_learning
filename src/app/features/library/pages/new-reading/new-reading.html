@@ -78,7 +78,18 @@
           }
 
           @if (importing()) {
-            <div class="import-state" role="status"><span class="import-spinner" aria-hidden="true"></span><div><strong>Estamos preparando tu documento…</strong><p>Esto puede tardar unos momentos.</p></div></div>
+            <div class="import-state" role="status">
+              <span class="import-spinner" aria-hidden="true"></span>
+              <div>
+                <strong>{{ importStatusTitle() }}</strong>
+                <p>{{ importStatusDescription() }}</p>
+                @if (directUploadEnabled() && uploadState() === 'UPLOADING') {
+                  <div class="upload-progress-track" role="progressbar" [attr.aria-valuenow]="uploadProgressPercent()" aria-valuemin="0" aria-valuemax="100">
+                    <div class="upload-progress-fill" [style.width.%]="uploadProgressPercent()"></div>
+                  </div>
+                }
+              </div>
+            </div>
           }
           @if (importedDocument()?.status === 'READY') {
             <div class="import-ready" role="status">
@@ -88,12 +99,26 @@
           }
           @if (documentError()) { <p class="text-[14px] leading-6 text-[var(--app-danger)]" role="alert">{{ documentError() }}</p> }
           @if (languageRequired()) {
-            <button type="button" class="language-retry" (click)="uploadDocument('en')">Reintentar indicando English</button>
+            @if (directUploadEnabled()) {
+              <div class="language-reprocess-notice mt-3 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-[14px]">
+                <p class="font-medium text-amber-800 dark:text-amber-200">Este documento requiere indicar el idioma (English).</p>
+                <p class="mt-1 text-xs text-stone-600 dark:text-stone-400">El re-procesamiento diferido estará disponible próximamente en el backend.</p>
+                <button type="button" class="language-retry mt-2 inline-flex items-center rounded bg-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-600 opacity-60 cursor-not-allowed dark:bg-stone-700 dark:text-stone-400" disabled (click)="requestLanguageReprocess('en')">Reintentar con English (Próximamente)</button>
+              </div>
+            } @else {
+              <button type="button" class="language-retry" (click)="retryLanguageRequired()">Reintentar indicando English</button>
+            }
+          }
+          @if (canRetryConfirm()) {
+            <button type="button" class="confirm-retry" (click)="retryConfirm()">Reintentar confirmación</button>
+          }
+          @if (canRetryUpload()) {
+            <button type="button" class="upload-retry" (click)="retryUpload()">Reintentar subida</button>
           }
 
           @if (importedDocument()?.status !== 'READY') {
             <div class="form-actions flex flex-col-reverse gap-3 border-t sm:flex-row sm:items-center sm:justify-between">
-              <button type="button" class="secondary-action inline-flex min-h-11 items-center justify-center px-5 py-3 text-[15px] font-semibold" (click)="clearDocument()" [disabled]="importing()">Cancelar</button>
+              <button type="button" class="secondary-action inline-flex min-h-11 items-center justify-center px-5 py-3 text-[15px] font-semibold" (click)="cancelOrClearDocument()" [disabled]="isCancelDisabled()">Cancelar</button>
               <button type="button" class="primary-action inline-flex min-h-11 items-center justify-center px-5 py-3 text-[15px] font-semibold" (click)="uploadDocument()" [disabled]="!selectedDocument() || importing()">{{ importing() ? 'Importando…' : 'Importar libro →' }}</button>
             </div>
           }

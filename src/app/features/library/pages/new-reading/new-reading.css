@@ -40,7 +40,11 @@
 .epub-dropzone strong { color:var(--app-accent); }
 .epub-dropzone span { font-size:.78rem; }
 .epub-file,.import-state { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.1rem; border-block:1px solid var(--app-border); }
-.epub-file button,.language-retry,.import-ready a { color:var(--app-accent); font-size:.84rem; font-weight:650; }
+.epub-file button,.language-retry,.confirm-retry,.upload-retry,.import-ready a { color:var(--app-accent); font-size:.84rem; font-weight:650; }
+.confirm-retry,.upload-retry { border:1px solid var(--app-accent); border-radius:.25rem; padding:.45rem .85rem; color:var(--app-surface-elevated) !important; background:var(--app-accent); }
+.confirm-retry:hover,.upload-retry:hover { filter:brightness(1.08); }
+.upload-progress-track { width:100%; max-width:18rem; height:.35rem; margin-top:.45rem; border-radius:.2rem; background:var(--app-border); overflow:hidden; }
+.upload-progress-fill { height:100%; background:var(--app-accent); transition:width .2s ease; }
 .import-state { justify-content:flex-start; color:var(--app-text-secondary); }
 .import-state strong { color:var(--app-text); }
 .import-state p { margin-top:.2rem; font-size:.78rem; }
