@@ -306,9 +306,9 @@ export class VocabularyService {
     const intervalSeconds =
       intervalSecondsRaw !== null ? this.parseInteger(intervalSecondsRaw, 0) : null;
     const stabilityRaw = this.getOptionalValue(entryEl, 'stability');
-    const stability = stabilityRaw !== null ? parseFloat(stabilityRaw) : null;
+    const stability = stabilityRaw !== null ? Number.parseFloat(stabilityRaw) : null;
     const difficultyRaw = this.getOptionalValue(entryEl, 'difficulty');
-    const difficulty = difficultyRaw !== null ? parseFloat(difficultyRaw) : null;
+    const difficulty = difficultyRaw !== null ? Number.parseFloat(difficultyRaw) : null;
 
     const pendingQueueSequenceRaw = this.getOptionalValue(entryEl, 'pendingQueueSequence');
     const pendingQueueSequence =

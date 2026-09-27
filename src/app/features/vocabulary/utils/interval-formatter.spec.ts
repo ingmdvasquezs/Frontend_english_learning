@@ -6,7 +6,13 @@ describe('formatIntervalSeconds', () => {
     expect(formatIntervalSeconds(null)).toBe('');
     expect(formatIntervalSeconds(undefined)).toBe('');
     expect(formatIntervalSeconds(NaN)).toBe('');
+    expect(formatIntervalSeconds(Number.NaN)).toBe('');
     expect(formatIntervalSeconds(-10)).toBe('');
+    expect(formatIntervalSeconds(-0)).toBe('1m');
+  });
+
+  it('characterizes large boundary values without throwing', () => {
+    expect(formatIntervalSeconds(Number.MAX_SAFE_INTEGER)).toMatch(/mo$/);
   });
 
   it('formats sub-hour intervals as Xm (< 60 min)', () => {

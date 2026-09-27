@@ -11,7 +11,7 @@ const USER_TEXT_COVERS = [
 
 export function userTextCoverUrl(readingId: string): string {
   const hash = Array.from(readingId).reduce(
-    (value, character) => (Math.imul(value, 31) + character.charCodeAt(0)) >>> 0,
+    (value, character) => (Math.imul(value, 31) + (character.codePointAt(0) ?? 0)) >>> 0,
     0
   );
 
