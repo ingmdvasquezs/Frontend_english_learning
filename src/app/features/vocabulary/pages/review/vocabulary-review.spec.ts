@@ -2848,5 +2848,81 @@ describe('VocabularyReview Component (Fase 2.1)', () => {
       expect(vocabularyServiceMock.setVocabularyStatus).not.toHaveBeenCalled();
     });
   });
+
+  describe('Audio Promise Hardening (S6544)', () => {
+    let playSpy: ReturnType<typeof vi.fn>;
+    let pauseSpy: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      playSpy = vi.fn(() => Promise.resolve());
+      pauseSpy = vi.fn();
+      class AudioMock {
+        currentTime = 0;
+        readonly play = playSpy;
+        readonly pause = pauseSpy;
+        constructor(readonly src: string) {}
+      }
+      vi.stubGlobal('Audio', AudioMock);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('A. playAudio resolves successfully without setting audioError', () => {
+      component.startSession(15);
+      fixture.detectChanges();
+      component.dictionaryWord.set(sampleDictWord);
+
+      component.playAudio();
+
+      expect(playSpy).toHaveBeenCalled();
+      expect(component.audioError()).toBeNull();
+    });
+
+    it('B. playAudio handles Promise rejection without unhandled error and sets error state', async () => {
+      const rej = Promise.reject(new Error('NotAllowedError: play() failed'));
+      rej.catch(() => {});
+      playSpy.mockReturnValue(rej);
+      component.startSession(15);
+      fixture.detectChanges();
+      component.dictionaryWord.set(sampleDictWord);
+
+      component.playAudio();
+      await Promise.resolve();
+
+      expect(playSpy).toHaveBeenCalled();
+      expect(component.audioError()).toBe('Audio no disponible');
+      expect(component.completed()).toBe(false);
+    });
+
+    it('C. playAudio handles synchronous exception in play() and sets error state', () => {
+      playSpy.mockImplementation(() => {
+        throw new Error('Sync media failure');
+      });
+      component.startSession(15);
+      fixture.detectChanges();
+      component.dictionaryWord.set(sampleDictWord);
+
+      component.playAudio();
+
+      expect(component.audioError()).toBe('Audio no disponible');
+    });
+
+    it('D. autoplayWordAudio catches Promise rejection cleanly without breaking review flow', async () => {
+      const rej = Promise.reject(new Error('Autoplay blocked by browser policy'));
+      rej.catch(() => {});
+      playSpy.mockReturnValue(rej);
+      component.startSession(15);
+      fixture.detectChanges();
+      component.dictionaryWord.set(sampleDictWord);
+
+      (component as unknown as { autoplayWordAudio: (id: number) => void }).autoplayWordAudio(1);
+      await Promise.resolve();
+
+      expect(component.audioError()).toBeNull();
+      expect(component.completed()).toBe(false);
+    });
+  });
 });
 
