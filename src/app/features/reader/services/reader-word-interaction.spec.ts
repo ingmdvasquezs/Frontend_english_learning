@@ -135,6 +135,82 @@ describe('ReaderWordInteraction', () => {
     expect(interaction.selectedToken()).toBeNull(); expect(interaction.lookupLoading()).toBe(false);
   });
 
+  describe('Audio Promise Hardening (S4822)', () => {
+    it('sets audioError when play() rejects asynchronously and current request is active', async () => {
+      const rejectedPromise = Promise.reject(new Error('Autoplay blocked'));
+      rejectedPromise.catch(() => {});
+
+      class RejectingAudioMock {
+        currentTime = 0;
+        readonly play = vi.fn(() => rejectedPromise);
+        readonly pause = vi.fn();
+        constructor(readonly src: string) {
+          audioInstances.push(this);
+        }
+      }
+      vi.stubGlobal('Audio', RejectingAudioMock);
+
+      interaction.playAudio('rejected.mp3');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(interaction.audioError()).toBe('Audio temporalmente no disponible');
+    });
+
+    it('sets audioError when play() rejects with NotSupportedError', async () => {
+      const rejectedPromise = Promise.reject(new Error('NotSupportedError: format not supported'));
+      rejectedPromise.catch(() => {});
+
+      class FailingAudioMock {
+        currentTime = 0;
+        readonly play = vi.fn(() => rejectedPromise);
+        readonly pause = vi.fn();
+        constructor(readonly src: string) {
+          audioInstances.push(this);
+        }
+      }
+      vi.stubGlobal('Audio', FailingAudioMock);
+
+      interaction.playAudio('unsupported.mp3');
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(interaction.audioError()).toBe('Audio temporalmente no disponible');
+    });
+
+    it('ignores rejection if a newer audio request has been made', async () => {
+      let rejectFirst!: (err: unknown) => void;
+      const firstPromise = new Promise<void>((_, reject) => {
+        rejectFirst = reject;
+      });
+      firstPromise.catch(() => {});
+
+      class DynamicAudioMock {
+        currentTime = 0;
+        readonly play: ReturnType<typeof vi.fn>;
+        readonly pause = vi.fn();
+        constructor(readonly src: string) {
+          audioInstances.push(this);
+          if (src === 'first.mp3') {
+            this.play = vi.fn(() => firstPromise);
+          } else {
+            this.play = vi.fn(() => Promise.resolve());
+          }
+        }
+      }
+      vi.stubGlobal('Audio', DynamicAudioMock);
+
+      interaction.playAudio('first.mp3');
+      interaction.playAudio('second.mp3');
+
+      rejectFirst(new Error('Stale request error'));
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(interaction.audioError()).toBeNull();
+    });
+  });
+
   function token(value:string,status:ReaderToken['status']):ReaderToken { return {value,normalizedValue:value.toLowerCase(),type:'WORD',status}; }
   function word(value:string) { return {word:value,normalizedWord:value,translation:'traducción',phonetic:'/test/',audioUrl:'audio.mp3',meanings:[{partOfSpeech:'noun',definitions:[{definition:'Definition',example:'Example'}]}]}; }
   function wordClick():MouseEvent { const element=document.createElement('button'); element.getBoundingClientRect=()=>({left:100,right:160,top:200,bottom:230,width:60,height:30} as DOMRect); return {stopPropagation:vi.fn(),currentTarget:element} as unknown as MouseEvent; }

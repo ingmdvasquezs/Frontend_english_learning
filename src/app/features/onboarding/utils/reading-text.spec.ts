@@ -34,4 +34,57 @@ describe('reading text utilities', () => {
     expect(normalizeWord('Reading,')).toBe('reading');
     expect(normalizeWord('\"Market.\"')).toBe('market');
   });
+
+  it('characterizes tokenization for contractions, hyphens, and quotes', () => {
+    const contractions = getTextParts("don't it's I'd");
+    expect(contractions.map((p) => p.word)).toEqual(["don't", "it's", "I'd"]);
+    expect(contractions.every((p) => p.isWord)).toBe(true);
+
+    const hyphenated = getTextParts('well-known');
+    expect(hyphenated).toEqual([
+      { prefix: '', word: 'well-known', punctuation: '', trailingSpace: '', isWord: true },
+    ]);
+
+    const quoted = getTextParts('"hello" (world) [reading]');
+    expect(quoted).toEqual([
+      { prefix: '"', word: 'hello', punctuation: '"', trailingSpace: ' ', isWord: true },
+      { prefix: '(', word: 'world', punctuation: ')', trailingSpace: ' ', isWord: true },
+      { prefix: '[', word: 'reading', punctuation: ']', trailingSpace: '', isWord: true },
+    ]);
+  });
+
+  it('characterizes Unicode quotes and punctuation boundaries', () => {
+    const doubleSmart = getTextParts('“hello”');
+    expect(doubleSmart).toEqual([
+      { prefix: '“', word: 'hello', punctuation: '”', trailingSpace: '', isWord: true },
+    ]);
+
+    const singleSmart = getTextParts('‘hello’');
+    expect(singleSmart).toEqual([
+      { prefix: '‘', word: 'hello’', punctuation: '', trailingSpace: '', isWord: true },
+    ]);
+
+    const inverted = getTextParts('¿hello?');
+    expect(inverted).toEqual([
+      { prefix: '', word: '¿hello?', punctuation: '', trailingSpace: '', isWord: false },
+    ]);
+
+    const standalonePunct = getTextParts('... ?! ---');
+    expect(standalonePunct).toEqual([
+      { prefix: '', word: '...', punctuation: '', trailingSpace: ' ', isWord: false },
+      { prefix: '', word: '?!', punctuation: '', trailingSpace: ' ', isWord: false },
+      { prefix: '', word: '---', punctuation: '', trailingSpace: '', isWord: true },
+    ]);
+  });
+
+  it('characterizes whitespace handling across tabs, newlines, and leading spaces', () => {
+    const whitespace = getTextParts('  first\tsecond\nthird  ');
+    expect(whitespace).toEqual([
+      { prefix: '', word: '  ', punctuation: '', trailingSpace: '', isWord: false },
+      { prefix: '', word: 'first', punctuation: '', trailingSpace: '\t', isWord: true },
+      { prefix: '', word: 'second', punctuation: '', trailingSpace: '\n', isWord: true },
+      { prefix: '', word: 'third', punctuation: '', trailingSpace: '  ', isWord: true },
+    ]);
+  });
 });
+

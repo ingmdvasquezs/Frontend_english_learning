@@ -112,18 +112,11 @@ export class ReaderWordInteraction {
     const requestId = ++this.pronunciationRequestId;
     const audio = new Audio(audioUrl);
     this.pronunciationAudio = audio;
-    try {
-      const playback = audio.play();
-      void playback?.catch(() => {
-        if (requestId === this.pronunciationRequestId) {
-          this.audioError.set('Audio temporalmente no disponible');
-        }
-      });
-    } catch {
+    void audio.play()?.catch(() => {
       if (requestId === this.pronunciationRequestId) {
         this.audioError.set('Audio temporalmente no disponible');
       }
-    }
+    });
   }
 
   private lookup(word: string): void {

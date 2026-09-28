@@ -14,16 +14,16 @@ export function formatShortDate(dateStr: string | null | undefined): string | nu
 
   const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
-    const day = parseInt(match[3], 10);
-    const monthIndex = parseInt(match[2], 10) - 1;
+    const day = Number.parseInt(match[3], 10);
+    const monthIndex = Number.parseInt(match[2], 10) - 1;
     const month = SPANISH_SHORT_MONTHS[monthIndex];
-    if (month && !isNaN(day)) {
+    if (month && !Number.isNaN(day)) {
       return `${day} ${month}`;
     }
   }
 
   const parsed = new Date(trimmed);
-  if (isNaN(parsed.getTime())) return null;
+  if (Number.isNaN(parsed.getTime())) return null;
   return `${parsed.getDate()} ${SPANISH_SHORT_MONTHS[parsed.getMonth()]}`;
 }
 
