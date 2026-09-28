@@ -150,6 +150,14 @@
 .continue-reading-carousel::-webkit-scrollbar,
 .collection-carousel::-webkit-scrollbar { display: none; }
 
+.recommendations-carousel:focus-visible,
+.continue-reading-carousel:focus-visible,
+.collection-carousel:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
 /* ================================================
    Continue Reading Cards — Standard Card Geometry
    Mismo tamaño base, altura y proporciones que HomeReadingCard
