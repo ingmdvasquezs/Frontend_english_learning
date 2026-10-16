@@ -23,8 +23,9 @@ import { userTextCoverUrl } from '../../../../shared/utils/user-text-cover';
 import { HomeReadingCard } from '../../components/home-reading-card/home-reading-card';
 
 import { EditorialHero } from '../../components/editorial-hero/editorial-hero';
-import { EditorialUniverse } from '../../components/editorial-universe/editorial-universe';
+import { HomeCountryExplorer } from '../../components/home-country-explorer/home-country-explorer';
 import { DiscoveryShelfComponent } from '../../components/discovery-shelf/discovery-shelf';
+import { ReadingCover } from '../../../../shared/components/reading-cover/reading-cover';
 import { EditorialHeroSlide } from '../../models/editorial-hero.models';
 import { COLOMBIA_EDITORIAL_PREVIEW } from '../../data/colombia-editorial-preview.data';
 
@@ -47,7 +48,7 @@ interface CollectionState {
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, HomeReadingCard, EditorialHero, EditorialUniverse, DiscoveryShelfComponent],
+  imports: [RouterLink, HomeReadingCard, EditorialHero, HomeCountryExplorer, DiscoveryShelfComponent, ReadingCover],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -92,63 +93,65 @@ export class Home implements OnInit {
 
   readonly heroSlides = computed<EditorialHeroSlide[]>(() => [
     {
-      id: 'london-westminster',
+      id: 'latin-america-cocora',
       eyebrow: this.greeting(),
-      title: 'Aprende inglés con historias que realmente quieras leer.',
+      title: 'Descubre América Latina a través de sus historias.',
       description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
       secondaryNote: '¿Qué te gustaría leer hoy?',
-      ctaLabel: 'Encontrar una historia',
-      ctaTarget: '#recommendations-heading',
-      location: 'London, United Kingdom',
+      ctaLabel: 'Explorar historias por país',
+      ctaTarget: '#explore-countries-heading',
+      location: 'Valle de Cocora, Colombia',
       quote: 'Different stories. A more open you.',
-      imageUrl: '/assets/editorial/heroes/home/hero-home-london-westminster.webp',
-      dotLabel: 'Show London',
+      imageUrl: '/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp',
+      dotLabel: 'Mostrar Colombia',
     },
     {
-      id: 'new-york-brooklyn',
+      id: 'latin-america-villa-leyva',
       eyebrow: this.greeting(),
-      title: 'Aprende inglés con historias que realmente quieras leer.',
+      title: 'Descubre América Latina a través de sus historias.',
       description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
       secondaryNote: '¿Qué te gustaría leer hoy?',
-      ctaLabel: 'Encontrar una historia',
-      ctaTarget: '#recommendations-heading',
-      location: 'Brooklyn, New York, USA',
+      ctaLabel: 'Explorar historias por país',
+      ctaTarget: '#explore-countries-heading',
+      location: 'Villa de Leyva, Colombia',
       quote: 'Different stories. A more open you.',
-      imageUrl: '/assets/editorial/heroes/home/hero-home-new-york-brooklyn.webp',
-      dotLabel: 'Show New York',
+      imageUrl: '/assets/editorial/heroes/colombia/hero-colombia-villa-de-leyva.webp',
+      dotLabel: 'Mostrar Villa de Leyva',
     },
     {
-      id: 'sydney-opera',
+      id: 'latin-america-machu-picchu',
       eyebrow: this.greeting(),
-      title: 'Aprende inglés con historias que realmente quieras leer.',
+      title: 'Descubre América Latina a través de sus historias.',
       description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
       secondaryNote: '¿Qué te gustaría leer hoy?',
-      ctaLabel: 'Encontrar una historia',
-      ctaTarget: '#recommendations-heading',
-      location: 'Sydney, Australia',
+      ctaLabel: 'Explorar historias por país',
+      ctaTarget: '#explore-countries-heading',
+      location: 'Machu Picchu, Perú',
       quote: 'Different stories. A more open you.',
-      imageUrl: '/assets/editorial/heroes/home/hero-home-sydney-opera.webp',
-      dotLabel: 'Show Sydney',
+      imageUrl: '/assets/editorial/heroes/hero-latam-peru-machu-picchu.webp',
+      dotLabel: 'Mostrar Perú',
     },
     {
-      id: 'oxford-radcliffe-camera',
+      id: 'latin-america-patagonia',
       eyebrow: this.greeting(),
-      title: 'Aprende inglés con historias que realmente quieras leer.',
+      title: 'Descubre América Latina a través de sus historias.',
       description: 'Historias reales. Nuevo vocabulario. Un mundo más grande.',
       secondaryNote: '¿Qué te gustaría leer hoy?',
-      ctaLabel: 'Encontrar una historia',
-      ctaTarget: '#recommendations-heading',
-      location: 'Oxford, United Kingdom',
+      ctaLabel: 'Explorar historias por país',
+      ctaTarget: '#explore-countries-heading',
+      location: 'Patagonia, Argentina',
       quote: 'Different stories. A more open you.',
-      imageUrl: '/assets/editorial/heroes/home/hero-home-oxford-radcliffe-camera.webp',
-      dotLabel: 'Show Oxford',
+      imageUrl: '/assets/editorial/heroes/hero-latam-argentina-patagonia.webp',
+      dotLabel: 'Mostrar Argentina',
     },
   ]);
 
-
   onHeroCtaClick(slide: EditorialHeroSlide): void {
     if (typeof document !== 'undefined') {
-      const el = document.querySelector(slide.ctaTarget);
+      const el =
+        document.querySelector(slide.ctaTarget) ||
+        document.getElementById('explore-countries-heading') ||
+        document.getElementById('explore-stories-heading');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -236,7 +239,7 @@ export class Home implements OnInit {
 
   scrollToExplore(): void {
     if (typeof document !== 'undefined') {
-      const el = document.getElementById('explore-stories-heading');
+      const el = document.getElementById('explore-countries-heading') || document.getElementById('explore-stories-heading');
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }

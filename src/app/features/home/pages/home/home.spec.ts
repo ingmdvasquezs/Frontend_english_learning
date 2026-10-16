@@ -486,7 +486,7 @@ describe('Home', () => {
     const recommendationsHeading = fixture.nativeElement.querySelector('#recommendations-heading') as HTMLElement;
     expect(continueHeading).toBeTruthy();
     expect(recommendationsHeading).toBeTruthy();
-    expect(recommendationsHeading.textContent).toContain('Recomendadas para ti');
+    expect(recommendationsHeading.textContent).toContain('Lecturas destacadas para ti');
     expect(componentText()).not.toContain('Más recomendaciones para ti');
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
 
@@ -512,7 +512,7 @@ describe('Home', () => {
     const recommendationsHeading = fixture.nativeElement.querySelector('#recommendations-heading') as HTMLElement;
     expect(continueHeading).toBeTruthy();
     expect(recommendationsHeading).toBeTruthy();
-    expect(recommendationsHeading.textContent).toContain('Recomendadas para ti');
+    expect(recommendationsHeading.textContent).toContain('Lecturas destacadas para ti');
     expect(componentText()).toContain('No se pudieron cargar las lecturas en progreso');
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
 
@@ -538,7 +538,7 @@ describe('Home', () => {
     expect(fixture.nativeElement.querySelector('.continue-reading-carousel')).toBeNull();
     expect(fixture.nativeElement.querySelector('.featured-recommendation')).toBeNull();
     const recommendationsHeading = fixture.nativeElement.querySelector('#recommendations-heading') as HTMLElement;
-    expect(recommendationsHeading.textContent).toContain('Recomendadas para ti');
+    expect(recommendationsHeading.textContent).toContain('Lecturas destacadas para ti');
     expect(componentText()).not.toContain('Más recomendaciones para ti');
   });
 
@@ -1381,12 +1381,12 @@ describe('Home', () => {
     homeService.parseRecommendations.mockReturnValue(recommendationsPage([covered, plain]));
     libraryService.parseUserReadings.mockReturnValue(userReadingsPage([]));
     fixture.detectChanges(); recommendationResponse.next('covers'); userReadingsResponse.next('users'); fixture.detectChanges();
-    const image = fixture.nativeElement.querySelector('img') as HTMLImageElement;
+    const image = fixture.nativeElement.querySelector('.recommendations-carousel img') as HTMLImageElement;
     expect(image.getAttribute('src')).toBe('/assets/reading-covers/the-camera-on-platform-three.webp');
     expect(image.getAttribute('loading')).toBe('lazy');
-    expect(fixture.nativeElement.querySelectorAll('.cover-fallback')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelectorAll('.recommendations-carousel .cover-fallback')).toHaveLength(1);
     image.dispatchEvent(new Event('error')); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('.cover-fallback')).toHaveLength(2);
+    expect(fixture.nativeElement.querySelectorAll('.recommendations-carousel .cover-fallback')).toHaveLength(2);
     expect(componentText()).toContain('90% vocab fit');
     expect(componentText()).toContain('Open reading');
   });
@@ -1675,8 +1675,8 @@ describe('Home', () => {
     expect(contRow).toBeTruthy();
     const contMain = contRow.querySelector('.section-heading-main');
     expect(contMain).toBeTruthy();
-    expect(contMain.querySelector('#continue-reading-heading')?.textContent).toContain('Continuar leyendo');
-    expect(contMain.querySelector('.section-subtitle')?.textContent).toContain('Retoma donde lo dejaste');
+    expect(contMain.querySelector('#continue-reading-heading')?.textContent).toContain('Retoma donde quedaste');
+    expect(contMain.querySelector('.section-subtitle')?.textContent).toContain('Continúa con tus lecturas en progreso');
     expect(contRow.querySelector('.section-more-link')).toBeTruthy();
 
     // Check Recommendations heading
@@ -1684,26 +1684,27 @@ describe('Home', () => {
     expect(recRow).toBeTruthy();
     const recMain = recRow.querySelector('.section-heading-main');
     expect(recMain).toBeTruthy();
-    expect(recMain.querySelector('#recommendations-heading')?.textContent).toContain('Recomendadas para ti');
+    expect(recMain.querySelector('#recommendations-heading')?.textContent).toContain('Lecturas destacadas para ti');
     expect(recMain.querySelector('.section-subtitle')?.textContent).toContain('Seleccionadas según tu nivel');
 
-    // Check Explore Stories heading
-    const expRow = fixture.nativeElement.querySelector('section[aria-labelledby="explore-stories-heading"] .section-heading-row');
+    // Check Country Explorer heading
+    const expRow = fixture.nativeElement.querySelector('app-home-country-explorer .country-explorer-header');
     expect(expRow).toBeTruthy();
-    const expMain = expRow.querySelector('.section-heading-main');
-    expect(expMain.querySelector('#explore-stories-heading')?.textContent).toContain('Explora historias');
-    expect(expMain.querySelector('.section-subtitle')?.textContent).toContain('Descubre lecturas por lugar');
-    expect(expRow.querySelector('.section-more-link')).toBeNull();
+    const expMain = expRow.querySelector('.country-explorer-copy');
+    expect(expMain).toBeTruthy();
+    expect(expMain.querySelector('#explore-countries-heading')?.textContent).toContain('Explora historias por país');
+    expect(expMain.querySelector('.country-explorer-subtitle')?.textContent).toContain('América Latina');
+    expect(expRow.querySelector('.latam-more-link')).toBeTruthy();
   });
 
-  it('boxes the entire explore stories section and editorial universe in a styled shell', () => {
+  it('renders the explore country section with authentic territory collections', () => {
     fixture.detectChanges();
-    const shell = fixture.nativeElement.querySelector('section.explore-editorial-shell');
-    expect(shell).toBeTruthy();
-    expect(shell.getAttribute('aria-labelledby')).toBe('explore-stories-heading');
-    expect(shell.querySelector('#explore-stories-heading')?.textContent).toContain('Explora historias');
-    expect(shell.querySelector('.explore-shell-header')).toBeTruthy();
-    expect(shell.querySelector('app-editorial-universe')).toBeTruthy();
+    const explorer = fixture.nativeElement.querySelector('app-home-country-explorer');
+    expect(explorer).toBeTruthy();
+    const heading = explorer.querySelector('#explore-countries-heading');
+    expect(heading).toBeTruthy();
+    expect(heading.textContent).toContain('Explora historias por país');
+    expect(explorer.querySelector('#explore-stories-heading')).toBeTruthy();
   });
 
   it('loads discovery home via getDiscoveryHome when provided, rendering shelves and passing latinAmerica', () => {

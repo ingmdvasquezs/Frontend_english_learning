@@ -1,0 +1,53 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.reading-cover-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--app-active);
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.cover-fallback {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, var(--app-card-bg, #fcfbf9) 0%, var(--app-active, #f3ede2) 100%);
+  color: var(--app-muted);
+  border: 1px solid var(--app-border);
+}
+
+.fallback-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  opacity: 0.65;
+}
+
+.fallback-monogram {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
