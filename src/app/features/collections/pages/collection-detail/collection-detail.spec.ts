@@ -562,4 +562,56 @@ describe('CollectionDetail', () => {
     });
     expect(component.title()).toBe('Mitos y leyendas de Colombia');
   });
+
+  it('resolves Platform Media coverKey for editorial collection', () => {
+    const platformMediaCollection: ReadingCollection = {
+      key: 'movies-and-cinema',
+      displayName: 'Cine y Películas',
+      description: 'Lecturas de cine',
+      displayOrder: 2,
+      coverKey: 'collections/movies-and-cinema/hero.webp',
+      readingCount: 8,
+    };
+    homeServiceMock.parseCollections.mockReturnValue([platformMediaCollection]);
+
+    paramMapSubject.next(convertToParamMap({ slug: 'movies-and-cinema' }));
+    createComponent();
+
+    expect(component.heroImageUrl()).toContain('/collections/movies-and-cinema/hero.webp');
+  });
+
+  it('resolves Platform Media hero key for Latin America country', () => {
+    const platformCountryOverview: DiscoveryRegionOverview = {
+      region: {
+        key: 'latin-america',
+        displayName: 'Descubre Latinoamérica',
+        subtitle: 'Historias',
+      },
+      countries: [
+        {
+          countryCode: 'MX',
+          displayName: 'México',
+          tagline: 'Cultura ancestral',
+          description: 'Historias de México',
+          displayOrder: 1,
+          readingCount: 5,
+          heroImages: [
+            {
+              assetKey: 'countries/MX/hero.webp',
+              location: 'Chichen Itza',
+              alt: 'Chichen Itza',
+              displayOrder: 1,
+            },
+          ],
+          topics: [],
+        },
+      ],
+    };
+    homeServiceMock.parseDiscoveryRegionOverview.mockReturnValue(platformCountryOverview);
+
+    queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+    createComponent();
+
+    expect(component.heroImageUrl()).toContain('/countries/MX/hero.webp');
+  });
 });

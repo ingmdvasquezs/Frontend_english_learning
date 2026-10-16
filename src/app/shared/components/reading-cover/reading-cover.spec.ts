@@ -62,4 +62,35 @@ describe('ReadingCover', () => {
     expect(img).toBeTruthy();
     expect(img.getAttribute('src')).toContain('/assets/reading-covers/user-text/');
   });
+
+  it('renders an image when a Platform Media key is provided', () => {
+    fixture.componentRef.setInput('coverKey', 'covers/CO/reading-123.webp');
+    fixture.componentRef.setInput('title', 'Reading 123');
+    fixture.detectChanges();
+
+    const img = fixture.nativeElement.querySelector('img') as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toContain('/covers/CO/reading-123.webp');
+    expect(img.getAttribute('alt')).toBe('Portada de Reading 123');
+  });
+
+  it('renders an image when an absolute URL is provided', () => {
+    fixture.componentRef.setInput('coverKey', 'https://example.com/custom-cover.webp');
+    fixture.componentRef.setInput('title', 'Custom Cover');
+    fixture.detectChanges();
+
+    const img = fixture.nativeElement.querySelector('img') as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toBe('https://example.com/custom-cover.webp');
+  });
+
+  it('renders fallback when coverKey is empty or whitespace string', () => {
+    fixture.componentRef.setInput('coverKey', '   ');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('img')).toBeNull();
+    const fallback = fixture.nativeElement.querySelector('.cover-fallback');
+    expect(fallback).toBeTruthy();
+    expect(fallback.textContent).toContain('ERP');
+  });
 });

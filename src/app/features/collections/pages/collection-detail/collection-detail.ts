@@ -26,6 +26,7 @@ import {
 } from '../../components/collection-filters/collection-filters';
 import { coverUrl } from '../../../home/utils/cover-url';
 import { resolveHeroAssetUrl } from '../../../home/components/editorial-universe/editorial-universe';
+import { resolveMediaUrl } from '../../../../shared/utils/media-url';
 
 export const NEUTRAL_LATAM_HERO_FALLBACK =
   '/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp';
@@ -131,7 +132,7 @@ export class CollectionDetail implements OnInit {
       return null;
     }
 
-    const collectionCover = coverUrl(this.collection()?.coverKey);
+    const collectionCover = resolveMediaUrl(this.collection()?.coverKey);
     if (collectionCover && !this.failedHeroImages().has(collectionCover)) {
       return collectionCover;
     }

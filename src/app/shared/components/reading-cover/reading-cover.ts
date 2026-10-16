@@ -1,5 +1,5 @@
 import { Component, computed, input, signal } from '@angular/core';
-import { coverUrl } from '../../../features/home/utils/cover-url';
+import { resolveMediaUrl } from '../../utils/media-url';
 import { userTextCoverUrl } from '../../utils/user-text-cover';
 
 @Component({
@@ -23,7 +23,7 @@ export class ReadingCover {
     if (this.origin() === 'USER' && this.readingId()) {
       return userTextCoverUrl(this.readingId()!);
     }
-    return coverUrl(this.coverKey());
+    return resolveMediaUrl(this.coverKey());
   });
 
   readonly resolvedAlt = computed<string>(() => {

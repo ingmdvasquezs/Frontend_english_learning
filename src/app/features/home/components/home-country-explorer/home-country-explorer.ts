@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DiscoveryCountrySummary } from '../../models/home.models';
+import { resolveMediaUrl } from '../../../../shared/utils/media-url';
 
 export interface CountryDisplayCard {
   countryCode: string;
@@ -47,23 +48,13 @@ const UPCOMING_COUNTRIES: Array<{ countryCode: string; displayName: string }> = 
 
 /**
  * Resolves a country hero asset key to a full URL.
- * Prepares the frontend for future S3/CloudFront CDN resolution without breaking local assets.
+ * Delegates to the centralized platform media resolver while preserving local fallback assets.
  */
-export function resolveCountryHeroUrl(assetKey: string | null | undefined): string | null {
-  if (!assetKey || typeof assetKey !== 'string') return null;
-  const key = assetKey.trim();
-  if (!key) return null;
-
-  if (key.startsWith('http://') || key.startsWith('https://')) {
-    return key;
-  }
-
-  const cleanKey = key.replace(/^\/+/, '');
-  if (cleanKey.startsWith('assets/')) {
-    return `/${cleanKey}`;
-  }
-
-  return `/assets/${cleanKey}`;
+export function resolveCountryHeroUrl(
+  assetKey: string | null | undefined,
+  mediaBaseUrl?: string
+): string | null {
+  return resolveMediaUrl(assetKey, mediaBaseUrl);
 }
 
 @Component({

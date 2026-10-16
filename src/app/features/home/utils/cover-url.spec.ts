@@ -17,4 +17,9 @@ describe('coverUrl', () => {
     expect(coverUrl(cdnUrl)).toBe(cdnUrl);
     expect(resolveReadingCoverUrl(cdnUrl)).toBe(cdnUrl);
   });
+
+  it('resolves platform media keys with explicit or environment base URL', () => {
+    expect(coverUrl('covers/CO/123.webp', '/media')).toBe('/media/covers/CO/123.webp');
+    expect(resolveReadingCoverUrl('covers/CO/123.webp', '/media')).toBe('/media/covers/CO/123.webp');
+  });
 });

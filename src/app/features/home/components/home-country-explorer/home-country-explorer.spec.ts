@@ -319,5 +319,34 @@ describe('HomeCountryExplorer', () => {
       expect(resolveCountryHeroUrl('')).toBeNull();
       expect(resolveCountryHeroUrl('   ')).toBeNull();
     });
+
+    it('resolves Platform Media country hero keys using same-origin or configured base', () => {
+      expect(resolveCountryHeroUrl('countries/CO/hero.webp', '/media')).toBe('/media/countries/CO/hero.webp');
+      expect(resolveCountryHeroUrl('/countries/MX/hero.webp', '/media')).toBe('/media/countries/MX/hero.webp');
+      expect(resolveCountryHeroUrl('countries/CO/hero.webp')).toContain('/countries/CO/hero.webp');
+    });
+  });
+
+  it('renders country hero from Platform Media key when provided by backend', () => {
+    const platformMediaCountry: DiscoveryCountrySummary[] = [
+      {
+        countryCode: 'CO',
+        displayName: 'Colombia',
+        tagline: 'Tierra mágica',
+        description: 'Historias',
+        displayOrder: 1,
+        readingCount: 15,
+        heroImages: [{ assetKey: 'countries/CO/hero.webp', displayOrder: 1, alt: 'Colombia hero' }],
+        topics: [],
+      },
+    ];
+
+    fixture.componentRef.setInput('countries', platformMediaCountry);
+    fixture.detectChanges();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const img = root.querySelector('img[alt="Paisaje de Colombia"]') as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.getAttribute('src')).toContain('/countries/CO/hero.webp');
   });
 });
