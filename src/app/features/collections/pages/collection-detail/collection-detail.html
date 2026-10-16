@@ -24,7 +24,12 @@
     <header class="collection-hero app-card">
       <div class="hero-media">
         @if (heroImageUrl(); as url) {
-          <img [src]="url" [alt]="'Portada de ' + title()" class="hero-img" />
+          <img
+            [src]="url"
+            [alt]="'Portada de ' + title()"
+            class="hero-img"
+            (error)="onHeroImageError(url)"
+          />
         } @else {
           <div class="hero-fallback" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">

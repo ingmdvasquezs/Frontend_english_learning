@@ -27,7 +27,8 @@ import {
 import { coverUrl } from '../../../home/utils/cover-url';
 import { resolveHeroAssetUrl } from '../../../home/components/editorial-universe/editorial-universe';
 
-export const NEUTRAL_LATAM_HERO_FALLBACK: string | null = null;
+export const NEUTRAL_LATAM_HERO_FALLBACK =
+  '/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp';
 
 @Component({
   selector: 'app-collection-detail',
@@ -57,6 +58,8 @@ export class CollectionDetail implements OnInit {
   readonly totalPages = signal<number>(0);
   readonly readingsLoading = signal<boolean>(false);
   readonly readingsError = signal<string | null>(null);
+
+  readonly failedHeroImages = signal<ReadonlySet<string>>(new Set<string>());
 
   readonly isLatinAmerica = computed(() => this.slug() === 'latin-america');
   readonly isNew = computed(() => this.slug() === 'new');
@@ -108,17 +111,42 @@ export class CollectionDetail implements OnInit {
     return this.collection()?.description ?? '';
   });
 
-  readonly heroImageUrl = computed(() => {
+  readonly heroImageUrl = computed<string | null>(() => {
     if (this.isLatinAmerica()) {
       const country = this.activeCountry();
       const heroKey = country?.heroImages?.[0]?.assetKey;
-      if (heroKey) {
-        return resolveHeroAssetUrl(heroKey);
+      const candidateUrl = heroKey ? resolveHeroAssetUrl(heroKey) : null;
+
+      if (candidateUrl && !this.failedHeroImages().has(candidateUrl)) {
+        return candidateUrl;
       }
-      return NEUTRAL_LATAM_HERO_FALLBACK;
+
+      if (
+        NEUTRAL_LATAM_HERO_FALLBACK &&
+        !this.failedHeroImages().has(NEUTRAL_LATAM_HERO_FALLBACK)
+      ) {
+        return NEUTRAL_LATAM_HERO_FALLBACK;
+      }
+
+      return null;
     }
-    return coverUrl(this.collection()?.coverKey);
+
+    const collectionCover = coverUrl(this.collection()?.coverKey);
+    if (collectionCover && !this.failedHeroImages().has(collectionCover)) {
+      return collectionCover;
+    }
+
+    return null;
   });
+
+  onHeroImageError(url: string): void {
+    this.failedHeroImages.update((current) => {
+      if (current.has(url)) return current;
+      const next = new Set(current);
+      next.add(url);
+      return next;
+    });
+  }
 
   readonly countLabel = computed(() => {
     const count = this.totalElements();
@@ -224,9 +252,7 @@ export class CollectionDetail implements OnInit {
 
     const validCountry = match ?? countries[0];
     this.selectedCountry.set(validCountry.countryCode);
-
-    const firstTopic = validCountry.topics?.[0]?.key ?? null;
-    this.selectedTopic.set(firstTopic);
+    this.selectedTopic.set(null);
   }
 
   private handleEditorialCollectionTransition(slug: string): Observable<unknown> {
@@ -326,8 +352,7 @@ export class CollectionDetail implements OnInit {
   onCountryChange(countryCode: string | null): void {
     if (this.selectedCountry() === countryCode) return;
     this.selectedCountry.set(countryCode);
-    const country = this.activeCountry();
-    this.selectedTopic.set(country?.topics?.[0]?.key ?? null);
+    this.selectedTopic.set(null);
     this.currentPage.set(0);
     this.fetchReadings();
   }
@@ -341,10 +366,7 @@ export class CollectionDetail implements OnInit {
 
   onClearFilters(): void {
     this.selectedLevel.set(null);
-    if (this.isLatinAmerica()) {
-      const country = this.activeCountry();
-      this.selectedTopic.set(country?.topics?.[0]?.key ?? null);
-    }
+    this.selectedTopic.set(null);
     this.currentPage.set(0);
     this.fetchReadings();
   }

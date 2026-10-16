@@ -44,10 +44,7 @@ export class CollectionFilters {
 
   readonly hasActiveFilters = computed(() => {
     if (this.selectedLevel() !== null) return true;
-    if (this.showTopicFilter() && this.topics().length > 0) {
-      const defaultTopic = this.topics()[0].key;
-      if (this.selectedTopic() !== defaultTopic) return true;
-    }
+    if (this.showTopicFilter() && this.selectedTopic() !== null) return true;
     return false;
   });
 

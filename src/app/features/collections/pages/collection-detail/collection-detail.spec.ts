@@ -209,16 +209,30 @@ describe('CollectionDetail', () => {
 
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledWith({
       countryCode: 'CO',
-      discoveryTopic: 'MYTHS_AND_LEGENDS',
+      discoveryTopic: null,
       editorialLevel: null,
       page: 0,
       size: 12,
     });
     expect(component.selectedCountry()).toBe('CO');
-    expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.selectedTopic()).toBeNull();
   });
 
-  it('D: Valid country query param ?country=MX selects MX and its first topic with exactly 1 browse call', () => {
+  it('Colombia also starts with topic=null (Todos) showing all its readings', () => {
+    createComponent();
+
+    expect(component.selectedCountry()).toBe('CO');
+    expect(component.selectedTopic()).toBeNull();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const topicGroup = root.querySelector('.filter-group-topics');
+    expect(topicGroup).toBeTruthy();
+    const allTopicPill = topicGroup!.querySelector('.filter-pill.active') as HTMLButtonElement;
+    expect(allTopicPill).toBeTruthy();
+    expect(allTopicPill.textContent?.trim()).toBe('Todos');
+  });
+
+  it('D: Valid country query param ?country=MX selects MX and topic=null (Todos) with exactly 1 browse call', () => {
     queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
 
     createComponent();
@@ -227,16 +241,16 @@ describe('CollectionDetail', () => {
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledTimes(1);
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledWith({
       countryCode: 'MX',
-      discoveryTopic: 'HISTORY_AND_MEMORY',
+      discoveryTopic: null,
       editorialLevel: null,
       page: 0,
       size: 12,
     });
     expect(component.selectedCountry()).toBe('MX');
-    expect(component.selectedTopic()).toBe('HISTORY_AND_MEMORY');
+    expect(component.selectedTopic()).toBeNull();
   });
 
-  it('E: Invalid country query param ?country=ZZ falls back to first real backend country and first topic with exactly 1 browse call', () => {
+  it('E: Invalid country query param ?country=ZZ falls back to first real backend country and topic=null with exactly 1 browse call', () => {
     queryParamMapSubject.next(convertToParamMap({ country: 'ZZ' }));
 
     createComponent();
@@ -245,13 +259,13 @@ describe('CollectionDetail', () => {
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledTimes(1);
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledWith({
       countryCode: 'CO',
-      discoveryTopic: 'MYTHS_AND_LEGENDS',
+      discoveryTopic: null,
       editorialLevel: null,
       page: 0,
       size: 12,
     });
     expect(component.selectedCountry()).toBe('CO');
-    expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.selectedTopic()).toBeNull();
   });
 
   it('re-uses loaded region metadata when query param changes while component is alive', () => {
@@ -266,17 +280,17 @@ describe('CollectionDetail', () => {
 
     // Metadata is NOT re-fetched
     expect(homeServiceMock.getDiscoveryRegionOverview).toHaveBeenCalledTimes(1);
-    // A second browse call is made for MX
+    // A second browse call is made for MX with topic=null
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledTimes(2);
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith({
       countryCode: 'MX',
-      discoveryTopic: 'HISTORY_AND_MEMORY',
+      discoveryTopic: null,
       editorialLevel: null,
       page: 0,
       size: 12,
     });
     expect(component.selectedCountry()).toBe('MX');
-    expect(component.selectedTopic()).toBe('HISTORY_AND_MEMORY');
+    expect(component.selectedTopic()).toBeNull();
   });
 
   it('A: Async route race safeguard ensures latest country emission wins without stale override', () => {
@@ -298,11 +312,11 @@ describe('CollectionDetail', () => {
     fixture.detectChanges();
 
     expect(component.selectedCountry()).toBe('MX');
-    expect(component.selectedTopic()).toBe('HISTORY_AND_MEMORY');
+    expect(component.selectedTopic()).toBeNull();
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledTimes(1);
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledWith({
       countryCode: 'MX',
-      discoveryTopic: 'HISTORY_AND_MEMORY',
+      discoveryTopic: null,
       editorialLevel: null,
       page: 0,
       size: 12,
@@ -344,19 +358,22 @@ describe('CollectionDetail', () => {
     createComponent();
 
     expect(component.selectedCountry()).toBe('CO');
-    expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.selectedTopic()).toBeNull();
     expect(component.activeTopics().map((t) => t.key)).toEqual([
       'MYTHS_AND_LEGENDS',
       'REAL_STORIES',
     ]);
 
-    // Switch country to MX
+    // Select a topic
+    component.onTopicChange('REAL_STORIES');
+    expect(component.selectedTopic()).toBe('REAL_STORIES');
+
+    // Switch country to MX -> topic resets to null (Todos)
     component.onCountryChange('MX');
     fixture.detectChanges();
 
     expect(component.selectedCountry()).toBe('MX');
-    // Stale topic MYTHS_AND_LEGENDS is replaced with MX's first topic
-    expect(component.selectedTopic()).toBe('HISTORY_AND_MEMORY');
+    expect(component.selectedTopic()).toBeNull();
     expect(component.activeTopics().map((t) => t.key)).toEqual(['HISTORY_AND_MEMORY']);
   });
 
@@ -376,25 +393,30 @@ describe('CollectionDetail', () => {
     });
   });
 
-  it('hero is strictly backend-driven and uses neutral fallback when country has no hero without hardcoding Colombia', () => {
+  it('hero is strictly backend-driven and uses neutral fallback when country has no hero or image fails', () => {
     createComponent();
 
     // CO has hero image in metadata
     expect(component.heroImageUrl()).toBe('/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp');
 
-    // Switch to MX which has its own hero image
+    // Switch to MX which has hero image key
     component.onCountryChange('MX');
     fixture.detectChanges();
     expect(component.heroImageUrl()).toBe('/assets/editorial/heroes/hero-mexico.webp');
 
-    // Switch to PE which has 0 hero images: falls back to neutral fallback (null), never hardcoded Colombia!
+    // Simulate 404 image error on Mexico hero
+    component.onHeroImageError('/assets/editorial/heroes/hero-mexico.webp');
+    fixture.detectChanges();
+    // Gracefully falls back to NEUTRAL_LATAM_HERO_FALLBACK
+    expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
+
+    // Switch to PE which has 0 hero images: uses NEUTRAL_LATAM_HERO_FALLBACK
     component.onCountryChange('PE');
     fixture.detectChanges();
     expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
-    expect(component.heroImageUrl()).toBeNull();
   });
 
-  it('clearing filters in Latin America preserves country and resets topic to first country topic', () => {
+  it('clearing filters in Latin America preserves country and resets topic to null (Todos)', () => {
     createComponent();
 
     component.onTopicChange('REAL_STORIES');
@@ -406,9 +428,106 @@ describe('CollectionDetail', () => {
     fixture.detectChanges();
 
     expect(component.selectedCountry()).toBe('CO');
-    expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+    expect(component.selectedTopic()).toBeNull();
     expect(component.selectedLevel()).toBeNull();
     expect(component.currentPage()).toBe(0);
+  });
+
+  it('country=MX renders all 5 readings on entry with topic Todos, filters on topic selection, and restores 5 readings when returning to Todos', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+
+    const fiveMexicoReadings: RecommendedPlatformReading[] = [
+      { ...mockReading, readingId: 'mx-1', title: 'La Llorona en Xochimilco', countryCode: 'MX', discoveryTopic: 'MYTHS_AND_LEGENDS' },
+      { ...mockReading, readingId: 'mx-2', title: 'El Popocatépetl y la Mujer Dormida', countryCode: 'MX', discoveryTopic: 'MYTHS_AND_LEGENDS' },
+      { ...mockReading, readingId: 'mx-3', title: 'Historias de la Revolución', countryCode: 'MX', discoveryTopic: 'HISTORY_AND_MEMORY' },
+      { ...mockReading, readingId: 'mx-4', title: 'Día de Muertos en Michoacán', countryCode: 'MX', discoveryTopic: 'CULTURE_AND_TRADITIONS' },
+      { ...mockReading, readingId: 'mx-5', title: 'El Cenote Sagrado de Chichén Itzá', countryCode: 'MX', discoveryTopic: 'HISTORY_AND_MEMORY' },
+    ];
+
+    const fiveMexicoPage: BrowsePlatformReadingsPage = {
+      page: 0,
+      size: 12,
+      totalElements: 5,
+      readings: fiveMexicoReadings,
+    };
+    homeServiceMock.parseBrowsePlatformReadings.mockReturnValue(fiveMexicoPage);
+
+    createComponent();
+
+    // 1. Initial State: country=MX, topic=Todos (null), level=null
+    expect(component.selectedCountry()).toBe('MX');
+    expect(component.selectedTopic()).toBeNull();
+    expect(component.readings().length).toBe(5);
+    expect(component.countLabel()).toBe('5 historias');
+
+    // Visual: topic pill "Todos" is active
+    const root = fixture.nativeElement as HTMLElement;
+    const topicGroup = root.querySelector('.filter-group-topics');
+    expect(topicGroup).toBeTruthy();
+    const allTopicPill = topicGroup!.querySelector('.filter-pill.active') as HTMLButtonElement;
+    expect(allTopicPill).toBeTruthy();
+    expect(allTopicPill.textContent?.trim()).toBe('Todos');
+
+    // All 5 readings rendered in UI
+    const cards = root.querySelectorAll('app-home-reading-card');
+    expect(cards.length).toBe(5);
+
+    // 2. Filter by specific topic
+    homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+      page: 0,
+      size: 12,
+      totalElements: 2,
+      readings: [fiveMexicoReadings[2], fiveMexicoReadings[4]],
+    });
+    component.onTopicChange('HISTORY_AND_MEMORY');
+    fixture.detectChanges();
+
+    expect(component.selectedTopic()).toBe('HISTORY_AND_MEMORY');
+    expect(component.readings().length).toBe(2);
+    expect(component.countLabel()).toBe('2 historias');
+    expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith({
+      countryCode: 'MX',
+      discoveryTopic: 'HISTORY_AND_MEMORY',
+      editorialLevel: null,
+      page: 0,
+      size: 12,
+    });
+
+    // 3. Return to "Todos" (topic = null)
+    homeServiceMock.parseBrowsePlatformReadings.mockReturnValue(fiveMexicoPage);
+    component.onTopicChange(null);
+    fixture.detectChanges();
+
+    expect(component.selectedTopic()).toBeNull();
+    expect(component.readings().length).toBe(5);
+    expect(component.countLabel()).toBe('5 historias');
+    expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith({
+      countryCode: 'MX',
+      discoveryTopic: null,
+      editorialLevel: null,
+      page: 0,
+      size: 12,
+    });
+  });
+
+  it('never displays broken image or naked alt text in collection hero on image error', () => {
+    createComponent();
+
+    const root = fixture.nativeElement as HTMLElement;
+    const heroImg = root.querySelector('.hero-img') as HTMLImageElement;
+    expect(heroImg).toBeTruthy();
+
+    // Trigger error on primary image
+    heroImg.dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+
+    // Still has a valid fallback image or fallback container, never broken alt
+    const currentImg = root.querySelector('.hero-img') as HTMLImageElement;
+    if (currentImg) {
+      expect(currentImg.getAttribute('src')).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
+    } else {
+      expect(root.querySelector('.hero-fallback')).toBeTruthy();
+    }
   });
 
   it('handles /collections/new with sort CREATED_AT_DESC without loading region metadata', () => {

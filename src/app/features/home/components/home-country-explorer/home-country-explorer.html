@@ -68,12 +68,19 @@
           class="country-card country-card-available"
           [attr.aria-label]="'Explorar historias de ' + card.displayName + ', ' + card.readingCount + ' lecturas disponibles'"
         >
-          <img
-            [src]="card.heroImage"
-            [alt]="'Paisaje de ' + card.displayName"
-            loading="lazy"
-            class="country-card-bg"
-          />
+          @if (!hasImageFailed(card.countryCode) && card.heroImage) {
+            <img
+              [src]="card.heroImage"
+              [alt]="'Paisaje de ' + card.displayName"
+              loading="lazy"
+              class="country-card-bg"
+              (error)="onImageError(card.countryCode)"
+            />
+          } @else {
+            <div class="country-card-fallback-bg" aria-hidden="true">
+              <span class="country-fallback-monogram">{{ card.countryCode }}</span>
+            </div>
+          }
           <div class="country-card-overlay" aria-hidden="true"></div>
           <div class="country-card-content">
             <div class="country-card-top">
@@ -93,12 +100,19 @@
           class="country-card country-card-upcoming"
           [attr.aria-label]="card.displayName + ', próximamente disponible'"
         >
-          <img
-            [src]="card.heroImage"
-            [alt]="'Paisaje de ' + card.displayName"
-            loading="lazy"
-            class="country-card-bg"
-          />
+          @if (!hasImageFailed(card.countryCode) && card.heroImage) {
+            <img
+              [src]="card.heroImage"
+              [alt]="'Paisaje de ' + card.displayName"
+              loading="lazy"
+              class="country-card-bg"
+              (error)="onImageError(card.countryCode)"
+            />
+          } @else {
+            <div class="country-card-fallback-bg" aria-hidden="true">
+              <span class="country-fallback-monogram">{{ card.countryCode }}</span>
+            </div>
+          }
           <div class="country-card-overlay" aria-hidden="true"></div>
           <div class="country-card-content">
             <div class="country-card-top">
