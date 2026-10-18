@@ -720,4 +720,293 @@ describe('CollectionDetail', () => {
     fixture.detectChanges();
     expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
   });
+
+  describe('Phase 19.6 Country Collection Redesign', () => {
+    it('Requirement A & K: ?country=CO renders Colombia as protagonist, split hero, breadcrumb, and editorial layout', () => {
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.isCountryLanding()).toBe(true);
+      expect(component.title()).toBe('Colombia');
+      expect(component.activeCountry()?.countryCode).toBe('CO');
+
+      const root = fixture.nativeElement as HTMLElement;
+
+      // Breadcrumb: Inicio / Latinoamérica / Colombia
+      const breadcrumb = root.querySelector('.detail-breadcrumb');
+      expect(breadcrumb).toBeTruthy();
+      expect(breadcrumb?.textContent).toContain('Inicio');
+      expect(breadcrumb?.textContent).toContain('Latinoamérica');
+      expect(breadcrumb?.textContent).toContain('Colombia');
+
+      // Split Country Hero
+      const heroSection = root.querySelector('.country-hero-section');
+      expect(heroSection).toBeTruthy();
+      expect(heroSection?.querySelector('.country-hero-title')?.textContent?.trim()).toBe('Colombia');
+      expect(heroSection?.querySelector('.country-hero-eyebrow')?.textContent).toContain('LATINOAMÉRICA · COLOMBIA');
+      expect(heroSection?.querySelector('.country-hero-tagline')?.textContent).toContain('Tierra de realismo mágico');
+      expect(heroSection?.querySelector('.country-hero-chips')?.textContent).toContain('15 historias');
+
+      // Middle Row: Territory explorer + Featured stories
+      expect(root.querySelector('.territory-card')).toBeTruthy();
+      expect(root.querySelector('.featured-stories-card')).toBeTruthy();
+
+      // Explora por tema
+      expect(root.querySelector('.country-topics-section')).toBeTruthy();
+
+      // Full catalog
+      expect(root.querySelector('#all-stories')).toBeTruthy();
+    });
+
+    it('Requirement B: ?country=MX renders Mexico with identical editorial structure and Mexico data', () => {
+      queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+      createComponent();
+
+      expect(component.isCountryLanding()).toBe(true);
+      expect(component.title()).toBe('México');
+      expect(component.activeCountry()?.countryCode).toBe('MX');
+
+      const root = fixture.nativeElement as HTMLElement;
+      const heroTitle = root.querySelector('.country-hero-title');
+      expect(heroTitle?.textContent?.trim()).toBe('México');
+      expect(root.querySelector('.country-hero-eyebrow')?.textContent).toContain('LATINOAMÉRICA · MÉXICO');
+      expect(root.querySelector('.territory-title')?.textContent).toContain('México');
+      expect(root.querySelector('.featured-stories-title')?.textContent).toContain('México');
+      expect(root.querySelector('.topics-section-title')?.textContent).toContain('México');
+    });
+
+    it('Requirement C: Switching country CO -> MX updates Signals dynamically without reload', () => {
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.title()).toBe('Colombia');
+      expect(component.selectedCountry()).toBe('CO');
+
+      component.onCountryChange('MX');
+      fixture.detectChanges();
+
+      expect(component.title()).toBe('México');
+      expect(component.selectedCountry()).toBe('MX');
+      expect(component.activeCountry()?.displayName).toBe('México');
+      expect(component.activeTopics().map((t) => t.key)).toEqual(['HISTORY_AND_MEMORY']);
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('.country-hero-title')?.textContent?.trim()).toBe('México');
+    });
+
+    it('Requirement D & E: Resolves correct hero per country and handles fallback gracefully', () => {
+      queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+      createComponent();
+
+      expect(component.heroImageUrl()).toContain('countries/MX/hero.webp');
+
+      // Trigger hero error -> fallback to region neutral hero
+      component.onHeroImageError(component.heroImageUrl()!);
+      fixture.detectChanges();
+      expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
+
+      // Trigger error on neutral fallback as well -> null (shows svg fallback template)
+      component.onHeroImageError(NEUTRAL_LATAM_HERO_FALLBACK);
+      fixture.detectChanges();
+      expect(component.heroImageUrl()).toBeNull();
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('.country-hero-media .hero-fallback')).toBeTruthy();
+    });
+
+    it('Requirement F & G: Topics with readingCount === 0 are excluded from activeTopics and topicSections', () => {
+      const overviewWithEmptyTopic: DiscoveryRegionOverview = {
+        ...mockRegionOverview,
+        countries: [
+          {
+            ...mockRegionOverview.countries[0],
+            topics: [
+              {
+                key: 'MYTHS_AND_LEGENDS',
+                displayName: 'Mitos y leyendas',
+                displayOrder: 1,
+                readingCount: 10,
+              },
+              {
+                key: 'EMPTY_TOPIC',
+                displayName: 'Tema vacío',
+                displayOrder: 2,
+                readingCount: 0,
+              },
+              {
+                key: 'REAL_STORIES',
+                displayName: 'Historias reales',
+                displayOrder: 3,
+                readingCount: 5,
+              },
+            ],
+          },
+        ],
+      };
+      homeServiceMock.parseDiscoveryRegionOverview.mockReturnValue(overviewWithEmptyTopic);
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const activeTopicKeys = component.activeTopics().map((t) => t.key);
+      expect(activeTopicKeys).toContain('MYTHS_AND_LEGENDS');
+      expect(activeTopicKeys).toContain('REAL_STORIES');
+      expect(activeTopicKeys).not.toContain('EMPTY_TOPIC');
+
+      const sectionTopicKeys = component.topicSections().map((s) => s.topic.key);
+      expect(sectionTopicKeys).toContain('MYTHS_AND_LEGENDS');
+      expect(sectionTopicKeys).toContain('REAL_STORIES');
+      expect(sectionTopicKeys).not.toContain('EMPTY_TOPIC');
+    });
+
+    it('Requirement H & I: Featured readings belong to active country and shortDescription remains in English', () => {
+      const readingsWithEnglishTeaser: RecommendedPlatformReading[] = [
+        {
+          ...mockReading,
+          readingId: 'rd-1',
+          title: 'The Legend of El Dorado',
+          editorialLevel: 'B2',
+          category: 'CULTURE_ARTS_AND_FICTION',
+          vocabularyFitPercentage: 88,
+          uniqueWords: 240,
+          shortDescription:
+            'Discover the ancient Indigenous myth of the gilded ruler and the sacred lake of Guatavita.',
+          discoveryTopic: 'MYTHS_AND_LEGENDS',
+        },
+        {
+          ...mockReading,
+          readingId: 'rd-2',
+          title: 'The Coffee Route',
+          editorialLevel: 'A2',
+          category: 'NATURE_AND_GEOGRAPHY',
+          vocabularyFitPercentage: 92,
+          uniqueWords: 180,
+          shortDescription:
+            'Explore the high-altitude Andes mountains where Colombia cultivates the world finest arabica coffee beans.',
+          discoveryTopic: 'REAL_STORIES',
+        },
+      ];
+
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 12,
+        totalElements: 2,
+        readings: readingsWithEnglishTeaser,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.featuredReadings().length).toBe(2);
+      expect(component.featuredReadings()[0].title).toBe('The Legend of El Dorado');
+
+      // CEFR range calculation
+      expect(component.cefrRange()).toBe('A2 – B2');
+
+      // Featured topic determination (highest readingCount)
+      expect(component.featuredTopic()?.key).toBe('MYTHS_AND_LEGENDS');
+
+      // UI verification
+      const root = fixture.nativeElement as HTMLElement;
+      const featuredCards = root.querySelectorAll('.featured-card');
+      expect(featuredCards.length).toBe(2);
+
+      const firstCardDesc = featuredCards[0].querySelector('.featured-card-desc');
+      expect(firstCardDesc?.textContent?.trim()).toBe(
+        'Discover the ancient Indigenous myth of the gilded ruler and the sacred lake of Guatavita.'
+      );
+
+      const firstCardTooltip = featuredCards[0].querySelector('.featured-card-tooltip');
+      expect(firstCardTooltip?.textContent?.trim()).toBe(
+        'Discover the ancient Indigenous myth of the gilded ruler and the sacred lake of Guatavita.'
+      );
+    });
+
+    it('Requirement J: Filter actions (topic, level, clear) trigger appropriate browse requests', () => {
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      // Topic change
+      component.onTopicChange('MYTHS_AND_LEGENDS');
+      expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+      expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          countryCode: 'CO',
+          discoveryTopic: 'MYTHS_AND_LEGENDS',
+          editorialLevel: null,
+          page: 0,
+        })
+      );
+
+      // Level change
+      component.onLevelChange('B1');
+      expect(component.selectedLevel()).toBe('B1');
+      expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          countryCode: 'CO',
+          discoveryTopic: 'MYTHS_AND_LEGENDS',
+          editorialLevel: 'B1',
+          page: 0,
+        })
+      );
+
+      // Clear filters
+      component.onClearFilters();
+      expect(component.selectedTopic()).toBeNull();
+      expect(component.selectedLevel()).toBeNull();
+      expect(component.selectedCountry()).toBe('CO');
+      expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          countryCode: 'CO',
+          discoveryTopic: null,
+          editorialLevel: null,
+          page: 0,
+        })
+      );
+    });
+
+    it('calculates CEFR range correctly with single level, multiple levels, or empty levels', () => {
+      createComponent();
+
+      // Default mock has 1 reading with 'B1'
+      expect(component.cefrRange()).toBe('B1');
+
+      // Empty readings
+      component.readings.set([]);
+      expect(component.cefrRange()).toBe('A1 – C2');
+
+      // Multiple levels: A1 and C1
+      component.readings.set([
+        { ...mockReading, editorialLevel: 'A1' },
+        { ...mockReading, editorialLevel: 'C1' },
+      ]);
+      expect(component.cefrRange()).toBe('A1 – C1');
+    });
+
+    it('topic mini-card links to reader route', () => {
+      const readingsForTopics: RecommendedPlatformReading[] = [
+        {
+          ...mockReading,
+          readingId: 'rd-myth-1',
+          title: 'The Silbón Legend',
+          editorialLevel: 'B1',
+          discoveryTopic: 'MYTHS_AND_LEGENDS',
+        },
+      ];
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 12,
+        totalElements: 1,
+        readings: readingsForTopics,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const miniCard = root.querySelector('.topic-mini-card') as HTMLAnchorElement;
+      expect(miniCard).toBeTruthy();
+      expect(miniCard.getAttribute('href')).toBe('/reading/rd-myth-1');
+      expect(miniCard.textContent).toContain('The Silbón Legend');
+    });
+  });
 });

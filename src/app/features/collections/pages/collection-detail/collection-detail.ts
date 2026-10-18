@@ -13,6 +13,7 @@ import {
   BrowsePlatformReadingsFilters,
   DiscoveryCountrySummary,
   DiscoveryRegionOverview,
+  DiscoveryTopicSummary,
   EditorialLevel,
   ReadingCollection,
   RecommendedPlatformReading,
@@ -82,14 +83,65 @@ export class CollectionDetail implements OnInit {
   readonly activeTopics = computed<TopicFilterOption[]>(() => {
     const country = this.activeCountry();
     if (!country) return [];
-    return (country.topics ?? []).map((t) => ({
-      key: t.key,
-      name: t.displayName,
-    }));
+    return (country.topics ?? [])
+      .filter((t) => t.readingCount > 0)
+      .map((t) => ({
+        key: t.key,
+        name: t.displayName,
+      }));
+  });
+
+  readonly isCountryLanding = computed<boolean>(() => {
+    return this.isLatinAmerica() && this.activeCountry() !== null;
+  });
+
+  readonly cefrRange = computed<string>(() => {
+    const levels = this.readings()
+      .map((r) => r.editorialLevel)
+      .filter((lvl): lvl is EditorialLevel => Boolean(lvl));
+    if (levels.length === 0) return 'A1 – C2';
+    const order: EditorialLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const indices = levels.map((l) => order.indexOf(l)).filter((i) => i >= 0);
+    if (indices.length === 0) return 'A1 – C2';
+    const min = order[Math.min(...indices)];
+    const max = order[Math.max(...indices)];
+    return min === max ? min : `${min} – ${max}`;
+  });
+
+  readonly featuredTopic = computed<DiscoveryTopicSummary | null>(() => {
+    const topics = (this.activeCountry()?.topics ?? []).filter((t) => t.readingCount > 0);
+    if (topics.length === 0) return null;
+    return [...topics].sort((a, b) => b.readingCount - a.readingCount)[0] ?? null;
+  });
+
+  readonly featuredReadings = computed<RecommendedPlatformReading[]>(() => {
+    return this.readings().slice(0, 4);
+  });
+
+  readonly topicSections = computed(() => {
+    const country = this.activeCountry();
+    if (!country) return [];
+    const allReadings = this.readings();
+    return (country.topics ?? [])
+      .filter((t) => t.readingCount > 0)
+      .map((topic) => {
+        const matchingReadings = allReadings
+          .filter((r) => r.discoveryTopic === topic.key)
+          .slice(0, 2);
+        return {
+          topic,
+          readings: matchingReadings,
+          description: this.getTopicDescription(topic.key),
+        };
+      });
   });
 
   readonly title = computed(() => {
     if (this.isLatinAmerica()) {
+      const country = this.activeCountry();
+      if (country) {
+        return country.displayName;
+      }
       return this.latamOverview()?.region.displayName ?? 'Descubre Latinoamérica';
     }
     if (this.isNew()) return 'Novedades';
@@ -390,6 +442,42 @@ export class CollectionDetail implements OnInit {
       this.fetchReadings();
       if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
         window.scrollTo({ top: 300, behavior: 'smooth' });
+      }
+    }
+  }
+
+  resolveCoverUrl(key: string | null | undefined): string {
+    return resolveMediaUrl(key) ?? NEUTRAL_LATAM_HERO_FALLBACK;
+  }
+
+  getReadingDuration(reading: RecommendedPlatformReading): string {
+    const words = reading.uniqueWords || 150;
+    const mins = Math.max(3, Math.min(18, Math.round(words / 18)));
+    return `${mins} min`;
+  }
+
+  getTopicName(key: string): string {
+    const found = this.activeTopics().find((t) => t.key === key);
+    return found?.name || key;
+  }
+
+  getTopicDescription(key: string): string {
+    const descriptions: Record<string, string> = {
+      MYTHS_AND_LEGENDS: 'Historias que han dado forma a la imaginación y la tradición oral.',
+      REAL_STORIES: 'Acontecimientos auténticos y vivencias que dejaron huella.',
+      HISTORY_AND_MEMORY: 'Ciudades, pueblos y legados que forjaron la identidad nacional.',
+      CULTURE_AND_TRADITIONS: 'Personas, tradiciones y expresiones que hacen única a su gente.',
+      NATURE_AND_PLACES: 'Montañas, selvas, ríos y una biodiversidad única.',
+      PEOPLE: 'Personajes singulares y vidas extraordinarias.',
+    };
+    return descriptions[key] || 'Relatos fascinantes de su historia y cultura.';
+  }
+
+  scrollToCatalog(): void {
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById('all-stories');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
   }

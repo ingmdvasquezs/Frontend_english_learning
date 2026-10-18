@@ -1,9 +1,37 @@
 <div class="collection-detail-page">
-  <!-- Navegación de retorno -->
-  <nav class="detail-nav" aria-label="Navegación de retorno">
-    <a routerLink="/home" class="back-link">
-      <span aria-hidden="true">←</span> Volver a Inicio
-    </a>
+  <!-- 1. BREADCRUMB EDITORIAL -->
+  <nav class="detail-breadcrumb" aria-label="Ruta de navegación">
+    <ol class="breadcrumb-list">
+      <li class="breadcrumb-item">
+        <a routerLink="/home" class="breadcrumb-link">Inicio</a>
+      </li>
+      <li class="breadcrumb-separator" aria-hidden="true">/</li>
+      @if (isLatinAmerica()) {
+        <li class="breadcrumb-item">
+          @if (activeCountry()) {
+            <button
+              type="button"
+              class="breadcrumb-link breadcrumb-btn"
+              (click)="onCountryChange(null)"
+            >
+              Latinoamérica
+            </button>
+          } @else {
+            <span class="breadcrumb-current">Latinoamérica</span>
+          }
+        </li>
+        @if (activeCountry(); as country) {
+          <li class="breadcrumb-separator" aria-hidden="true">/</li>
+          <li class="breadcrumb-item">
+            <span class="breadcrumb-current">{{ country.displayName }}</span>
+          </li>
+        }
+      } @else {
+        <li class="breadcrumb-item">
+          <span class="breadcrumb-current">{{ title() }}</span>
+        </li>
+      }
+    </ol>
   </nav>
 
   @if (collectionLoading()) {
@@ -20,46 +48,114 @@
       <a routerLink="/home" class="editorial-btn">Volver a Inicio</a>
     </div>
   } @else {
-    <!-- Hero Editorial de la Colección -->
-    <header class="collection-hero app-card">
-      <div class="hero-media">
-        @if (heroImageUrl(); as url) {
-          <img
-            [src]="url"
-            [alt]="'Portada de ' + title()"
-            class="hero-img"
-            (error)="onHeroImageError(url)"
-          />
-        } @else {
-          <div class="hero-fallback" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-              <path d="M6 6h10M6 10h10"/>
-            </svg>
-            <span class="fallback-tag">Colección Editorial</span>
-          </div>
-        }
-      </div>
-
-      <div class="hero-body">
-        <div class="hero-top-row">
-          <span class="hero-eyebrow">
-            @if (isLatinAmerica()) {
-              Región editorial
-            } @else if (isNew()) {
-              Catálogo reciente
+    <!-- 2. HERO EDITORIAL -->
+    @if (isCountryLanding() && activeCountry(); as country) {
+      <!-- Country Hero Section (Split 2-column panoramic) -->
+      <header class="country-hero-section">
+        <div class="country-hero-grid">
+          <!-- Dominant Hero Photo on Left -->
+          <div class="country-hero-media">
+            @if (heroImageUrl(); as url) {
+              <img
+                [src]="url"
+                [alt]="'Paisaje y patrimonio de ' + country.displayName"
+                class="country-hero-img"
+                (error)="onHeroImageError(url)"
+              />
             } @else {
-              Colección editorial
+              <div class="hero-fallback" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                  <path d="M6 6h10M6 10h10"/>
+                </svg>
+                <span class="fallback-tag">{{ country.displayName }}</span>
+              </div>
             }
-          </span>
-          <span class="hero-count-badge">{{ countLabel() }}</span>
-        </div>
-        <h1 class="hero-title">{{ title() }}</h1>
-        <p class="hero-description">{{ description() }}</p>
-      </div>
-    </header>
+          </div>
 
-    <!-- Filtros de la Colección -->
+          <!-- Editorial Storytelling Context on Right -->
+          <div class="country-hero-context">
+            <span class="country-hero-eyebrow">
+              LATINOAMÉRICA · {{ country.displayName.toUpperCase() }}
+            </span>
+            <h1 class="country-hero-title">{{ country.displayName }}</h1>
+            @if (country.tagline) {
+              <p class="country-hero-tagline">{{ country.tagline }}</p>
+            }
+            <p class="country-hero-desc">
+              {{ country.description || 'Explora historias que dan vida a su cultura, tradiciones y belleza natural.' }}
+            </p>
+
+            <!-- Metadata Chips Strip -->
+            <div class="country-hero-chips" aria-label="Detalles de la colección">
+              <span class="hero-chip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                </svg>
+                <span>{{ country.readingCount }} historias</span>
+              </span>
+              <span class="hero-chip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="3" y="12" width="4" height="8" rx="1"/>
+                  <rect x="10" y="8" width="4" height="12" rx="1"/>
+                  <rect x="17" y="4" width="4" height="16" rx="1"/>
+                </svg>
+                <span>{{ cefrRange() }}</span>
+              </span>
+              @if (featuredTopic(); as fTopic) {
+                <span class="hero-chip hero-chip-highlight">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  <span>Tema destacado: {{ fTopic.displayName }}</span>
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      </header>
+    } @else {
+      <!-- Generic / Region Collection Hero -->
+      <header class="collection-hero app-card">
+        <div class="hero-media">
+          @if (heroImageUrl(); as url) {
+            <img
+              [src]="url"
+              [alt]="'Portada de ' + title()"
+              class="hero-img"
+              (error)="onHeroImageError(url)"
+            />
+          } @else {
+            <div class="hero-fallback" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                <path d="M6 6h10M6 10h10"/>
+              </svg>
+              <span class="fallback-tag">Colección Editorial</span>
+            </div>
+          }
+        </div>
+
+        <div class="hero-body">
+          <div class="hero-top-row">
+            <span class="hero-eyebrow">
+              @if (isLatinAmerica()) {
+                Región editorial
+              } @else if (isNew()) {
+                Catálogo reciente
+              } @else {
+                Colección editorial
+              }
+            </span>
+            <span class="hero-count-badge">{{ countLabel() }}</span>
+          </div>
+          <h1 class="hero-title">{{ title() }}</h1>
+          <p class="hero-description">{{ description() }}</p>
+        </div>
+      </header>
+    }
+
+    <!-- 3. STRIP DE FILTROS INTEGRADOS -->
     <section class="detail-filters-section" aria-label="Filtros de lecturas">
       <app-collection-filters
         [showCountryFilter]="isLatinAmerica()"
@@ -76,10 +172,257 @@
       />
     </section>
 
-    <!-- Grid de Lecturas de la Colección -->
-    <section class="collection-readings-section" aria-labelledby="collection-readings-heading">
+    <!-- IF IN COUNTRY LANDING: EDITORIAL SECTIONS (Middle Row & Topics) -->
+    @if (isCountryLanding() && activeCountry(); as country) {
+      <!-- 4. MIDDLE ROW: TERRITORY EXPLORER (Left) + FEATURED READINGS (Right) -->
+      <section class="country-editorial-row" aria-label="Exploración editorial y lecturas destacadas">
+        <!-- Bloque Izquierdo: Explora el Territorio -->
+        <article class="territory-card">
+          <div class="territory-header">
+            <span class="territory-eyebrow">EXPLORA EL TERRITORIO</span>
+            <h2 class="territory-title">{{ country.displayName }} y su geografía cultural</h2>
+            <p class="territory-subtitle">
+              Descubre historias a través de la diversidad de paisajes, culturas y tradiciones que hacen única a {{ country.displayName }}.
+            </p>
+          </div>
+
+          <div class="territory-body">
+            <!-- Lista de pilares culturales / temáticos con marcadores cromáticos -->
+            <ul class="territory-pillars" role="list">
+              @for (topic of country.topics; track topic.key; let idx = $index) {
+                <li
+                  class="territory-pillar-item"
+                  (click)="onTopicChange(topic.key); scrollToCatalog()"
+                  tabindex="0"
+                  role="button"
+                  [attr.aria-label]="'Ver lecturas de ' + topic.displayName"
+                  (keydown.enter)="onTopicChange(topic.key); scrollToCatalog()"
+                >
+                  <span class="pillar-dot" [class]="'pillar-dot-' + (idx % 5)" aria-hidden="true"></span>
+                  <div class="pillar-text">
+                    <strong class="pillar-name">{{ topic.displayName }}</strong>
+                    <span class="pillar-count">{{ topic.readingCount }} historias disponibles</span>
+                  </div>
+                </li>
+              }
+            </ul>
+
+            <!-- Ilustración / Mapa cultural atmosférico -->
+            <div class="territory-visual" aria-hidden="true">
+              <div class="territory-visual-backdrop">
+                <svg class="compass-rose" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <div class="territory-badge">
+                  <span class="territory-badge-country">{{ country.displayName }}</span>
+                  <span class="territory-badge-label">Latinoamérica</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Bloque Derecho: Historias Destacadas del País -->
+        <article class="featured-stories-card">
+          <div class="featured-stories-header">
+            <h2 class="featured-stories-title">Historias destacadas de {{ country.displayName }}</h2>
+            <button type="button" class="featured-see-all-btn" (click)="scrollToCatalog()">
+              Ver todas <span aria-hidden="true">→</span>
+            </button>
+          </div>
+
+          @if (featuredReadings().length > 0) {
+            <div class="featured-cards-grid">
+              @for (item of featuredReadings(); track item.readingId) {
+                <a
+                  [routerLink]="['/reading', item.readingId]"
+                  class="featured-card"
+                  [attr.aria-label]="'Leer ' + item.title"
+                >
+                  <div class="featured-card-cover">
+                    <img
+                      [src]="resolveCoverUrl(item.coverKey)"
+                      [alt]="'Portada de ' + item.title"
+                      class="featured-cover-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="featured-card-body">
+                    <div class="featured-card-top-meta">
+                      <span class="featured-cefr-badge">{{ item.editorialLevel }}</span>
+                      <span class="featured-category-label">{{ item.category }}</span>
+                      <svg class="featured-bookmark-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                      </svg>
+                    </div>
+
+                    <h3 class="featured-card-title">{{ item.title }}</h3>
+
+                    @if (item.shortDescription || item.description; as desc) {
+                      <div
+                        class="featured-card-desc-wrap"
+                        tabindex="0"
+                        role="region"
+                        [attr.aria-label]="'Descripción: ' + desc"
+                        (click)="$event.stopPropagation()"
+                        (keydown.escape)="$any($event.target).blur()"
+                      >
+                        <p class="featured-card-desc">{{ desc }}</p>
+                        <div class="featured-card-tooltip" role="tooltip">
+                          {{ desc }}
+                        </div>
+                      </div>
+                    }
+
+                    <div class="featured-card-footer">
+                      <span class="featured-vocab-fit">
+                        <svg class="fit-signal-icon" viewBox="0 0 14 12" width="13" height="11" fill="currentColor" aria-hidden="true">
+                          <rect x="0.5" y="7" width="3" height="5" rx="1" />
+                          <rect x="5.5" y="3.5" width="3" height="8.5" rx="1" />
+                          <rect x="10.5" y="0" width="3" height="12" rx="1" />
+                        </svg>
+                        <span>{{ item.vocabularyFitPercentage ?? 0 }}% vocab fit</span>
+                      </span>
+                      <span class="featured-duration">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span>{{ getReadingDuration(item) }}</span>
+                      </span>
+                      <span class="featured-action-circle" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+          } @else {
+            <p class="featured-empty-note">Cargando lecturas destacadas...</p>
+          }
+        </article>
+      </section>
+
+      <!-- 5. EXPLORA [PAÍS] POR TEMA -->
+      @if (topicSections().length > 0) {
+        <section class="country-topics-section" aria-labelledby="explore-by-topic-heading">
+          <div class="topics-section-header">
+            <h2 id="explore-by-topic-heading" class="topics-section-title">
+              Explora {{ country.displayName }} por tema
+            </h2>
+            <button type="button" class="topics-see-all-btn" (click)="onTopicChange(null); scrollToCatalog()">
+              Ver todas las colecciones <span aria-hidden="true">→</span>
+            </button>
+          </div>
+
+          <div class="topic-cards-grid">
+            @for (block of topicSections(); track block.topic.key) {
+              <article class="topic-block-card">
+                <div class="topic-block-header">
+                  <div class="topic-block-icon" [class]="'topic-icon-' + block.topic.key">
+                    @switch (block.topic.key) {
+                      @case ('MYTHS_AND_LEGENDS') {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+                        </svg>
+                      }
+                      @case ('REAL_STORIES') {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                          <path d="M6 6h10M6 10h10"/>
+                        </svg>
+                      }
+                      @case ('HISTORY_AND_MEMORY') {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M3 21h18M4 18h16M5 14h14M6 10h12M9 6h6M12 2v4"/>
+                        </svg>
+                      }
+                      @case ('CULTURE_AND_TRADITIONS') {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <circle cx="12" cy="12" r="4"/>
+                          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                        </svg>
+                      }
+                      @case ('NATURE_AND_PLACES') {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+                        </svg>
+                      }
+                      @case ('PEOPLE') {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                          <circle cx="9" cy="7" r="4"/>
+                          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                      }
+                      @default {
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <circle cx="12" cy="12" r="10"/>
+                          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+                        </svg>
+                      }
+                    }
+                  </div>
+                  <div class="topic-block-info">
+                    <h3 class="topic-block-title">{{ block.topic.displayName }}</h3>
+                    <p class="topic-block-desc">{{ block.description }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="topic-block-link"
+                    (click)="onTopicChange(block.topic.key); scrollToCatalog()"
+                  >
+                    Ver colección <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+
+                <!-- Mini lecturas de muestra dentro del bloque temático -->
+                <div class="topic-block-readings">
+                  @for (r of block.readings; track r.readingId) {
+                    <a [routerLink]="['/reading', r.readingId]" class="topic-mini-card">
+                      <div class="topic-mini-cover">
+                        <img
+                          [src]="resolveCoverUrl(r.coverKey)"
+                          [alt]="'Portada de ' + r.title"
+                          class="topic-mini-img"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div class="topic-mini-body">
+                        <span class="topic-mini-badge">{{ r.editorialLevel }}</span>
+                        <h4 class="topic-mini-title">{{ r.title }}</h4>
+                        <span class="topic-mini-metric">
+                          {{ r.vocabularyFitPercentage ?? 0 }}% vocab fit
+                        </span>
+                      </div>
+                    </a>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+    }
+
+    <!-- 6. GRID COMPLETO DE LECTURAS (Catálogo paginado) -->
+    <section id="all-stories" class="collection-readings-section" aria-labelledby="collection-readings-heading">
       <div class="section-heading-row">
-        <h2 id="collection-readings-heading" class="section-title">Lecturas disponibles</h2>
+        <h2 id="collection-readings-heading" class="section-title">
+          @if (isCountryLanding() && activeCountry(); as country) {
+            @if (selectedTopic(); as activeTopicKey) {
+              Historias de {{ country.displayName }} · {{ getTopicName(activeTopicKey) }}
+            } @else {
+              Todas las historias de {{ country.displayName }}
+            }
+          } @else {
+            Lecturas disponibles
+          }
+        </h2>
         <span class="results-count">{{ countLabel() }}</span>
       </div>
 
@@ -97,7 +440,7 @@
         <div class="catalog-empty" role="status">
           <h3 class="empty-title">No hay lecturas disponibles con los filtros seleccionados.</h3>
           <p class="empty-desc">Prueba limpiando los filtros para ver todas las lecturas disponibles.</p>
-          @if (selectedLevel() !== null || (isLatinAmerica() && selectedCountry() !== null)) {
+          @if (selectedLevel() !== null || (isLatinAmerica() && (selectedCountry() !== null || selectedTopic() !== null))) {
             <button type="button" class="editorial-btn" (click)="onClearFilters()">
               Ver todas las lecturas
             </button>
