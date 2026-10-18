@@ -95,6 +95,14 @@ export class CollectionDetail implements OnInit {
     return this.isLatinAmerica() && this.activeCountry() !== null;
   });
 
+  readonly colombiaRegions = [
+    { name: 'Región Caribe', desc: 'Playas, ciudades coloniales', dotClass: 'pillar-dot-0', topicKey: null },
+    { name: 'Región Andina', desc: 'Montañas, historia, cafetería', dotClass: 'pillar-dot-1', topicKey: null },
+    { name: 'Región Pacífica', desc: 'Selva, cultura afrocolombiana', dotClass: 'pillar-dot-2', topicKey: null },
+    { name: 'Orinoquía', desc: 'Llanos, ríos, vida silvestre', dotClass: 'pillar-dot-3', topicKey: null },
+    { name: 'Amazonía', desc: 'Selva, biodiversidad', dotClass: 'pillar-dot-4', topicKey: null },
+  ];
+
   readonly cefrRange = computed<string>(() => {
     const levels = this.readings()
       .map((r) => r.editorialLevel)

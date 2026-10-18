@@ -174,56 +174,143 @@
 
     <!-- IF IN COUNTRY LANDING: EDITORIAL SECTIONS (Middle Row & Topics) -->
     @if (isCountryLanding() && activeCountry(); as country) {
-      <!-- 4. MIDDLE ROW: TERRITORY EXPLORER (Left) + FEATURED READINGS (Right) -->
+      <!-- 4. MIDDLE ROW: TERRITORY EXPLORER (Left 45%) + FEATURED READINGS (Right 55%) -->
       <section class="country-editorial-row" aria-label="Exploración editorial y lecturas destacadas">
-        <!-- Bloque Izquierdo: Explora el Territorio -->
+        <!-- Bloque Izquierdo: Explora el Territorio (45%) -->
         <article class="territory-card">
           <div class="territory-header">
             <span class="territory-eyebrow">EXPLORA EL TERRITORIO</span>
-            <h2 class="territory-title">{{ country.displayName }} y su geografía cultural</h2>
+            <h2 class="territory-title">{{ country.displayName }} por regiones</h2>
             <p class="territory-subtitle">
               Descubre historias a través de la diversidad de paisajes, culturas y tradiciones que hacen única a {{ country.displayName }}.
             </p>
           </div>
 
           <div class="territory-body">
-            <!-- Lista de pilares culturales / temáticos con marcadores cromáticos -->
+            <!-- Lista de pilares culturales / regiones -->
             <ul class="territory-pillars" role="list">
-              @for (topic of country.topics; track topic.key; let idx = $index) {
-                <li
-                  class="territory-pillar-item"
-                  (click)="onTopicChange(topic.key); scrollToCatalog()"
-                  tabindex="0"
-                  role="button"
-                  [attr.aria-label]="'Ver lecturas de ' + topic.displayName"
-                  (keydown.enter)="onTopicChange(topic.key); scrollToCatalog()"
-                >
-                  <span class="pillar-dot" [class]="'pillar-dot-' + (idx % 5)" aria-hidden="true"></span>
-                  <div class="pillar-text">
-                    <strong class="pillar-name">{{ topic.displayName }}</strong>
-                    <span class="pillar-count">{{ topic.readingCount }} historias disponibles</span>
-                  </div>
-                </li>
+              @if (country.countryCode === 'CO') {
+                @for (reg of colombiaRegions; track reg.name) {
+                  <li
+                    class="territory-pillar-item"
+                    (click)="scrollToCatalog()"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Ver lecturas de ' + reg.name"
+                    (keydown.enter)="scrollToCatalog()"
+                  >
+                    <span class="pillar-dot" [class]="reg.dotClass" aria-hidden="true"></span>
+                    <div class="pillar-text">
+                      <strong class="pillar-name">{{ reg.name }}</strong>
+                      <span class="pillar-count">{{ reg.desc }}</span>
+                    </div>
+                  </li>
+                }
+              } @else {
+                @for (topic of country.topics; track topic.key; let idx = $index) {
+                  <li
+                    class="territory-pillar-item"
+                    (click)="onTopicChange(topic.key); scrollToCatalog()"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Ver lecturas de ' + topic.displayName"
+                    (keydown.enter)="onTopicChange(topic.key); scrollToCatalog()"
+                  >
+                    <span class="pillar-dot" [class]="'pillar-dot-' + (idx % 5)" aria-hidden="true"></span>
+                    <div class="pillar-text">
+                      <strong class="pillar-name">{{ topic.displayName }}</strong>
+                      <span class="pillar-count">{{ topic.readingCount }} historias disponibles</span>
+                    </div>
+                  </li>
+                }
               }
             </ul>
 
             <!-- Ilustración / Mapa cultural atmosférico -->
             <div class="territory-visual" aria-hidden="true">
-              <div class="territory-visual-backdrop">
-                <svg class="compass-rose" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <div class="territory-badge">
-                  <span class="territory-badge-country">{{ country.displayName }}</span>
-                  <span class="territory-badge-label">Latinoamérica</span>
+              @if (country.countryCode === 'CO') {
+                <div class="colombia-map-container" aria-label="Mapa de regiones de Colombia">
+                  <svg viewBox="0 0 400 360" class="colombia-vector-map">
+                    <defs>
+                      <filter id="mapShadow" x="-5%" y="-5%" width="115%" height="115%">
+                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+                      </filter>
+                    </defs>
+                    <text x="35" y="160" class="map-label-water">OCÉANO</text>
+                    <text x="30" y="174" class="map-label-water">PACÍFICO</text>
+                    <text x="135" y="32" class="map-label-water">MAR CARIBE</text>
+                    <text x="315" y="110" class="map-label-neighbor">VENEZUELA</text>
+                    <text x="330" y="270" class="map-label-neighbor">BRASIL</text>
+                    <text x="215" y="348" class="map-label-neighbor">PERÚ</text>
+                    <text x="80" y="335" class="map-label-neighbor">ECUADOR</text>
+
+                    <!-- Compass Rose -->
+                    <g transform="translate(345, 38)">
+                      <circle cx="0" cy="0" r="16" fill="none" stroke="currentColor" stroke-width="0.75" opacity="0.3"/>
+                      <polygon points="0,-18 3,-4 0,0 -3,-4" fill="#0284c7"/>
+                      <polygon points="0,18 3,4 0,0 -3,4" fill="#64748b" opacity="0.6"/>
+                      <polygon points="18,0 4,3 0,0 4,-3" fill="#64748b" opacity="0.6"/>
+                      <polygon points="-18,0 -4,3 0,0 -4,-3" fill="#64748b" opacity="0.6"/>
+                      <text x="0" y="-21" text-anchor="middle" font-size="7" font-weight="700" fill="#0284c7">N</text>
+                    </g>
+
+                    <g filter="url(#mapShadow)">
+                      <path d="M 145 20 Q 185 8, 220 30 Q 235 60, 205 90 Q 170 100, 140 85 Q 125 55, 145 20 Z" fill="#38bdf8" class="region-shape region-caribe"/>
+                      <path d="M 115 110 Q 140 105, 140 145 Q 135 220, 110 270 Q 85 240, 95 160 Q 105 125, 115 110 Z" fill="#22c55e" class="region-shape region-pacifico"/>
+                      <path d="M 140 85 Q 170 100, 205 90 Q 225 140, 195 210 Q 165 245, 135 220 Q 140 145, 140 85 Z" fill="#eab308" class="region-shape region-andina"/>
+                      <path d="M 205 90 Q 275 105, 305 165 Q 285 220, 230 215 Q 195 210, 225 140 Z" fill="#f97316" class="region-shape region-orinoquia"/>
+                      <path d="M 135 220 Q 195 210, 230 215 Q 285 220, 270 280 Q 235 340, 175 320 Q 110 270, 135 220 Z" fill="#a855f7" class="region-shape region-amazonia"/>
+                    </g>
+
+                    <g transform="translate(185, 55)" class="map-badge-pill">
+                      <rect x="-26" y="-10" width="52" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
+                      <circle cx="-16" cy="0" r="4" fill="#0284c7"/>
+                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Caribe</text>
+                    </g>
+                    <g transform="translate(178, 148)" class="map-badge-pill">
+                      <rect x="-27" y="-10" width="54" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
+                      <circle cx="-17" cy="0" r="4" fill="#eab308"/>
+                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Andina</text>
+                    </g>
+                    <g transform="translate(112, 185)" class="map-badge-pill">
+                      <rect x="-28" y="-10" width="56" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
+                      <circle cx="-18" cy="0" r="4" fill="#16a34a"/>
+                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Pacífico</text>
+                    </g>
+                    <g transform="translate(255, 160)" class="map-badge-pill">
+                      <rect x="-30" y="-10" width="60" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
+                      <circle cx="-20" cy="0" r="4" fill="#ea580c"/>
+                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Orinoquía</text>
+                    </g>
+                    <g transform="translate(225, 260)" class="map-badge-pill">
+                      <rect x="-30" y="-10" width="60" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
+                      <circle cx="-20" cy="0" r="4" fill="#7e22ce"/>
+                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Amazonía</text>
+                    </g>
+                  </svg>
                 </div>
-              </div>
+              } @else {
+                <div class="territory-hero-crop-container">
+                  @if (heroImageUrl(); as url) {
+                    <img [src]="url" [alt]="'Paisaje de ' + country.displayName" class="territory-hero-bg-img" />
+                  }
+                  <div class="territory-hero-overlay">
+                    <svg class="compass-rose" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <div class="territory-badge">
+                      <span class="territory-badge-country">{{ country.displayName }}</span>
+                      <span class="territory-badge-label">Territorio Cultural</span>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
         </article>
 
-        <!-- Bloque Derecho: Historias Destacadas del País -->
+        <!-- Bloque Derecho: Historias Destacadas del País (55%) -->
         <article class="featured-stories-card">
           <div class="featured-stories-header">
             <h2 class="featured-stories-title">Historias destacadas de {{ country.displayName }}</h2>
@@ -307,7 +394,7 @@
         </article>
       </section>
 
-      <!-- 5. EXPLORA [PAÍS] POR TEMA -->
+      <!-- 5. EXPLORA [PAÍS] POR TEMA (Fila de tarjetas temáticas compactas) -->
       @if (topicSections().length > 0) {
         <section class="country-topics-section" aria-labelledby="explore-by-topic-heading">
           <div class="topics-section-header">
@@ -323,85 +410,94 @@
             @for (block of topicSections(); track block.topic.key) {
               <article class="topic-block-card">
                 <div class="topic-block-header">
-                  <div class="topic-block-icon" [class]="'topic-icon-' + block.topic.key">
-                    @switch (block.topic.key) {
-                      @case ('MYTHS_AND_LEGENDS') {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
-                        </svg>
+                  <div class="topic-block-header-top">
+                    <div class="topic-block-icon" [class]="'topic-icon-' + block.topic.key">
+                      @switch (block.topic.key) {
+                        @case ('MYTHS_AND_LEGENDS') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
+                          </svg>
+                        }
+                        @case ('REAL_STORIES') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                            <path d="M6 6h10M6 10h10"/>
+                          </svg>
+                        }
+                        @case ('HISTORY_AND_MEMORY') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M3 21h18M4 18h16M5 14h14M6 10h12M9 6h6M12 2v4"/>
+                          </svg>
+                        }
+                        @case ('CULTURE_AND_TRADITIONS') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4"/>
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                          </svg>
+                        }
+                        @case ('NATURE_AND_PLACES') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+                          </svg>
+                        }
+                        @case ('PEOPLE') {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                          </svg>
+                        }
+                        @default {
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+                          </svg>
+                        }
                       }
-                      @case ('REAL_STORIES') {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-                          <path d="M6 6h10M6 10h10"/>
-                        </svg>
-                      }
-                      @case ('HISTORY_AND_MEMORY') {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M3 21h18M4 18h16M5 14h14M6 10h12M9 6h6M12 2v4"/>
-                        </svg>
-                      }
-                      @case ('CULTURE_AND_TRADITIONS') {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <circle cx="12" cy="12" r="4"/>
-                          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                        </svg>
-                      }
-                      @case ('NATURE_AND_PLACES') {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
-                        </svg>
-                      }
-                      @case ('PEOPLE') {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                          <circle cx="9" cy="7" r="4"/>
-                          <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                      }
-                      @default {
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <circle cx="12" cy="12" r="10"/>
-                          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-                        </svg>
-                      }
-                    }
+                    </div>
+                    <button
+                      type="button"
+                      class="topic-block-link"
+                      (click)="onTopicChange(block.topic.key); scrollToCatalog()"
+                    >
+                      Ver colección <span aria-hidden="true">→</span>
+                    </button>
                   </div>
                   <div class="topic-block-info">
                     <h3 class="topic-block-title">{{ block.topic.displayName }}</h3>
                     <p class="topic-block-desc">{{ block.description }}</p>
                   </div>
-                  <button
-                    type="button"
-                    class="topic-block-link"
-                    (click)="onTopicChange(block.topic.key); scrollToCatalog()"
-                  >
-                    Ver colección <span aria-hidden="true">→</span>
-                  </button>
                 </div>
 
-                <!-- Mini lecturas de muestra dentro del bloque temático -->
-                <div class="topic-block-readings">
-                  @for (r of block.readings; track r.readingId) {
-                    <a [routerLink]="['/reading', r.readingId]" class="topic-mini-card">
-                      <div class="topic-mini-cover">
-                        <img
-                          [src]="resolveCoverUrl(r.coverKey)"
-                          [alt]="'Portada de ' + r.title"
-                          class="topic-mini-img"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div class="topic-mini-body">
-                        <span class="topic-mini-badge">{{ r.editorialLevel }}</span>
-                        <h4 class="topic-mini-title">{{ r.title }}</h4>
-                        <span class="topic-mini-metric">
-                          {{ r.vocabularyFitPercentage ?? 0 }}% vocab fit
-                        </span>
-                      </div>
-                    </a>
-                  }
-                </div>
+                <!-- Mini lecturas de muestra horizontales -->
+                @if (block.readings.length > 0) {
+                  <div class="topic-block-readings">
+                    @for (r of block.readings; track r.readingId) {
+                      <a [routerLink]="['/reading', r.readingId]" class="topic-mini-card" [attr.aria-label]="'Leer ' + r.title">
+                        <div class="topic-mini-cover">
+                          <img
+                            [src]="resolveCoverUrl(r.coverKey)"
+                            [alt]="'Portada de ' + r.title"
+                            class="topic-mini-img"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div class="topic-mini-body">
+                          <span class="topic-mini-badge">{{ r.editorialLevel }}</span>
+                          <h4 class="topic-mini-title">{{ r.title }}</h4>
+                          <div class="topic-mini-footer">
+                            <span class="topic-mini-metric">
+                              {{ r.vocabularyFitPercentage ?? 0 }}% vocab fit
+                            </span>
+                            <span class="topic-mini-duration">
+                              {{ getReadingDuration(r) }}
+                            </span>
+                          </div>
+                        </div>
+                      </a>
+                    }
+                  </div>
+                }
               </article>
             }
           </div>
