@@ -46,7 +46,10 @@ export class CollectionDetail implements OnInit {
   readonly selectedTopic = signal<string | null>(null);
   readonly selectedLevel = signal<EditorialLevel | null>(null);
   readonly currentPage = signal<number>(0);
-  readonly pageSize = 12;
+  readonly loadingMore = signal<boolean>(false);
+  readonly pageSize = computed<number>(() => {
+    return this.isLatinAmerica() && this.selectedCountry() !== null ? 24 : 12;
+  });
 
   readonly latamOverview = signal<DiscoveryRegionOverview | null>(null);
   readonly collection = signal<ReadingCollection | null>(null);
@@ -92,6 +95,10 @@ export class CollectionDetail implements OnInit {
 
   readonly isCountryLanding = computed<boolean>(() => {
     return this.isLatinAmerica() && this.activeCountry() !== null;
+  });
+
+  readonly hasMore = computed<boolean>(() => {
+    return this.isCountryLanding() && this.readings().length < this.totalElements();
   });
 
   readonly cefrRange = computed<string>(() => {
@@ -360,17 +367,22 @@ export class CollectionDetail implements OnInit {
     );
   }
 
-  fetchReadingsObservable(): Observable<unknown> {
+  fetchReadingsObservable(append = false): Observable<unknown> {
     const slug = this.slug();
     if (!slug) return of(null);
 
-    this.readingsLoading.set(true);
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.readingsLoading.set(true);
+    }
     this.readingsError.set(null);
 
+    const size = this.pageSize();
     const filters: BrowsePlatformReadingsFilters = {
       editorialLevel: this.selectedLevel(),
       page: this.currentPage(),
-      size: this.pageSize,
+      size,
     };
 
     if (this.isLatinAmerica()) {
@@ -387,28 +399,50 @@ export class CollectionDetail implements OnInit {
         next: (responseXml) => {
           try {
             const page = this.homeService.parseBrowsePlatformReadings(responseXml);
-            this.readings.set(page.readings);
+            if (append) {
+              this.readings.update((current) => [...current, ...page.readings]);
+            } else {
+              this.readings.set(page.readings);
+            }
             this.totalElements.set(page.totalElements);
-            this.totalPages.set(Math.ceil(page.totalElements / this.pageSize));
+            this.totalPages.set(Math.ceil(page.totalElements / size));
           } catch {
             this.readingsError.set('No se pudieron interpretar las historias.');
           }
-          this.readingsLoading.set(false);
+          if (append) {
+            this.loadingMore.set(false);
+          } else {
+            this.readingsLoading.set(false);
+          }
         },
         error: () => {
           this.readingsError.set('No se pudieron cargar las historias de la colección.');
-          this.readingsLoading.set(false);
+          if (append) {
+            this.loadingMore.set(false);
+          } else {
+            this.readingsLoading.set(false);
+          }
         },
       }),
       catchError(() => {
-        this.readingsLoading.set(false);
+        if (append) {
+          this.loadingMore.set(false);
+        } else {
+          this.readingsLoading.set(false);
+        }
         return of(null);
       })
     );
   }
 
   fetchReadings(): void {
-    this.fetchReadingsObservable().subscribe();
+    this.fetchReadingsObservable(false).subscribe();
+  }
+
+  loadMore(): void {
+    if (this.loadingMore() || !this.hasMore()) return;
+    this.currentPage.update((p) => p + 1);
+    this.fetchReadingsObservable(true).subscribe();
   }
 
   onLevelChange(level: EditorialLevel | null): void {

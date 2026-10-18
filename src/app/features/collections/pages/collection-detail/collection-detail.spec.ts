@@ -257,7 +257,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: null,
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
     expect(component.selectedCountry()).toBe('MX');
     expect(component.selectedTopic()).toBeNull();
@@ -275,7 +275,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: null,
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
     expect(component.selectedCountry()).toBe('CO');
     expect(component.selectedTopic()).toBeNull();
@@ -300,7 +300,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: null,
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
     expect(component.selectedCountry()).toBe('MX');
     expect(component.selectedTopic()).toBeNull();
@@ -332,7 +332,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: null,
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
   });
 
@@ -404,7 +404,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: 'REAL_STORIES',
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
   });
 
@@ -513,7 +513,7 @@ describe('CollectionDetail', () => {
     // 2. Filter by specific topic
     homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
       page: 0,
-      size: 12,
+      size: 24,
       totalElements: 2,
       readings: [fiveMexicoReadings[2], fiveMexicoReadings[4]],
     });
@@ -528,7 +528,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: 'HISTORY_AND_MEMORY',
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
 
     // 3. Return to null topic
@@ -544,7 +544,7 @@ describe('CollectionDetail', () => {
       discoveryTopic: null,
       editorialLevel: null,
       page: 0,
-      size: 12,
+      size: 24,
     });
   });
 
@@ -1040,7 +1040,7 @@ describe('CollectionDetail', () => {
       ];
       homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
         page: 0,
-        size: 12,
+        size: 24,
         totalElements: 1,
         readings: readingsForTopics,
       });
@@ -1053,6 +1053,181 @@ describe('CollectionDetail', () => {
       expect(topicRailCard).toBeTruthy();
       expect(topicRailCard.getAttribute('href')).toBe('/reading/rd-myth-1');
       expect(topicRailCard.textContent).toContain('The Silbón Legend');
+    });
+  });
+
+  describe('Phase 19.6D Country Catalog Loading & Pagination Removal', () => {
+    function generateMockReadings(count: number, startIndex = 1): RecommendedPlatformReading[] {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockReading,
+        readingId: `rd-${startIndex + i}`,
+        title: `Story ${startIndex + i}`,
+        shortDescription: `Description for story ${startIndex + i}`,
+      }));
+    }
+
+    it('1. 15 readings: all 15 rendered and pagination absent', () => {
+      const readings15 = generateMockReadings(15);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings: readings15,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.readings().length).toBe(15);
+      expect(component.hasMore()).toBe(false);
+
+      const root = fixture.nativeElement as HTMLElement;
+      const catalogCards = root.querySelectorAll('.collection-readings-section .readings-grid app-home-reading-card');
+      expect(catalogCards.length).toBe(15);
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+      expect(root.querySelector('.load-more-btn')).toBeNull();
+    });
+
+    it('2. 5 readings: all 5 rendered and pagination absent', () => {
+      const readings5 = generateMockReadings(5);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 5,
+        readings: readings5,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+      createComponent();
+
+      expect(component.readings().length).toBe(5);
+      expect(component.hasMore()).toBe(false);
+
+      const root = fixture.nativeElement as HTMLElement;
+      const catalogCards = root.querySelectorAll('.collection-readings-section .readings-grid app-home-reading-card');
+      expect(catalogCards.length).toBe(5);
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+      expect(root.querySelector('.load-more-btn')).toBeNull();
+    });
+
+    it('3. 24 readings: all 24 rendered and pagination absent', () => {
+      const readings24 = generateMockReadings(24);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 24,
+        readings: readings24,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.readings().length).toBe(24);
+      expect(component.hasMore()).toBe(false);
+
+      const root = fixture.nativeElement as HTMLElement;
+      const catalogCards = root.querySelectorAll('.collection-readings-section .readings-grid app-home-reading-card');
+      expect(catalogCards.length).toBe(24);
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+      expect(root.querySelector('.load-more-btn')).toBeNull();
+    });
+
+    it('4. >24 readings: initial batch rendered and Cargar más visible', () => {
+      const initial24 = generateMockReadings(24);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 30,
+        readings: initial24,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.readings().length).toBe(24);
+      expect(component.hasMore()).toBe(true);
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+      const loadMoreBtn = root.querySelector('.load-more-btn') as HTMLButtonElement;
+      expect(loadMoreBtn).toBeTruthy();
+      expect(loadMoreBtn.textContent).toContain('Cargar más');
+
+      // Click "Cargar más"
+      const next6 = generateMockReadings(6, 25);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 1,
+        size: 24,
+        totalElements: 30,
+        readings: next6,
+      });
+
+      loadMoreBtn.click();
+      fixture.detectChanges();
+
+      expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          countryCode: 'CO',
+          page: 1,
+          size: 24,
+        })
+      );
+      expect(component.readings().length).toBe(30);
+      expect(component.hasMore()).toBe(false);
+      expect(root.querySelector('.load-more-btn')).toBeNull();
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+    });
+
+    it('5. topic filter <=24: all filtered readings rendered and pagination absent', () => {
+      const allReadings = generateMockReadings(15);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings: allReadings,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      expect(component.readings().length).toBe(15);
+
+      // Filter by topic
+      const topicReadings = generateMockReadings(4);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 4,
+        readings: topicReadings,
+      });
+
+      component.onTopicChange('MYTHS_AND_LEGENDS');
+      fixture.detectChanges();
+
+      expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+      expect(component.readings().length).toBe(4);
+      expect(component.hasMore()).toBe(false);
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelectorAll('.collection-readings-section .readings-grid app-home-reading-card').length).toBe(4);
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+      expect(root.querySelector('.load-more-btn')).toBeNull();
+
+      // Reset topic back to null (Mostrar todas)
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings: allReadings,
+      });
+
+      component.onTopicChange(null);
+      fixture.detectChanges();
+
+      expect(component.selectedTopic()).toBeNull();
+      expect(component.readings().length).toBe(15);
+      expect(root.querySelector('.pagination-nav')).toBeNull();
+      expect(root.querySelector('.load-more-btn')).toBeNull();
     });
   });
 });

@@ -269,8 +269,24 @@
           }
         </div>
 
-        <!-- Paginación -->
-        @if (totalPages() > 1) {
+        <!-- Paginación continua / Cargar más para Country Editorial Page (> 24 lecturas) -->
+        @if (isCountryLanding() && hasMore()) {
+          <div class="load-more-section">
+            <button
+              type="button"
+              class="load-more-btn"
+              [disabled]="loadingMore()"
+              (click)="loadMore()"
+            >
+              @if (loadingMore()) {
+                Cargando más historias...
+              } @else {
+                Cargar más historias ↓
+              }
+            </button>
+          </div>
+        } @else if (!isCountryLanding() && totalPages() > 1) {
+          <!-- Paginación clásica sólo para colecciones no-country -->
           <nav class="pagination-nav" aria-label="Paginación de lecturas">
             <button
               type="button"
