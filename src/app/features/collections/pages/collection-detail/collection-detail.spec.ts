@@ -29,6 +29,8 @@ describe('CollectionDetail', () => {
       key: 'latin-america',
       displayName: 'Latinoamérica',
       subtitle: 'Historias, cultura y lugares de nuestra región.',
+      heroKey: null,
+      heroImages: [],
     },
     countries: [
       {
@@ -38,9 +40,10 @@ describe('CollectionDetail', () => {
         description: 'Historias de la memoria oral colombiana',
         displayOrder: 1,
         readingCount: 15,
+        heroKey: 'countries/CO/hero.webp',
         heroImages: [
           {
-            assetKey: 'editorial/heroes/hero-latam-colombia-valle-de-cocora.webp',
+            assetKey: 'countries/CO/hero.webp',
             location: 'Valle de Cocora',
             alt: 'Cocora',
             displayOrder: 1,
@@ -68,9 +71,10 @@ describe('CollectionDetail', () => {
         description: 'Relatos de tradiciones mexicanas',
         displayOrder: 2,
         readingCount: 8,
+        heroKey: 'countries/MX/hero.webp',
         heroImages: [
           {
-            assetKey: 'editorial/heroes/hero-mexico.webp',
+            assetKey: 'countries/MX/hero.webp',
             location: 'Chichen Itza',
             alt: 'Chichen Itza',
             displayOrder: 1,
@@ -92,7 +96,15 @@ describe('CollectionDetail', () => {
         description: 'Historias andinas',
         displayOrder: 3,
         readingCount: 6,
-        heroImages: [],
+        heroKey: 'countries/PE/hero.webp',
+        heroImages: [
+          {
+            assetKey: 'countries/PE/hero.webp',
+            location: 'Machu Picchu',
+            alt: 'Machu Picchu',
+            displayOrder: 1,
+          },
+        ],
         topics: [
           {
             key: 'ANDES_CULTURE',
@@ -183,7 +195,7 @@ describe('CollectionDetail', () => {
     fixture.detectChanges();
   }
 
-  it('B & C: Initial Latin America performs exactly 1 metadata call and 1 browse call with valid country and topic, and no browse occurs before metadata', () => {
+  it('Initial Latin America without country query param loads region metadata and browses with null country (all region)', () => {
     let metadataResolved = false;
     let browseCalledBeforeMetadata = false;
 
@@ -208,17 +220,18 @@ describe('CollectionDetail', () => {
     expect(browseCalledBeforeMetadata).toBe(false);
 
     expect(homeServiceMock.browsePlatformReadings).toHaveBeenCalledWith({
-      countryCode: 'CO',
+      countryCode: null,
       discoveryTopic: null,
       editorialLevel: null,
       page: 0,
       size: 12,
     });
-    expect(component.selectedCountry()).toBe('CO');
+    expect(component.selectedCountry()).toBeNull();
     expect(component.selectedTopic()).toBeNull();
   });
 
-  it('Colombia also starts with topic=null (Todos) showing all its readings', () => {
+  it('Colombia with country=CO starts with topic=null (Todos) showing all its readings', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
     createComponent();
 
     expect(component.selectedCountry()).toBe('CO');
@@ -355,6 +368,7 @@ describe('CollectionDetail', () => {
   });
 
   it('topics are country-bound and switching country clears stale topics immediately', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
     createComponent();
 
     expect(component.selectedCountry()).toBe('CO');
@@ -378,6 +392,7 @@ describe('CollectionDetail', () => {
   });
 
   it('updates readings when topic is changed in UI', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
     createComponent();
 
     component.onTopicChange('REAL_STORIES');
@@ -394,29 +409,49 @@ describe('CollectionDetail', () => {
   });
 
   it('hero is strictly backend-driven and uses neutral fallback when country has no hero or image fails', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
     createComponent();
 
     // CO has hero image in metadata
-    expect(component.heroImageUrl()).toBe('/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp');
+    expect(component.heroImageUrl()).toContain('/countries/CO/hero.webp');
 
     // Switch to MX which has hero image key
     component.onCountryChange('MX');
     fixture.detectChanges();
-    expect(component.heroImageUrl()).toBe('/assets/editorial/heroes/hero-mexico.webp');
+    expect(component.heroImageUrl()).toContain('/countries/MX/hero.webp');
 
     // Simulate 404 image error on Mexico hero
-    component.onHeroImageError('/assets/editorial/heroes/hero-mexico.webp');
+    component.onHeroImageError(component.heroImageUrl()!);
     fixture.detectChanges();
     // Gracefully falls back to NEUTRAL_LATAM_HERO_FALLBACK
     expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
 
-    // Switch to PE which has 0 hero images: uses NEUTRAL_LATAM_HERO_FALLBACK
-    component.onCountryChange('PE');
+    // Switch to country with 0 hero images: uses NEUTRAL_LATAM_HERO_FALLBACK
+    const withNoHeroCountry: DiscoveryRegionOverview = {
+      ...mockRegionOverview,
+      countries: [
+        ...mockRegionOverview.countries,
+        {
+          countryCode: 'CL',
+          displayName: 'Chile',
+          tagline: 'Entre el mar y la cordillera',
+          description: 'Historias chilenas',
+          displayOrder: 4,
+          readingCount: 5,
+          heroKey: null,
+          heroImages: [],
+          topics: [],
+        },
+      ],
+    };
+    component.latamOverview.set(withNoHeroCountry);
+    component.onCountryChange('CL');
     fixture.detectChanges();
     expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
   });
 
   it('clearing filters in Latin America preserves country and resets topic to null (Todos)', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
     createComponent();
 
     component.onTopicChange('REAL_STORIES');
@@ -613,5 +648,76 @@ describe('CollectionDetail', () => {
     createComponent();
 
     expect(component.heroImageUrl()).toContain('/countries/MX/hero.webp');
+  });
+
+  it('Phase 19.5D - A: without country selected uses Latin America region hero fallback', () => {
+    createComponent();
+
+    expect(component.selectedCountry()).toBeNull();
+    expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
+  });
+
+  it('Phase 19.5D - B: country MX with hero resolves MX country hero URL', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+    createComponent();
+
+    expect(component.selectedCountry()).toBe('MX');
+    expect(component.heroImageUrl()).toContain('/countries/MX/hero.webp');
+  });
+
+  it('Phase 19.5D - C: country PE resolves PE hero URL', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'PE' }));
+    createComponent();
+
+    expect(component.selectedCountry()).toBe('PE');
+    expect(component.heroImageUrl()).toContain('/countries/PE/hero.webp');
+  });
+
+  it('Phase 19.5D - D: country missing hero falls back to region hero', () => {
+    const withNoHeroCountry: DiscoveryRegionOverview = {
+      ...mockRegionOverview,
+      countries: [
+        ...mockRegionOverview.countries,
+        {
+          countryCode: 'EC',
+          displayName: 'Ecuador',
+          tagline: 'Mitad del mundo',
+          description: 'Historias ecuatorianas',
+          displayOrder: 4,
+          readingCount: 4,
+          heroKey: null,
+          heroImages: [],
+          topics: [],
+        },
+      ],
+    };
+    homeServiceMock.parseDiscoveryRegionOverview.mockReturnValue(withNoHeroCountry);
+    queryParamMapSubject.next(convertToParamMap({ country: 'EC' }));
+    createComponent();
+
+    expect(component.selectedCountry()).toBe('EC');
+    expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
+  });
+
+  it('Phase 19.5D - E: changing country updates hero immediately via Signals without page reload', () => {
+    queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+    createComponent();
+
+    expect(component.heroImageUrl()).toContain('/countries/MX/hero.webp');
+
+    // Switch to Peru
+    component.onCountryChange('PE');
+    fixture.detectChanges();
+    expect(component.heroImageUrl()).toContain('/countries/PE/hero.webp');
+
+    // Switch to Colombia
+    component.onCountryChange('CO');
+    fixture.detectChanges();
+    expect(component.heroImageUrl()).toContain('/countries/CO/hero.webp');
+
+    // Switch to no country (null) -> region hero fallback
+    component.onCountryChange(null);
+    fixture.detectChanges();
+    expect(component.heroImageUrl()).toBe(NEUTRAL_LATAM_HERO_FALLBACK);
   });
 });

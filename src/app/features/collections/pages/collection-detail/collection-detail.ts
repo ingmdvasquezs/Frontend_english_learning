@@ -25,7 +25,6 @@ import {
   TopicFilterOption,
 } from '../../components/collection-filters/collection-filters';
 import { coverUrl } from '../../../home/utils/cover-url';
-import { resolveHeroAssetUrl } from '../../../home/components/editorial-universe/editorial-universe';
 import { resolveMediaUrl } from '../../../../shared/utils/media-url';
 
 export const NEUTRAL_LATAM_HERO_FALLBACK =
@@ -76,7 +75,8 @@ export class CollectionDetail implements OnInit {
     const countries = this.latamOverview()?.countries ?? [];
     if (countries.length === 0) return null;
     const selected = this.selectedCountry();
-    return countries.find((c) => c.countryCode === selected) ?? countries[0];
+    if (!selected) return null;
+    return countries.find((c) => c.countryCode.toUpperCase() === selected.toUpperCase()) ?? null;
   });
 
   readonly activeTopics = computed<TopicFilterOption[]>(() => {
@@ -114,22 +114,31 @@ export class CollectionDetail implements OnInit {
 
   readonly heroImageUrl = computed<string | null>(() => {
     if (this.isLatinAmerica()) {
+      const region = this.latamOverview()?.region;
+      const regionHeroKey = region?.heroKey || region?.heroImages?.[0]?.assetKey;
+      const regionCandidate = regionHeroKey ? resolveMediaUrl(regionHeroKey) : null;
+      const regionHeroUrl =
+        (regionCandidate && !this.failedHeroImages().has(regionCandidate) ? regionCandidate : null) ??
+        (!this.failedHeroImages().has(NEUTRAL_LATAM_HERO_FALLBACK) ? NEUTRAL_LATAM_HERO_FALLBACK : null);
+
       const country = this.activeCountry();
-      const heroKey = country?.heroImages?.[0]?.assetKey;
-      const candidateUrl = heroKey ? resolveHeroAssetUrl(heroKey) : null;
+      if (country) {
+        const countryHeroKey =
+          country.heroKey ||
+          country.heroImages?.[0]?.assetKey ||
+          null;
 
-      if (candidateUrl && !this.failedHeroImages().has(candidateUrl)) {
-        return candidateUrl;
+        const candidateUrl = countryHeroKey ? resolveMediaUrl(countryHeroKey) : null;
+        if (candidateUrl && !this.failedHeroImages().has(candidateUrl)) {
+          return candidateUrl;
+        }
+
+        // Active country has no hero or its image failed -> fallback to region hero
+        return regionHeroUrl;
       }
 
-      if (
-        NEUTRAL_LATAM_HERO_FALLBACK &&
-        !this.failedHeroImages().has(NEUTRAL_LATAM_HERO_FALLBACK)
-      ) {
-        return NEUTRAL_LATAM_HERO_FALLBACK;
-      }
-
-      return null;
+      // No country selected -> region hero
+      return regionHeroUrl;
     }
 
     const collectionCover = resolveMediaUrl(this.collection()?.coverKey);
@@ -247,10 +256,13 @@ export class CollectionDetail implements OnInit {
     }
 
     const normalizedParam = countryParam?.toUpperCase().trim() ?? null;
-    const match = normalizedParam
-      ? countries.find((c) => c.countryCode.toUpperCase() === normalizedParam)
-      : null;
+    if (!normalizedParam) {
+      this.selectedCountry.set(null);
+      this.selectedTopic.set(null);
+      return;
+    }
 
+    const match = countries.find((c) => c.countryCode.toUpperCase() === normalizedParam);
     const validCountry = match ?? countries[0];
     this.selectedCountry.set(validCountry.countryCode);
     this.selectedTopic.set(null);
