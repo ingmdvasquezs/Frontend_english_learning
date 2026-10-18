@@ -951,17 +951,17 @@ describe('CollectionDetail', () => {
       // Featured topic determination (highest readingCount)
       expect(component.featuredTopic()?.key).toBe('MYTHS_AND_LEGENDS');
 
-      // UI verification
+      // UI verification: standard app-home-reading-card in featured readings section
       const root = fixture.nativeElement as HTMLElement;
-      const featuredCards = root.querySelectorAll('.featured-card');
+      const featuredCards = root.querySelectorAll('.country-featured-section app-home-reading-card');
       expect(featuredCards.length).toBe(2);
 
-      const firstCardDesc = featuredCards[0].querySelector('.featured-card-desc');
+      const firstCardDesc = featuredCards[0].querySelector('.reading-card-desc');
       expect(firstCardDesc?.textContent?.trim()).toBe(
         'Discover the ancient Indigenous myth of the gilded ruler and the sacred lake of Guatavita.'
       );
 
-      const firstCardTooltip = featuredCards[0].querySelector('.featured-card-tooltip');
+      const firstCardTooltip = featuredCards[0].querySelector('.reading-card-desc-tooltip');
       expect(firstCardTooltip?.textContent?.trim()).toBe(
         'Discover the ancient Indigenous myth of the gilded ruler and the sacred lake of Guatavita.'
       );

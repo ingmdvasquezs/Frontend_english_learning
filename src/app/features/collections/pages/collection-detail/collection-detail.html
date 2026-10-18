@@ -173,76 +173,13 @@
               Historias destacadas de {{ country.displayName }}
             </h2>
             <button type="button" class="section-see-all-btn" (click)="scrollToCatalog()">
-              Ver catálogo completo <span aria-hidden="true">↓</span>
+              Ver catálogo completo <span aria-hidden="true">→</span>
             </button>
           </div>
 
           <div class="featured-cards-grid">
             @for (item of featuredReadings(); track item.readingId) {
-              <a
-                [routerLink]="['/reading', item.readingId]"
-                class="featured-card"
-                [attr.aria-label]="'Leer ' + item.title"
-              >
-                <div class="featured-card-cover">
-                  <img
-                    [src]="resolveCoverUrl(item.coverKey)"
-                    [alt]="'Portada de ' + item.title"
-                    class="featured-cover-img"
-                    loading="lazy"
-                  />
-                </div>
-                <div class="featured-card-body">
-                  <div class="featured-card-top-meta">
-                    <span class="featured-cefr-badge">{{ item.editorialLevel }}</span>
-                    <span class="featured-category-label">{{ item.category }}</span>
-                    <svg class="featured-bookmark-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </div>
-
-                  <h3 class="featured-card-title">{{ item.title }}</h3>
-
-                  @if (item.shortDescription || item.description; as desc) {
-                    <div
-                      class="featured-card-desc-wrap"
-                      tabindex="0"
-                      role="region"
-                      [attr.aria-label]="'Descripción: ' + desc"
-                      (click)="$event.stopPropagation()"
-                      (keydown.escape)="$any($event.target).blur()"
-                    >
-                      <p class="featured-card-desc">{{ desc }}</p>
-                      <div class="featured-card-tooltip" role="tooltip">
-                        {{ desc }}
-                      </div>
-                    </div>
-                  }
-
-                  <div class="featured-card-footer">
-                    <span class="featured-vocab-fit">
-                      <svg class="fit-signal-icon" viewBox="0 0 14 12" width="13" height="11" fill="currentColor" aria-hidden="true">
-                        <rect x="0.5" y="7" width="3" height="5" rx="1" />
-                        <rect x="5.5" y="3.5" width="3" height="8.5" rx="1" />
-                        <rect x="10.5" y="0" width="3" height="12" rx="1" />
-                      </svg>
-                      <span>{{ item.vocabularyFitPercentage ?? 0 }}% vocab fit</span>
-                    </span>
-                    <span class="featured-duration">
-                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                      <span>{{ getReadingDuration(item) }}</span>
-                    </span>
-                    <span class="featured-action-circle" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <polyline points="9 18 15 12 9 6"/>
-                      </svg>
-                    </span>
-                  </div>
-                </div>
-              </a>
+              <app-home-reading-card [reading]="item" />
             }
           </div>
         </section>

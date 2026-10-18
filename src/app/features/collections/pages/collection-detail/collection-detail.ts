@@ -450,15 +450,6 @@ export class CollectionDetail implements OnInit {
     }
   }
 
-  resolveCoverUrl(key: string | null | undefined): string {
-    return resolveMediaUrl(key) ?? NEUTRAL_LATAM_HERO_FALLBACK;
-  }
-
-  getReadingDuration(reading: RecommendedPlatformReading): string {
-    const words = reading.uniqueWords || 150;
-    const mins = Math.max(3, Math.min(18, Math.round(words / 18)));
-    return `${mins} min`;
-  }
 
   getTopicName(key: string): string {
     const names: Record<string, string> = {
