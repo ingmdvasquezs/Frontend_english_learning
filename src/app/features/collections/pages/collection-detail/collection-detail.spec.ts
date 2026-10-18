@@ -1427,4 +1427,59 @@ describe('CollectionDetail', () => {
       expect(root.querySelector('.active-topic-filter-row')).toBeNull();
     });
   });
+
+  describe('Phase 19.6F Layout Alignment with Home Gutters & Density', () => {
+    function generateMockReadings(count: number, startIndex = 1): RecommendedPlatformReading[] {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockReading,
+        readingId: `rd-196f-${startIndex + i}`,
+        title: `Story ${startIndex + i}`,
+        shortDescription: `Description for story ${startIndex + i}`,
+        discoveryTopic: i % 2 === 0 ? 'MYTHS_AND_LEGENDS' : 'REAL_STORIES',
+      }));
+    }
+
+    it('renders collection-detail-page with full-width container matching Home layout structure', () => {
+      const readings = generateMockReadings(15);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const pageEl = root.querySelector('.collection-detail-page');
+      expect(pageEl).toBeTruthy();
+
+      // Hero expands to container
+      const hero = root.querySelector('.country-hero-section');
+      expect(hero).toBeTruthy();
+
+      // Country switcher expands to container
+      const switcher = root.querySelector('.country-switcher');
+      expect(switcher).toBeTruthy();
+
+      // Featured cards grid renders standard reading cards
+      const featuredGrid = root.querySelector('.featured-cards-grid');
+      expect(featuredGrid).toBeTruthy();
+      const featuredCards = featuredGrid?.querySelectorAll('app-home-reading-card');
+      expect(featuredCards?.length).toBe(4);
+
+      // Topic rail container renders with standard rail structure
+      const railContainer = root.querySelector('.topic-rail-container');
+      expect(railContainer).toBeTruthy();
+      const rail = railContainer?.querySelector('.topic-readings-rail');
+      expect(rail).toBeTruthy();
+
+      // Catalog grid renders all 15 readings
+      const catalogGrid = root.querySelector('.readings-grid');
+      expect(catalogGrid).toBeTruthy();
+      const catalogCards = catalogGrid?.querySelectorAll('app-home-reading-card');
+      expect(catalogCards?.length).toBe(15);
+    });
+  });
 });
