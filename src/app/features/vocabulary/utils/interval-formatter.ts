@@ -5,7 +5,7 @@
  * - >= 24 h -> Xd
  */
 export function formatIntervalSeconds(seconds?: number | null): string {
-  if (seconds === null || seconds === undefined || isNaN(seconds) || seconds < 0) {
+  if (seconds === null || seconds === undefined || Number.isNaN(seconds) || seconds < 0) {
     return '';
   }
 

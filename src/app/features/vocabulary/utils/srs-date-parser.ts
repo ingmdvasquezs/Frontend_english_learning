@@ -23,7 +23,7 @@ export function parseSrsDate(dateStr: string | null | undefined): number | null 
   }
 
   const timestamp = Date.parse(isoStr);
-  return isNaN(timestamp) ? null : timestamp;
+  return Number.isNaN(timestamp) ? null : timestamp;
 }
 
 /**

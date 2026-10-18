@@ -21,6 +21,8 @@ describe('srs-date-parser', () => {
     expect(parseSrsDate(undefined)).toBeNull();
     expect(parseSrsDate('')).toBeNull();
     expect(parseSrsDate('invalid-date')).toBeNull();
+    expect(parseSrsDate('2026-13-45T99:99:99Z')).toBeNull();
+    expect(parseSrsDate('NaN')).toBeNull();
   });
 
   it('calculates 10m delta for Again (+10m) without recurrence of 310m', () => {

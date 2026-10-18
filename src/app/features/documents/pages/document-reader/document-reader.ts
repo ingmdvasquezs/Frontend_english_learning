@@ -239,7 +239,18 @@ export class DocumentReader implements OnInit {
 
   formatNumber(value: number): string {
     if (!Number.isFinite(value)) return '0';
-    return Math.round(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const rounded = Math.round(value).toString();
+    if (rounded.includes('e') || rounded.includes('E')) return rounded;
+    const isNegative = rounded.startsWith('-');
+    const digits = isNegative ? rounded.slice(1) : rounded;
+    const len = digits.length;
+    if (len <= 3) return rounded;
+    const remainder = len % 3 || 3;
+    let formatted = digits.slice(0, remainder);
+    for (let i = remainder; i < len; i += 3) {
+      formatted += `.${digits.slice(i, i + 3)}`;
+    }
+    return isNegative ? `-${formatted}` : formatted;
   }
 
   formatConfidence(value: number): string {

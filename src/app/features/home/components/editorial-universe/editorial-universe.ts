@@ -15,6 +15,7 @@ import { RouterLink } from '@angular/router';
 import { UpperCasePipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { coverUrl } from '../../utils/cover-url';
+import { resolveMediaUrl } from '../../../../shared/utils/media-url';
 import { HomeService } from '../../services/home';
 import {
   DiscoveryCountrySummary,
@@ -58,11 +59,11 @@ export function resolveReadingFitTone(reading: RecommendedPlatformReading): Voca
   });
 }
 
-export function resolveHeroAssetUrl(assetKey?: string | null): string {
-  if (!assetKey) return '';
-  if (assetKey.startsWith('http://') || assetKey.startsWith('https://')) return assetKey;
-  const stripped = assetKey.replace(/^\/+/, '').replace(/^assets\/+/, '');
-  return `/assets/${stripped}`;
+export function resolveHeroAssetUrl(
+  assetKey?: string | null,
+  mediaBaseUrl?: string
+): string {
+  return resolveMediaUrl(assetKey, mediaBaseUrl) ?? '';
 }
 
 export function resolveTopicIcon(topicKey?: string | null): string {

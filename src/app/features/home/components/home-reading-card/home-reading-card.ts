@@ -95,8 +95,8 @@ export class HomeReadingCard {
   readonly resolvedDescription = computed(() => {
     const direct = this.description();
     if (direct !== null && direct !== undefined && direct.trim() !== '') return direct;
-    const r = this.reading() as { description?: string | null; summary?: string | null };
-    return r.description || r.summary || null;
+    const r = this.reading() as { description?: string | null; shortDescription?: string | null; summary?: string | null };
+    return r.shortDescription || r.description || r.summary || null;
   });
   readonly progressLabel = computed(() => {
     const status = this.reading().progressStatus;

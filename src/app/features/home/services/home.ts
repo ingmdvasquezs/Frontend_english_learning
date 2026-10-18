@@ -145,10 +145,25 @@ export class HomeService {
       throw new Error('Invalid SOAP response: missing region');
     }
 
+    const regionHeroImageElements = Array.from(
+      regionElement.getElementsByTagNameNS(this.namespace, 'heroImages')
+    );
+    const regionHeroImages: DiscoveryHeroImage[] = regionHeroImageElements.map((imgEl) => ({
+      assetKey: this.getRequiredValue(imgEl, 'assetKey'),
+      location: this.getOptionalValue(imgEl, 'location'),
+      alt: this.getOptionalValue(imgEl, 'alt'),
+      displayOrder: this.getRequiredNumber(imgEl, 'displayOrder'),
+    })).sort((a, b) => a.displayOrder - b.displayOrder);
+
+    const regionHeroKey = this.getOptionalValue(regionElement, 'heroKey') ??
+      (regionHeroImages.length > 0 ? regionHeroImages[0].assetKey : null);
+
     const region: DiscoveryRegionDetails = {
       key: this.getRequiredValue(regionElement, 'key'),
       displayName: this.getRequiredValue(regionElement, 'displayName'),
       subtitle: this.getOptionalValue(regionElement, 'subtitle'),
+      heroKey: regionHeroKey,
+      heroImages: regionHeroImages,
     };
 
     const countryElements = Array.from(
@@ -176,6 +191,18 @@ export class HomeService {
       displayOrder: this.getRequiredNumber(imgEl, 'displayOrder'),
     })).sort((a, b) => a.displayOrder - b.displayOrder);
 
+    const heroKey = this.getOptionalValue(countryEl, 'heroKey') ??
+      (heroImages.length > 0 ? heroImages[0].assetKey : null);
+
+    if (heroKey && heroImages.length === 0) {
+      heroImages.push({
+        assetKey: heroKey,
+        location: null,
+        alt: null,
+        displayOrder: 1,
+      });
+    }
+
     const topicElements = Array.from(
       countryEl.getElementsByTagNameNS(this.namespace, 'topics')
     );
@@ -193,6 +220,7 @@ export class HomeService {
       description: this.getRequiredValue(countryEl, 'description'),
       displayOrder: this.getRequiredNumber(countryEl, 'displayOrder'),
       readingCount: this.getRequiredNumber(countryEl, 'readingCount'),
+      heroKey,
       heroImages,
       topics,
     };
@@ -346,7 +374,7 @@ export class HomeService {
   }
 
   parseRecommendedReading(element: Element): RecommendedPlatformReading {
-    return {
+    const reading: RecommendedPlatformReading = {
       readingId: this.getRequiredValue(element, 'readingId'),
       title: this.getRequiredValue(element, 'title'),
       language: this.getRequiredValue(element, 'language'),
@@ -371,10 +399,25 @@ export class HomeService {
       reasonCode: parseRecommendationReasonCode(
         this.getOptionalValue(element, 'reasonCode')
       ),
-      description: this.getOptionalValue(element, 'shortDescription'),
-      countryCode: this.getOptionalValue(element, 'countryCode') ?? undefined,
-      discoveryTopic: this.getOptionalValue(element, 'discoveryTopic') ?? undefined,
+      description: this.getOptionalValue(element, 'shortDescription') ?? this.getOptionalValue(element, 'description'),
     };
+
+    const shortDesc = this.getOptionalValue(element, 'shortDescription');
+    if (shortDesc !== null) {
+      reading.shortDescription = shortDesc;
+    }
+
+    const countryCode = this.getOptionalValue(element, 'countryCode');
+    if (countryCode !== null) {
+      reading.countryCode = countryCode;
+    }
+
+    const discoveryTopic = this.getOptionalValue(element, 'discoveryTopic');
+    if (discoveryTopic !== null) {
+      reading.discoveryTopic = discoveryTopic;
+    }
+
+    return reading;
   }
 
   private getRequiredNumber(

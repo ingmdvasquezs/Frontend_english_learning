@@ -1,0 +1,131 @@
+<section
+  id="explore-stories-heading"
+  class="country-explorer-section"
+  aria-labelledby="explore-countries-heading"
+>
+  <div class="country-explorer-header">
+    <div class="country-explorer-copy">
+      <span class="country-explorer-eyebrow">Colecciones por territorio</span>
+      <h2 id="explore-countries-heading" class="country-explorer-title">
+        Explora historias por país
+      </h2>
+      <p class="country-explorer-subtitle">
+        Descubre lecturas auténticas inspiradas en la cultura, historia y geografía de América Latina.
+      </p>
+    </div>
+
+    <div class="country-header-actions">
+      <a
+        [routerLink]="['/collections/latin-america']"
+        [queryParams]="{ country: defaultCountryCode() }"
+        class="latam-more-link section-more-link"
+      >
+        Ver todas <span aria-hidden="true">→</span>
+      </a>
+
+      @if (railHasOverflow()) {
+        <div class="country-rail-controls" aria-label="Controles del carrusel de países">
+          <button
+            type="button"
+            class="rail-nav-btn"
+            aria-label="Ver países anteriores"
+            [disabled]="railAtStart()"
+            (click)="scrollRail('previous')"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="rail-nav-btn"
+            aria-label="Ver países siguientes"
+            [disabled]="railAtEnd()"
+            (click)="scrollRail('next')"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div
+    #countriesRail
+    class="country-cards-rail"
+    tabindex="0"
+    role="region"
+    aria-label="Carrusel de países de América Latina"
+    (scroll)="onRailScroll($event)"
+  >
+    @for (card of countryCards(); track card.countryCode) {
+      @if (card.isAvailable) {
+        <a
+          [routerLink]="['/collections/latin-america']"
+          [queryParams]="{ country: card.countryCode }"
+          class="country-card country-card-available"
+          [attr.aria-label]="'Explorar historias de ' + card.displayName + ', ' + card.readingCount + ' lecturas disponibles'"
+        >
+          @if (!hasImageFailed(card.countryCode) && card.heroImage) {
+            <img
+              [src]="card.heroImage"
+              [alt]="'Paisaje de ' + card.displayName"
+              loading="lazy"
+              class="country-card-bg"
+              (error)="onImageError(card.countryCode)"
+            />
+          } @else {
+            <div class="country-card-fallback-bg" aria-hidden="true">
+              <span class="country-fallback-monogram">{{ card.countryCode }}</span>
+            </div>
+          }
+          <div class="country-card-overlay" aria-hidden="true"></div>
+          <div class="country-card-content">
+            <div class="country-card-top">
+              <span class="country-card-flag" aria-hidden="true">{{ card.flag }}</span>
+              <span class="country-badge-available">{{ card.readingCount }} lecturas</span>
+            </div>
+            <div class="country-card-bottom">
+              <h3 class="country-card-name">{{ card.displayName }}</h3>
+              <span class="country-card-cta">
+                Explorar colección <span aria-hidden="true">→</span>
+              </span>
+            </div>
+          </div>
+        </a>
+      } @else {
+        <div
+          class="country-card country-card-upcoming"
+          [attr.aria-label]="card.displayName + ', próximamente disponible'"
+        >
+          @if (!hasImageFailed(card.countryCode) && card.heroImage) {
+            <img
+              [src]="card.heroImage"
+              [alt]="'Paisaje de ' + card.displayName"
+              loading="lazy"
+              class="country-card-bg"
+              (error)="onImageError(card.countryCode)"
+            />
+          } @else {
+            <div class="country-card-fallback-bg" aria-hidden="true">
+              <span class="country-fallback-monogram">{{ card.countryCode }}</span>
+            </div>
+          }
+          <div class="country-card-overlay" aria-hidden="true"></div>
+          <div class="country-card-content">
+            <div class="country-card-top">
+              <span class="country-card-flag" aria-hidden="true">{{ card.flag }}</span>
+              <span class="country-badge-upcoming">Próximamente</span>
+            </div>
+            <div class="country-card-bottom">
+              <h3 class="country-card-name">{{ card.displayName }}</h3>
+              <span class="country-card-upcoming-text">Nueva colección en preparación</span>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</section>

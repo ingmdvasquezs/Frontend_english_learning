@@ -24,6 +24,15 @@
     <div class="filter-group filter-group-topics" role="group" aria-label="Filtrar por tema">
       <span class="filter-group-label">Tema:</span>
       <div class="filter-pills-row">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.active]="selectedTopic() === null"
+          (click)="onSelectTopic(null)"
+          [attr.aria-pressed]="selectedTopic() === null"
+        >
+          Todos
+        </button>
         @for (t of topics(); track t.key) {
           <button
             type="button"

@@ -36,9 +36,20 @@
     <!-- Título editorial -->
     <h3 class="reading-card-title">{{ item.title }}</h3>
 
-    <!-- Descripción breve editorial opcional -->
+    <!-- Descripción breve editorial en inglés (máx 2 líneas clamp) con tooltip discreto en hover/focus -->
     @if (resolvedDescription(); as desc) {
-      <p class="reading-card-desc">{{ desc }}</p>
+      <div
+        class="reading-card-desc-wrap"
+        tabindex="0"
+        role="region"
+        [attr.aria-label]="'Descripción: ' + desc"
+        (keydown.escape)="$any($event.target).blur()"
+      >
+        <p class="reading-card-desc">{{ desc }}</p>
+        <div class="reading-card-desc-tooltip" role="tooltip">
+          {{ desc }}
+        </div>
+      </div>
     }
 
     <!-- Estado de progreso (siempre presente en DOM para consistencia de selectores) -->

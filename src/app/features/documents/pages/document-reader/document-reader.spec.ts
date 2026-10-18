@@ -530,6 +530,29 @@ describe('DocumentReader', () => {
     expect(documents['getCompatibility']).toHaveBeenCalledTimes(2);
   });
 
+  it('formats numbers with dot thousand separators and handles non-finite values', () => {
+    expect(component.formatNumber(0)).toBe('0');
+    expect(component.formatNumber(1)).toBe('1');
+    expect(component.formatNumber(999)).toBe('999');
+    expect(component.formatNumber(1000)).toBe('1.000');
+    expect(component.formatNumber(2845)).toBe('2.845');
+    expect(component.formatNumber(9999)).toBe('9.999');
+    expect(component.formatNumber(10000)).toBe('10.000');
+    expect(component.formatNumber(1000000)).toBe('1.000.000');
+    expect(component.formatNumber(-1000)).toBe('-1.000');
+    expect(component.formatNumber(1000.5)).toBe('1.001');
+    expect(component.formatNumber(1000.4)).toBe('1.000');
+    expect(component.formatNumber(-1000.5)).toBe('-1.000');
+    expect(component.formatNumber(-0.1)).toBe('0');
+    expect(component.formatNumber(Number.MAX_SAFE_INTEGER)).toBe('9.007.199.254.740.991');
+    expect(component.formatNumber(-Number.MAX_SAFE_INTEGER)).toBe('-9.007.199.254.740.991');
+    expect(component.formatNumber(1e21)).toBe('1e+21');
+    expect(component.formatNumber(NaN)).toBe('0');
+    expect(component.formatNumber(Infinity)).toBe('0');
+    expect(component.formatNumber(-Infinity)).toBe('0');
+  });
+
+
 
   function document() { return {documentId:'doc',title:'Book',author:null,language:'en',format:'EPUB',status:'READY',failureReason:null,coverAvailable:false,coverUrl:null,progressStatus:'NOT_STARTED',lastReadAt:null,createdAt:'2026-09-07'}; }
   function progress() { return {documentId:'doc',status:'NOT_STARTED',currentUnitId:null,version:0,startedAt:null,completedAt:null}; }

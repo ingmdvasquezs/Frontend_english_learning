@@ -1,18 +1,18 @@
 <div class="app-page min-h-screen overflow-x-hidden bg-[var(--app-bg)] py-6 text-[var(--app-text)]">
   <main class="home-main w-full">
-    <!-- Hero Editorial Principal -->
+    <!-- 1. Hero Editorial Principal Único -->
     <app-editorial-hero
       [slides]="heroSlides()"
       (ctaClick)="onHeroCtaClick($event)"
     />
 
-    <!-- Continuar Leyendo -->
+    <!-- 2. Retoma donde quedaste -->
     @if (continueReadingError() || continueReadingCards().length > 0) {
       <section class="section-block" aria-labelledby="continue-reading-heading">
         <div class="section-heading-row">
           <div class="section-heading-main">
-            <h2 id="continue-reading-heading" class="section-title">Continuar leyendo</h2>
-            <p class="section-subtitle">Retoma donde lo dejaste. Grandes historias te esperan.</p>
+            <h2 id="continue-reading-heading" class="section-title">Retoma donde quedaste</h2>
+            <p class="section-subtitle">Continúa con tus lecturas en progreso o descubre una nueva historia.</p>
           </div>
           <button type="button" class="section-more-link" (click)="scrollContinueReading('next')">
             Ver todo <span aria-hidden="true">→</span>
@@ -29,26 +29,14 @@
             <div #continueReadingCarousel class="continue-reading-carousel" role="region" aria-label="Lecturas en progreso" tabindex="0" (scroll)="onContinueReadingScroll($event)" (focus)="syncContinueReadingPosition()">
               @for (card of continueReadingCards(); track card.readingId) {
                 <a [routerLink]="['/reading', card.readingId]" class="continue-reading-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--app-accent)]">
-                  <!-- Portada lateral izquierda -->
-                  <div class="continue-reading-cover reading-cover">
-                    @if (card.origin === 'PLATFORM') {
-                      @if (coverUrl(card.coverKey); as url) {
-                        @if (!failedCoverIds().has(card.readingId)) {
-                          <img [src]="url" [alt]="'Portada de ' + card.title" width="1672" height="941" loading="lazy" class="h-full w-full object-cover object-center" (error)="markCoverFailed(card.readingId)" />
-                        } @else {
-                          <div class="cover-fallback" aria-hidden="true"><span>ERP</span></div>
-                        }
-                      } @else {
-                        <div class="cover-fallback" aria-hidden="true"><span>ERP</span></div>
-                      }
-                    } @else {
-                      @if (!failedCoverIds().has(card.readingId)) {
-                        <img [src]="userTextCoverUrl(card.readingId)" [alt]="'Portada predeterminada de ' + card.title" width="1200" height="675" loading="lazy" class="h-full w-full object-cover object-center" (error)="markCoverFailed(card.readingId)" />
-                      } @else {
-                        <div class="cover-fallback" aria-hidden="true"><span>ERP</span></div>
-                      }
-                    }
-                  </div>
+                  <!-- Portada lateral izquierda blindada con fallback resiliente -->
+                  <app-reading-cover
+                    [coverKey]="card.coverKey"
+                    [title]="card.title"
+                    [origin]="card.origin"
+                    [readingId]="card.readingId"
+                    class="continue-reading-cover reading-cover"
+                  />
 
                   <!-- Contenido lateral derecho -->
                   <div class="continue-reading-body">
@@ -119,6 +107,24 @@
                   </div>
                 </a>
               }
+
+              <!-- Tarjeta auxiliar al final de lecturas en progreso -->
+              <div class="continue-auxiliary-card" role="article" aria-label="Descubre nuevas lecturas">
+                <div class="auxiliary-card-content">
+                  <span class="auxiliary-card-badge">Colecciones ERP</span>
+                  <h3 class="auxiliary-card-title">¿Buscas algo nuevo?</h3>
+                  <p class="auxiliary-card-desc">
+                    Explora nuestra colección de historias por país y encuentra tu próxima lectura auténtica.
+                  </p>
+                  <button
+                    type="button"
+                    class="auxiliary-card-cta"
+                    (click)="scrollToExplore()"
+                  >
+                    Explorar historias <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+              </div>
             </div>
             @if (continueReadingHasOverflow() && !continueReadingAtEnd()) {
               <button type="button" aria-label="Ver lecturas en progreso siguientes" (click)="scrollContinueReading('next')" class="rail-arrow rail-arrow-next">›</button>
@@ -128,11 +134,17 @@
       </section>
     }
 
-    <!-- Recomendadas Para Ti -->
+    <!-- 3. Explora historias por país -->
+    <app-home-country-explorer
+      [countries]="latinAmerica()?.countries ?? []"
+      [defaultCountryCode]="latinAmerica()?.defaultCountryCode ?? 'CO'"
+    />
+
+    <!-- 4. Lecturas destacadas para ti -->
     <section class="section-block" aria-labelledby="recommendations-heading">
       <div class="section-heading-row">
         <div class="section-heading-main">
-          <h2 id="recommendations-heading" class="section-title">Recomendadas para ti</h2>
+          <h2 id="recommendations-heading" class="section-title">Lecturas destacadas para ti</h2>
           <p class="section-subtitle">Seleccionadas según tu nivel de vocabulario e historial de lectura.</p>
         </div>
       </div>
@@ -182,20 +194,7 @@
       </div>
     </section>
 
-    <!-- Explora Historias (Shell Editorial Beige) -->
-    <section class="explore-editorial-shell" aria-labelledby="explore-stories-heading">
-      <div class="section-heading-row explore-shell-header">
-        <div class="section-heading-main">
-          <h2 id="explore-stories-heading" class="section-title">Explora historias</h2>
-          <p class="section-subtitle">Descubre lecturas por lugar, tema o perspectiva.</p>
-        </div>
-      </div>
-
-      <!-- Universo temático destacado: Latinoamérica -->
-      <app-editorial-universe [latinAmerica]="latinAmerica()" />
-    </section>
-
-    <!-- Estanterías de descubrimiento dinámicas (Discovery Shelves) -->
+    <!-- 5. Estanterías de descubrimiento dinámicas (Discovery Shelves) / Colecciones -->
     @if (discoveryHome()) {
       @for (shelf of shelves(); track shelf.key) {
         <app-discovery-shelf [shelf]="shelf" />

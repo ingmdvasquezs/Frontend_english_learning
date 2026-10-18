@@ -2,6 +2,8 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  AfterViewInit,
+  HostListener,
   computed,
   inject,
   signal,
@@ -13,6 +15,7 @@ import {
   BrowsePlatformReadingsFilters,
   DiscoveryCountrySummary,
   DiscoveryRegionOverview,
+  DiscoveryTopicSummary,
   EditorialLevel,
   ReadingCollection,
   RecommendedPlatformReading,
@@ -24,10 +27,10 @@ import {
   CountryFilterOption,
   TopicFilterOption,
 } from '../../components/collection-filters/collection-filters';
-import { coverUrl } from '../../../home/utils/cover-url';
-import { resolveHeroAssetUrl } from '../../../home/components/editorial-universe/editorial-universe';
+import { resolveMediaUrl } from '../../../../shared/utils/media-url';
 
-export const NEUTRAL_LATAM_HERO_FALLBACK: string | null = null;
+export const NEUTRAL_LATAM_HERO_FALLBACK =
+  '/assets/editorial/heroes/hero-latam-colombia-valle-de-cocora.webp';
 
 @Component({
   selector: 'app-collection-detail',
@@ -35,7 +38,7 @@ export const NEUTRAL_LATAM_HERO_FALLBACK: string | null = null;
   templateUrl: './collection-detail.html',
   styleUrl: './collection-detail.css',
 })
-export class CollectionDetail implements OnInit {
+export class CollectionDetail implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly homeService = inject(HomeService);
   private readonly destroyRef = inject(DestroyRef);
@@ -45,7 +48,10 @@ export class CollectionDetail implements OnInit {
   readonly selectedTopic = signal<string | null>(null);
   readonly selectedLevel = signal<EditorialLevel | null>(null);
   readonly currentPage = signal<number>(0);
-  readonly pageSize = 12;
+  readonly loadingMore = signal<boolean>(false);
+  readonly pageSize = computed<number>(() => {
+    return this.isLatinAmerica() && this.selectedCountry() !== null ? 24 : 12;
+  });
 
   readonly latamOverview = signal<DiscoveryRegionOverview | null>(null);
   readonly collection = signal<ReadingCollection | null>(null);
@@ -57,6 +63,8 @@ export class CollectionDetail implements OnInit {
   readonly totalPages = signal<number>(0);
   readonly readingsLoading = signal<boolean>(false);
   readonly readingsError = signal<string | null>(null);
+
+  readonly failedHeroImages = signal<ReadonlySet<string>>(new Set<string>());
 
   readonly isLatinAmerica = computed(() => this.slug() === 'latin-america');
   readonly isNew = computed(() => this.slug() === 'new');
@@ -72,20 +80,81 @@ export class CollectionDetail implements OnInit {
     const countries = this.latamOverview()?.countries ?? [];
     if (countries.length === 0) return null;
     const selected = this.selectedCountry();
-    return countries.find((c) => c.countryCode === selected) ?? countries[0];
+    if (!selected) return null;
+    return countries.find((c) => c.countryCode.toUpperCase() === selected.toUpperCase()) ?? null;
   });
 
   readonly activeTopics = computed<TopicFilterOption[]>(() => {
     const country = this.activeCountry();
     if (!country) return [];
-    return (country.topics ?? []).map((t) => ({
-      key: t.key,
-      name: t.displayName,
-    }));
+    return (country.topics ?? [])
+      .filter((t) => t.readingCount > 0)
+      .map((t) => ({
+        key: t.key,
+        name: this.getTopicName(t.key) || t.displayName,
+      }));
+  });
+
+  readonly isCountryLanding = computed<boolean>(() => {
+    return this.isLatinAmerica() && this.activeCountry() !== null;
+  });
+
+  readonly hasMore = computed<boolean>(() => {
+    return this.isCountryLanding() && this.readings().length < this.totalElements();
+  });
+
+  readonly cefrRange = computed<string>(() => {
+    const levels = this.readings()
+      .map((r) => r.editorialLevel)
+      .filter((lvl): lvl is EditorialLevel => Boolean(lvl));
+    if (levels.length === 0) return 'A1 – C2';
+    const order: EditorialLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const indices = levels.map((l) => order.indexOf(l)).filter((i) => i >= 0);
+    if (indices.length === 0) return 'A1 – C2';
+    const min = order[Math.min(...indices)];
+    const max = order[Math.max(...indices)];
+    return min === max ? min : `${min} – ${max}`;
+  });
+
+  readonly featuredTopic = computed<DiscoveryTopicSummary | null>(() => {
+    const topics = (this.activeCountry()?.topics ?? []).filter((t) => t.readingCount > 0);
+    if (topics.length === 0) return null;
+    return [...topics].sort((a, b) => b.readingCount - a.readingCount)[0] ?? null;
+  });
+
+  readonly featuredReadings = computed<RecommendedPlatformReading[]>(() => {
+    return this.readings().slice(0, 4);
+  });
+
+  readonly topicSections = computed(() => {
+    const country = this.activeCountry();
+    if (!country) return [];
+    const allReadings = this.readings();
+    return (country.topics ?? [])
+      .filter((t) => t.readingCount > 0)
+      .map((topic) => {
+        let matchingReadings = allReadings.filter((r) => r.discoveryTopic === topic.key);
+        if (
+          matchingReadings.length === 0 &&
+          (country.topics?.filter((t) => t.readingCount > 0).length === 1)
+        ) {
+          matchingReadings = allReadings;
+        }
+        return {
+          topic,
+          displayName: this.getTopicName(topic.key) || topic.displayName,
+          readings: matchingReadings,
+          description: this.getTopicDescription(topic.key),
+        };
+      });
   });
 
   readonly title = computed(() => {
     if (this.isLatinAmerica()) {
+      const country = this.activeCountry();
+      if (country) {
+        return country.displayName;
+      }
       return this.latamOverview()?.region.displayName ?? 'Descubre Latinoamérica';
     }
     if (this.isNew()) return 'Novedades';
@@ -108,17 +177,51 @@ export class CollectionDetail implements OnInit {
     return this.collection()?.description ?? '';
   });
 
-  readonly heroImageUrl = computed(() => {
+  readonly heroImageUrl = computed<string | null>(() => {
     if (this.isLatinAmerica()) {
+      const region = this.latamOverview()?.region;
+      const regionHeroKey = region?.heroKey || region?.heroImages?.[0]?.assetKey;
+      const regionCandidate = regionHeroKey ? resolveMediaUrl(regionHeroKey) : null;
+      const regionHeroUrl =
+        (regionCandidate && !this.failedHeroImages().has(regionCandidate) ? regionCandidate : null) ??
+        (!this.failedHeroImages().has(NEUTRAL_LATAM_HERO_FALLBACK) ? NEUTRAL_LATAM_HERO_FALLBACK : null);
+
       const country = this.activeCountry();
-      const heroKey = country?.heroImages?.[0]?.assetKey;
-      if (heroKey) {
-        return resolveHeroAssetUrl(heroKey);
+      if (country) {
+        const countryHeroKey =
+          country.heroKey ||
+          country.heroImages?.[0]?.assetKey ||
+          null;
+
+        const candidateUrl = countryHeroKey ? resolveMediaUrl(countryHeroKey) : null;
+        if (candidateUrl && !this.failedHeroImages().has(candidateUrl)) {
+          return candidateUrl;
+        }
+
+        // Active country has no hero or its image failed -> fallback to region hero
+        return regionHeroUrl;
       }
-      return NEUTRAL_LATAM_HERO_FALLBACK;
+
+      // No country selected -> region hero
+      return regionHeroUrl;
     }
-    return coverUrl(this.collection()?.coverKey);
+
+    const collectionCover = resolveMediaUrl(this.collection()?.coverKey);
+    if (collectionCover && !this.failedHeroImages().has(collectionCover)) {
+      return collectionCover;
+    }
+
+    return null;
   });
+
+  onHeroImageError(url: string): void {
+    this.failedHeroImages.update((current) => {
+      if (current.has(url)) return current;
+      const next = new Set(current);
+      next.add(url);
+      return next;
+    });
+  }
 
   readonly countLabel = computed(() => {
     const count = this.totalElements();
@@ -218,15 +321,16 @@ export class CollectionDetail implements OnInit {
     }
 
     const normalizedParam = countryParam?.toUpperCase().trim() ?? null;
-    const match = normalizedParam
-      ? countries.find((c) => c.countryCode.toUpperCase() === normalizedParam)
-      : null;
+    if (!normalizedParam) {
+      this.selectedCountry.set(null);
+      this.selectedTopic.set(null);
+      return;
+    }
 
+    const match = countries.find((c) => c.countryCode.toUpperCase() === normalizedParam);
     const validCountry = match ?? countries[0];
     this.selectedCountry.set(validCountry.countryCode);
-
-    const firstTopic = validCountry.topics?.[0]?.key ?? null;
-    this.selectedTopic.set(firstTopic);
+    this.selectedTopic.set(null);
   }
 
   private handleEditorialCollectionTransition(slug: string): Observable<unknown> {
@@ -265,17 +369,22 @@ export class CollectionDetail implements OnInit {
     );
   }
 
-  fetchReadingsObservable(): Observable<unknown> {
+  fetchReadingsObservable(append = false): Observable<unknown> {
     const slug = this.slug();
     if (!slug) return of(null);
 
-    this.readingsLoading.set(true);
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.readingsLoading.set(true);
+    }
     this.readingsError.set(null);
 
+    const size = this.pageSize();
     const filters: BrowsePlatformReadingsFilters = {
       editorialLevel: this.selectedLevel(),
       page: this.currentPage(),
-      size: this.pageSize,
+      size,
     };
 
     if (this.isLatinAmerica()) {
@@ -292,28 +401,50 @@ export class CollectionDetail implements OnInit {
         next: (responseXml) => {
           try {
             const page = this.homeService.parseBrowsePlatformReadings(responseXml);
-            this.readings.set(page.readings);
+            if (append) {
+              this.readings.update((current) => [...current, ...page.readings]);
+            } else {
+              this.readings.set(page.readings);
+            }
             this.totalElements.set(page.totalElements);
-            this.totalPages.set(Math.ceil(page.totalElements / this.pageSize));
+            this.totalPages.set(Math.ceil(page.totalElements / size));
           } catch {
             this.readingsError.set('No se pudieron interpretar las historias.');
           }
-          this.readingsLoading.set(false);
+          if (append) {
+            this.loadingMore.set(false);
+          } else {
+            this.readingsLoading.set(false);
+          }
         },
         error: () => {
           this.readingsError.set('No se pudieron cargar las historias de la colección.');
-          this.readingsLoading.set(false);
+          if (append) {
+            this.loadingMore.set(false);
+          } else {
+            this.readingsLoading.set(false);
+          }
         },
       }),
       catchError(() => {
-        this.readingsLoading.set(false);
+        if (append) {
+          this.loadingMore.set(false);
+        } else {
+          this.readingsLoading.set(false);
+        }
         return of(null);
       })
     );
   }
 
   fetchReadings(): void {
-    this.fetchReadingsObservable().subscribe();
+    this.fetchReadingsObservable(false).subscribe();
+  }
+
+  loadMore(): void {
+    if (this.loadingMore() || !this.hasMore()) return;
+    this.currentPage.update((p) => p + 1);
+    this.fetchReadingsObservable(true).subscribe();
   }
 
   onLevelChange(level: EditorialLevel | null): void {
@@ -326,8 +457,7 @@ export class CollectionDetail implements OnInit {
   onCountryChange(countryCode: string | null): void {
     if (this.selectedCountry() === countryCode) return;
     this.selectedCountry.set(countryCode);
-    const country = this.activeCountry();
-    this.selectedTopic.set(country?.topics?.[0]?.key ?? null);
+    this.selectedTopic.set(null);
     this.currentPage.set(0);
     this.fetchReadings();
   }
@@ -341,10 +471,7 @@ export class CollectionDetail implements OnInit {
 
   onClearFilters(): void {
     this.selectedLevel.set(null);
-    if (this.isLatinAmerica()) {
-      const country = this.activeCountry();
-      this.selectedTopic.set(country?.topics?.[0]?.key ?? null);
-    }
+    this.selectedTopic.set(null);
     this.currentPage.set(0);
     this.fetchReadings();
   }
@@ -357,5 +484,125 @@ export class CollectionDetail implements OnInit {
         window.scrollTo({ top: 300, behavior: 'smooth' });
       }
     }
+  }
+
+
+  getTopicName(key: string): string {
+    const names: Record<string, string> = {
+      MYTHS_AND_LEGENDS: 'Mitos y leyendas',
+      REAL_STORIES: 'Historias reales',
+      HISTORY_AND_MEMORY: 'Historia y memoria',
+      CULTURE_AND_TRADITIONS: 'Cultura y tradiciones',
+      NATURE_AND_PLACES: 'Naturaleza y lugares',
+      PEOPLE: 'Personas',
+    };
+    if (names[key]) return names[key];
+    const found = this.activeCountry()?.topics?.find((t) => t.key === key);
+    return found?.displayName || key;
+  }
+
+  getTopicDescription(key: string): string {
+    const descriptions: Record<string, string> = {
+      MYTHS_AND_LEGENDS: 'Relatos extraordinarios que forman parte de la tradición oral.',
+      REAL_STORIES: 'Hechos y vivencias que marcaron la historia y la cultura.',
+      HISTORY_AND_MEMORY: 'Hitos, transformaciones y memoria colectiva.',
+      CULTURE_AND_TRADITIONS: 'Expresiones vivas, fiestas y costumbres ancestrales.',
+      NATURE_AND_PLACES: 'Paisajes asombrosos, biodiversidad y geografía.',
+      PEOPLE: 'Vidas fascinantes y personajes memorables.',
+    };
+    return descriptions[key] || 'Relatos fascinantes de su historia y cultura.';
+  }
+
+  scrollToCatalog(): void {
+    if (typeof document !== 'undefined') {
+      const el = document.getElementById('all-stories');
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }
+
+  // Topic Rail Carousel & Filter helpers
+  readonly railStates = signal<Record<string, { atStart: boolean; atEnd: boolean }>>({});
+
+  ngAfterViewInit(): void {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => this.checkAllRails(), 150);
+    }
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.checkAllRails();
+  }
+
+  checkAllRails(): void {
+    if (typeof document === 'undefined') return;
+    for (const section of this.topicSections()) {
+      const el = document.getElementById(`topic-rail-${section.topic.key}`);
+      if (el) {
+        this.updateRailState(section.topic.key, el);
+      }
+    }
+  }
+
+  isRailAtStart(topicKey: string): boolean {
+    return this.railStates()[topicKey]?.atStart ?? true;
+  }
+
+  isRailAtEnd(topicKey: string, readingsCount = 0): boolean {
+    const state = this.railStates()[topicKey];
+    if (state !== undefined) return state.atEnd;
+    return readingsCount <= 2;
+  }
+
+  onRailScroll(topicKey: string, event: Event): void {
+    const el = event.target as HTMLElement;
+    if (!el) return;
+    this.updateRailState(topicKey, el);
+  }
+
+  updateRailState(topicKey: string, el: HTMLElement): void {
+    const tolerance = 4;
+    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+    const hasOverflow = maxScroll > tolerance;
+    const atStart = el.scrollLeft <= tolerance;
+    const atEnd = !hasOverflow || el.scrollLeft >= maxScroll - tolerance;
+
+    this.railStates.update((states) => ({
+      ...states,
+      [topicKey]: { atStart, atEnd },
+    }));
+  }
+
+  scrollRail(topicKey: string, direction: 'previous' | 'next'): void {
+    if (typeof document === 'undefined') return;
+    const rail = document.getElementById(`topic-rail-${topicKey}`);
+    if (!rail) return;
+
+    const scrollAmount = Math.max(260, Math.round(rail.clientWidth * 0.75) || 300);
+    const delta = direction === 'next' ? scrollAmount : -scrollAmount;
+
+    if (typeof rail.scrollBy === 'function') {
+      rail.scrollBy({ left: delta, behavior: 'smooth' });
+    } else {
+      rail.scrollLeft += delta;
+    }
+
+    setTimeout(() => {
+      this.updateRailState(topicKey, rail);
+    }, 350);
+  }
+
+  getTopicSeeAllLabel(count: number): string {
+    if (count <= 1) {
+      return 'Ver historia →';
+    }
+    return `Ver las ${count} →`;
+  }
+
+  filterByTopicAndScroll(topicKey: string): void {
+    this.onTopicChange(topicKey);
+    this.scrollToCatalog();
   }
 }

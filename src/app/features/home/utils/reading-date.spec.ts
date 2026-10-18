@@ -19,7 +19,10 @@ describe('reading-date utils', () => {
       expect(formatShortDate(null)).toBeNull();
       expect(formatShortDate(undefined)).toBeNull();
       expect(formatShortDate('')).toBeNull();
+      expect(formatShortDate('   ')).toBeNull();
       expect(formatShortDate('invalid-date')).toBeNull();
+      expect(formatShortDate('2026-99-99')).toBeNull();
+      expect(formatShortDate('2026-00-14')).toBeNull();
     });
   });
 

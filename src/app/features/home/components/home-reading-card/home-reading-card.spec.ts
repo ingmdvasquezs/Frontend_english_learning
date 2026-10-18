@@ -429,6 +429,50 @@ describe('HomeReadingCard', () => {
     expect(summary.textContent).toContain('Open →');
   });
 
+  it('Phase 19.5D - F: renders English shortDescription exactly as provided without frontend translation', () => {
+    const englishTeaser = 'A vibrant journey through pre-Hispanic folklore and ancient traditions.';
+    fixture.componentRef.setInput('reading', reading({ shortDescription: englishTeaser }));
+    fixture.detectChanges();
+
+    const descEl = fixture.nativeElement.querySelector('.reading-card-desc');
+    expect(descEl).toBeTruthy();
+    expect(descEl.textContent?.trim()).toBe(englishTeaser);
+  });
+
+  it('Phase 19.5D - G: long shortDescription is enclosed in 2-line clamped element within reading-card-desc-wrap', () => {
+    const longTeaser = 'This is an extensive editorial summary designed to exceed two lines on typical cards, giving readers context before opening the story.';
+    fixture.componentRef.setInput('reading', reading({ shortDescription: longTeaser }));
+    fixture.detectChanges();
+
+    const wrap = fixture.nativeElement.querySelector('.reading-card-desc-wrap');
+    expect(wrap).toBeTruthy();
+    const desc = wrap.querySelector('.reading-card-desc');
+    expect(desc).toBeTruthy();
+    expect(desc.textContent?.trim()).toBe(longTeaser);
+  });
+
+  it('Phase 19.5D - H: full description accessible via tooltip and keyboard focus without modifying card layout or hiding card elements', () => {
+    const fullText = 'Full English short description text that can be viewed in a discreet popover on focus or hover.';
+    fixture.componentRef.setInput('reading', reading({ shortDescription: fullText }));
+    fixture.detectChanges();
+
+    const wrap = fixture.nativeElement.querySelector('.reading-card-desc-wrap') as HTMLElement;
+    expect(wrap).toBeTruthy();
+    expect(wrap.getAttribute('tabindex')).toBe('0');
+    expect(wrap.getAttribute('role')).toBe('region');
+    expect(wrap.getAttribute('aria-label')).toBe(`Descripción: ${fullText}`);
+
+    const tooltip = wrap.querySelector('.reading-card-desc-tooltip') as HTMLElement;
+    expect(tooltip).toBeTruthy();
+    expect(tooltip.getAttribute('role')).toBe('tooltip');
+    expect(tooltip.textContent?.trim()).toBe(fullText);
+
+    // Title, cover, level, metric, and CTA remain present in DOM and intact
+    expect(fixture.nativeElement.querySelector('.reading-card-title')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.reading-card-cover')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.reading-card-primary-metric')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.reading-card-cta')).toBeTruthy();
+  });
 
   function reading(overrides: Partial<RecommendedPlatformReading> = {}): RecommendedPlatformReading {
     return {

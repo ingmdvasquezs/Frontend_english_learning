@@ -1,80 +1,292 @@
 <div class="collection-detail-page">
-  <!-- Navegación de retorno -->
-  <nav class="detail-nav" aria-label="Navegación de retorno">
-    <a routerLink="/home" class="back-link">
-      <span aria-hidden="true">←</span> Volver a Inicio
-    </a>
-  </nav>
-
   @if (collectionLoading()) {
     <div class="collection-loading" aria-live="polite">
       <div class="loading-spinner" aria-hidden="true"></div>
-      <p>Cargando información de la colección...</p>
+      <p>Cargando colección...</p>
     </div>
   } @else if (collectionNotFound()) {
     <div class="collection-not-found" role="alert">
-      <h2 class="not-found-title">Colección no disponible</h2>
+      <h2 class="not-found-title">Colección no encontrada</h2>
       <p class="not-found-desc">
-        La colección solicitada no existe o no se encuentra disponible actualmente.
+        La colección que buscas no existe o no está disponible en este momento.
       </p>
-      <a routerLink="/home" class="editorial-btn">Volver a Inicio</a>
+      <a routerLink="/home" class="editorial-btn">Volver al inicio</a>
     </div>
   } @else {
-    <!-- Hero Editorial de la Colección -->
-    <header class="collection-hero app-card">
-      <div class="hero-media">
-        @if (heroImageUrl(); as url) {
-          <img [src]="url" [alt]="'Portada de ' + title()" class="hero-img" />
+    <!-- 1. BREADCRUMB EDITORIAL -->
+    <nav class="detail-breadcrumb" aria-label="Ruta de navegación">
+      <ol class="breadcrumb-list">
+        <li><a routerLink="/home" class="breadcrumb-link">Inicio</a></li>
+        <li class="breadcrumb-separator" aria-hidden="true">/</li>
+        @if (isCountryLanding() && activeCountry(); as country) {
+          <li>
+            <button
+              type="button"
+              class="breadcrumb-link breadcrumb-btn"
+              (click)="onCountryChange(null)"
+            >
+              Latinoamérica
+            </button>
+          </li>
+          <li class="breadcrumb-separator" aria-hidden="true">/</li>
+          <li class="breadcrumb-current" aria-current="page">{{ country.displayName }}</li>
         } @else {
-          <div class="hero-fallback" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-              <path d="M6 6h10M6 10h10"/>
-            </svg>
-            <span class="fallback-tag">Colección Editorial</span>
-          </div>
+          <li class="breadcrumb-current" aria-current="page">{{ title() }}</li>
         }
-      </div>
+      </ol>
+    </nav>
 
-      <div class="hero-body">
-        <div class="hero-top-row">
-          <span class="hero-eyebrow">
-            @if (isLatinAmerica()) {
-              Región editorial
-            } @else if (isNew()) {
-              Catálogo reciente
+    <!-- 2. HERO PRINCIPAL -->
+    @if (isCountryLanding() && activeCountry(); as country) {
+      <header class="country-hero-section">
+        <div class="country-hero-grid">
+          <!-- Hero Media on Left -->
+          <div class="country-hero-media">
+            @if (heroImageUrl(); as url) {
+              <img
+                [src]="url"
+                [alt]="'Paisaje y patrimonio de ' + country.displayName"
+                class="country-hero-img"
+                (error)="onHeroImageError(url)"
+              />
             } @else {
-              Colección editorial
+              <div class="hero-fallback" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                  <path d="M6 6h10M6 10h10"/>
+                </svg>
+                <span class="fallback-tag">{{ country.displayName }}</span>
+              </div>
             }
-          </span>
-          <span class="hero-count-badge">{{ countLabel() }}</span>
+          </div>
+
+          <!-- Editorial Context on Right -->
+          <div class="country-hero-context">
+            <span class="country-hero-eyebrow">
+              LATINOAMÉRICA · {{ country.displayName.toUpperCase() }}
+            </span>
+            <h1 class="country-hero-title">{{ country.displayName }}</h1>
+            @if (country.tagline) {
+              <p class="country-hero-tagline">{{ country.tagline }}</p>
+            }
+            <p class="country-hero-desc">
+              {{ country.description || 'Explora historias que dan vida a su cultura, tradiciones y belleza natural.' }}
+            </p>
+
+            <!-- Metadata Chips Strip -->
+            <div class="country-hero-chips" aria-label="Detalles de la colección">
+              <span class="hero-chip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                </svg>
+                <span>{{ country.readingCount }} historias</span>
+              </span>
+              <span class="hero-chip">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="3" y="12" width="4" height="8" rx="1"/>
+                  <rect x="10" y="8" width="4" height="12" rx="1"/>
+                  <rect x="17" y="4" width="4" height="16" rx="1"/>
+                </svg>
+                <span>{{ cefrRange() }}</span>
+              </span>
+            </div>
+          </div>
         </div>
-        <h1 class="hero-title">{{ title() }}</h1>
-        <p class="hero-description">{{ description() }}</p>
-      </div>
-    </header>
+      </header>
+    } @else {
+      <!-- Generic / Region Collection Hero -->
+      <header class="collection-hero app-card">
+        <div class="hero-media">
+          @if (heroImageUrl(); as url) {
+            <img
+              [src]="url"
+              [alt]="'Portada de ' + title()"
+              class="hero-img"
+              (error)="onHeroImageError(url)"
+            />
+          } @else {
+            <div class="hero-fallback" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                <path d="M6 6h10M6 10h10"/>
+              </svg>
+              <span class="fallback-tag">Colección Editorial</span>
+            </div>
+          }
+        </div>
 
-    <!-- Filtros de la Colección -->
-    <section class="detail-filters-section" aria-label="Filtros de lecturas">
-      <app-collection-filters
-        [showCountryFilter]="isLatinAmerica()"
-        [countries]="latamCountries()"
-        [selectedCountry]="selectedCountry()"
-        [showTopicFilter]="isLatinAmerica()"
-        [topics]="activeTopics()"
-        [selectedTopic]="selectedTopic()"
-        [selectedLevel]="selectedLevel()"
-        (countryChange)="onCountryChange($event)"
-        (topicChange)="onTopicChange($event)"
-        (levelChange)="onLevelChange($event)"
-        (clear)="onClearFilters()"
-      />
-    </section>
+        <div class="hero-body">
+          <div class="hero-top-row">
+            <span class="hero-eyebrow">
+              @if (isLatinAmerica()) {
+                Región editorial
+              } @else if (isNew()) {
+                Catálogo reciente
+              } @else {
+                Colección editorial
+              }
+            </span>
+            <span class="hero-count-badge">{{ countLabel() }}</span>
+          </div>
+          <h1 class="hero-title">{{ title() }}</h1>
+          <p class="hero-description">{{ description() }}</p>
+        </div>
+      </header>
+    }
 
-    <!-- Grid de Lecturas de la Colección -->
-    <section class="collection-readings-section" aria-labelledby="collection-readings-heading">
+    <!-- 3. COUNTRY SWITCHER (Solo selector de país, sin TEMA ni NIVEL) -->
+    @if (isLatinAmerica() && latamCountries().length > 0) {
+      <nav class="country-switcher" aria-label="Seleccionar país">
+        <span class="country-switcher-label">País:</span>
+        <div class="country-pills-row" role="tablist">
+          @for (c of latamCountries(); track c.code) {
+            <button
+              type="button"
+              class="country-pill"
+              [class.active]="selectedCountry() === c.code"
+              (click)="onCountryChange(c.code)"
+              role="tab"
+              [attr.aria-selected]="selectedCountry() === c.code"
+            >
+              {{ c.name }}
+            </button>
+          }
+        </div>
+      </nav>
+    } @else if (!isLatinAmerica()) {
+      <section class="detail-filters-section" aria-label="Filtros de lecturas">
+        <app-collection-filters
+          [selectedLevel]="selectedLevel()"
+          (levelChange)="onLevelChange($event)"
+          (clear)="onClearFilters()"
+        />
+      </section>
+    }
+
+    <!-- 4. SI ES COUNTRY LANDING: HISTORIAS DESTACADAS + SECCIONES POR TEMA -->
+    @if (isCountryLanding() && activeCountry(); as country) {
+      <!-- 4A. HISTORIAS DESTACADAS (Máximo 4) -->
+      @if (featuredReadings().length > 0) {
+        <section class="country-featured-section" aria-labelledby="country-featured-heading">
+          <div class="section-heading-row">
+            <h2 id="country-featured-heading" class="section-title">
+              Historias destacadas de {{ country.displayName }}
+            </h2>
+            <button type="button" class="section-see-all-btn" (click)="scrollToCatalog()">
+              Ver catálogo completo <span aria-hidden="true">→</span>
+            </button>
+          </div>
+
+          <div class="featured-cards-grid">
+            @for (item of featuredReadings(); track item.readingId) {
+              <app-home-reading-card [reading]="item" />
+            }
+          </div>
+        </section>
+      }
+
+      <!-- 4B. SECCIONES DINÁMICAS POR DISCOVERY TOPIC (readingCount > 0) -->
+      @for (block of topicSections(); track block.topic.key) {
+        <section class="topic-editorial-section" [attr.aria-labelledby]="'topic-heading-' + block.topic.key">
+          <div class="section-heading-row">
+            <div class="topic-heading-intro">
+              <h2 [id]="'topic-heading-' + block.topic.key" class="section-title">
+                {{ block.displayName }}
+              </h2>
+              <p class="topic-section-desc">{{ block.description }}</p>
+            </div>
+            <button
+              type="button"
+              class="section-see-all-btn"
+              (click)="filterByTopicAndScroll(block.topic.key)"
+              [attr.aria-label]="getTopicSeeAllLabel(block.topic.readingCount) + ' de ' + block.displayName"
+            >
+              {{ getTopicSeeAllLabel(block.topic.readingCount) }}
+            </button>
+          </div>
+
+          @if (block.readings.length > 0) {
+            <div class="topic-rail-container">
+              <button
+                type="button"
+                class="rail-arrow rail-arrow-left"
+                aria-label="Ver lecturas anteriores"
+                [disabled]="isRailAtStart(block.topic.key)"
+                [class.rail-arrow-hidden]="isRailAtStart(block.topic.key)"
+                (click)="scrollRail(block.topic.key, 'previous')"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              <div
+                [id]="'topic-rail-' + block.topic.key"
+                class="topic-readings-rail"
+                role="region"
+                tabindex="0"
+                [attr.aria-label]="'Lecturas de ' + block.displayName"
+                (scroll)="onRailScroll(block.topic.key, $event)"
+              >
+                @for (r of block.readings; track r.readingId) {
+                  <div class="topic-rail-item">
+                    <app-home-reading-card [reading]="r" />
+                  </div>
+                }
+              </div>
+
+              <button
+                type="button"
+                class="rail-arrow rail-arrow-right"
+                aria-label="Ver más lecturas"
+                [disabled]="isRailAtEnd(block.topic.key, block.readings.length)"
+                [class.rail-arrow-hidden]="isRailAtEnd(block.topic.key, block.readings.length)"
+                (click)="scrollRail(block.topic.key, 'next')"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          }
+        </section>
+      }
+    }
+
+    <!-- 5. TODAS LAS HISTORIAS (Catálogo completo al final) -->
+    <section id="all-stories" class="collection-readings-section" aria-labelledby="collection-readings-heading">
       <div class="section-heading-row">
-        <h2 id="collection-readings-heading" class="section-title">Lecturas disponibles</h2>
+        <div class="catalog-heading-intro">
+          <h2 id="collection-readings-heading" class="section-title">
+            @if (isCountryLanding() && activeCountry(); as country) {
+              Todas las historias de {{ country.displayName }}
+            } @else {
+              Lecturas disponibles
+            }
+          </h2>
+          @if (selectedTopic(); as activeTopicKey) {
+            <div class="active-topic-filter-row">
+              <span class="active-topic-chip">
+                <span>{{ getTopicName(activeTopicKey) }}</span>
+                <button
+                  type="button"
+                  class="active-topic-chip-remove"
+                  (click)="onTopicChange(null)"
+                  [attr.aria-label]="'Quitar filtro ' + getTopicName(activeTopicKey)"
+                >
+                  ×
+                </button>
+              </span>
+              <button
+                type="button"
+                class="catalog-show-all-btn"
+                (click)="onTopicChange(null)"
+              >
+                Mostrar todas
+              </button>
+            </div>
+          }
+        </div>
         <span class="results-count">{{ countLabel() }}</span>
       </div>
 
@@ -92,7 +304,7 @@
         <div class="catalog-empty" role="status">
           <h3 class="empty-title">No hay lecturas disponibles con los filtros seleccionados.</h3>
           <p class="empty-desc">Prueba limpiando los filtros para ver todas las lecturas disponibles.</p>
-          @if (selectedLevel() !== null || (isLatinAmerica() && selectedCountry() !== null)) {
+          @if (selectedLevel() !== null || selectedTopic() !== null) {
             <button type="button" class="editorial-btn" (click)="onClearFilters()">
               Ver todas las lecturas
             </button>
@@ -105,8 +317,24 @@
           }
         </div>
 
-        <!-- Paginación -->
-        @if (totalPages() > 1) {
+        <!-- Paginación continua / Cargar más para Country Editorial Page (> 24 lecturas) -->
+        @if (isCountryLanding() && hasMore()) {
+          <div class="load-more-section">
+            <button
+              type="button"
+              class="load-more-btn"
+              [disabled]="loadingMore()"
+              (click)="loadMore()"
+            >
+              @if (loadingMore()) {
+                Cargando más historias...
+              } @else {
+                Cargar más historias ↓
+              }
+            </button>
+          </div>
+        } @else if (!isCountryLanding() && totalPages() > 1) {
+          <!-- Paginación clásica sólo para colecciones no-country -->
           <nav class="pagination-nav" aria-label="Paginación de lecturas">
             <button
               type="button"

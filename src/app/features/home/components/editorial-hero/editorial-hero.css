@@ -6,7 +6,7 @@
 .editorial-hero {
   position: relative;
   width: 100%;
-  min-height: clamp(210px, 18vw, 255px);
+  min-height: clamp(18rem, 26vw, 22rem);
   border-radius: 1rem;
   overflow: hidden;
   border: 1px solid var(--app-border);

@@ -29,6 +29,7 @@ export interface RecommendedPlatformReading {
   coverKey: string | null;
   reasonCode?: RecommendationReasonCode | null;
   description?: string | null;
+  shortDescription?: string | null;
   countryCode?: string | null;
   discoveryTopic?: string | null;
 }
@@ -54,6 +55,7 @@ export interface DiscoveryCountrySummary {
   description: string;
   displayOrder: number;
   readingCount: number;
+  heroKey?: string | null;
   heroImages: DiscoveryHeroImage[];
   topics: DiscoveryTopicSummary[];
 }
@@ -62,6 +64,8 @@ export interface DiscoveryRegionDetails {
   key: string;
   displayName: string;
   subtitle?: string | null;
+  heroKey?: string | null;
+  heroImages?: DiscoveryHeroImage[];
 }
 
 export interface DiscoveryRegionOverview {

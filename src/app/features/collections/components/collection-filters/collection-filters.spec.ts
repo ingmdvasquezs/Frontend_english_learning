@@ -49,49 +49,60 @@ describe('CollectionFilters', () => {
     expect(countryPills[1].textContent).toContain('Perú');
   });
 
-  it('renders topic pills and emits topicChange when clicked', () => {
+  it('renders topic pills including Todos and emits topicChange when clicked', () => {
     fixture.componentRef.setInput('showTopicFilter', true);
     fixture.componentRef.setInput('topics', [
       { key: 'MYTHS_AND_LEGENDS', name: 'Mitos y leyendas' },
       { key: 'REAL_STORIES', name: 'Historias reales' },
     ]);
-    fixture.componentRef.setInput('selectedTopic', 'MYTHS_AND_LEGENDS');
+    fixture.componentRef.setInput('selectedTopic', null); // default: Todos
     fixture.detectChanges();
 
     const topicPills = fixture.nativeElement.querySelectorAll('.filter-group-topics .filter-pill');
-    expect(topicPills.length).toBe(2);
-    expect(topicPills[0].textContent).toContain('Mitos y leyendas');
+    expect(topicPills.length).toBe(3); // Todos + 2 topics
+    expect(topicPills[0].textContent).toContain('Todos');
     expect(topicPills[0].classList).toContain('active');
-    expect(topicPills[1].textContent).toContain('Historias reales');
+    expect(topicPills[1].textContent).toContain('Mitos y leyendas');
     expect(topicPills[1].classList).not.toContain('active');
+    expect(topicPills[2].textContent).toContain('Historias reales');
+    expect(topicPills[2].classList).not.toContain('active');
 
-    let emittedTopic: string | null = null;
+    let emittedTopic: string | null = 'not-called';
     component.topicChange.subscribe((t) => (emittedTopic = t));
 
-    topicPills[1].click();
+    // Click a specific topic
+    topicPills[2].click();
     expect(emittedTopic).toBe('REAL_STORIES');
+
+    // Simulate parent updating the selectedTopic input
+    fixture.componentRef.setInput('selectedTopic', 'REAL_STORIES');
+    fixture.detectChanges();
+
+    // Click Todos pill -> emits null
+    topicPills[0].click();
+    expect(emittedTopic).toBeNull();
   });
 
-  it('shows clear filters button only when level is selected or topic differs from default', () => {
+  it('shows clear filters button only when level is selected or topic is not null', () => {
     fixture.componentRef.setInput('showTopicFilter', true);
     fixture.componentRef.setInput('topics', [
       { key: 'MYTHS_AND_LEGENDS', name: 'Mitos y leyendas' },
       { key: 'REAL_STORIES', name: 'Historias reales' },
     ]);
-    fixture.componentRef.setInput('selectedTopic', 'MYTHS_AND_LEGENDS');
+    fixture.componentRef.setInput('selectedTopic', null); // default: Todos
     fixture.componentRef.setInput('selectedLevel', null);
     fixture.detectChanges();
 
-    // In default state: clear button not visible
+    // In default state (Todos, no level): clear button not visible
     expect(fixture.nativeElement.querySelector('.filter-clear-btn')).toBeNull();
 
-    // When topic is non-default: clear button is visible
+    // When topic is selected: clear button is visible
     fixture.componentRef.setInput('selectedTopic', 'REAL_STORIES');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.filter-clear-btn')).not.toBeNull();
 
     // When level is selected: clear button is visible
-    fixture.componentRef.setInput('selectedTopic', 'MYTHS_AND_LEGENDS');
+    fixture.componentRef.setInput('selectedTopic', null);
     fixture.componentRef.setInput('selectedLevel', 'B1');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.filter-clear-btn')).not.toBeNull();

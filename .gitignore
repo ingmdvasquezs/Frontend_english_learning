@@ -40,6 +40,7 @@ yarn-error.log
 .sass-cache/
 /connect.lock
 /coverage
+/.scannerwork
 /libpeerconnection.log
 testem.log
 /typings

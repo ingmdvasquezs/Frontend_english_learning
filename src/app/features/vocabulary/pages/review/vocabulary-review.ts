@@ -727,12 +727,9 @@ export class VocabularyReview implements OnInit {
     this.stopAudio();
     try {
       this.audioInstance = new Audio(audioUrl);
-      const playPromise = this.audioInstance.play();
-      if (playPromise) {
-        playPromise.catch(() => {
-          // Autoplay blocked by browser policy or audio failure - review flow unaffected
-        });
-      }
+      void this.audioInstance.play().catch(() => {
+        // Autoplay blocked by browser policy or audio failure - review flow unaffected
+      });
     } catch {
       // Ignored
     }
@@ -767,12 +764,9 @@ export class VocabularyReview implements OnInit {
 
     try {
       this.audioInstance = new Audio(audioUrl);
-      const playPromise = this.audioInstance.play();
-      if (playPromise) {
-        playPromise.catch(() => {
-          this.audioError.set('Audio no disponible');
-        });
-      }
+      void this.audioInstance.play().catch(() => {
+        this.audioError.set('Audio no disponible');
+      });
     } catch {
       this.audioError.set('Audio no disponible');
     }
