@@ -1,14 +1,25 @@
 <div class="collection-detail-page">
-  <!-- 1. BREADCRUMB EDITORIAL -->
-  <nav class="detail-breadcrumb" aria-label="Ruta de navegación">
-    <ol class="breadcrumb-list">
-      <li class="breadcrumb-item">
-        <a routerLink="/home" class="breadcrumb-link">Inicio</a>
-      </li>
-      <li class="breadcrumb-separator" aria-hidden="true">/</li>
-      @if (isLatinAmerica()) {
-        <li class="breadcrumb-item">
-          @if (activeCountry()) {
+  @if (collectionLoading()) {
+    <div class="collection-loading" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Cargando colección...</p>
+    </div>
+  } @else if (collectionNotFound()) {
+    <div class="collection-not-found" role="alert">
+      <h2 class="not-found-title">Colección no encontrada</h2>
+      <p class="not-found-desc">
+        La colección que buscas no existe o no está disponible en este momento.
+      </p>
+      <a routerLink="/home" class="editorial-btn">Volver al inicio</a>
+    </div>
+  } @else {
+    <!-- 1. BREADCRUMB EDITORIAL -->
+    <nav class="detail-breadcrumb" aria-label="Ruta de navegación">
+      <ol class="breadcrumb-list">
+        <li><a routerLink="/home" class="breadcrumb-link">Inicio</a></li>
+        <li class="breadcrumb-separator" aria-hidden="true">/</li>
+        @if (isCountryLanding() && activeCountry(); as country) {
+          <li>
             <button
               type="button"
               class="breadcrumb-link breadcrumb-btn"
@@ -16,44 +27,20 @@
             >
               Latinoamérica
             </button>
-          } @else {
-            <span class="breadcrumb-current">Latinoamérica</span>
-          }
-        </li>
-        @if (activeCountry(); as country) {
-          <li class="breadcrumb-separator" aria-hidden="true">/</li>
-          <li class="breadcrumb-item">
-            <span class="breadcrumb-current">{{ country.displayName }}</span>
           </li>
+          <li class="breadcrumb-separator" aria-hidden="true">/</li>
+          <li class="breadcrumb-current" aria-current="page">{{ country.displayName }}</li>
+        } @else {
+          <li class="breadcrumb-current" aria-current="page">{{ title() }}</li>
         }
-      } @else {
-        <li class="breadcrumb-item">
-          <span class="breadcrumb-current">{{ title() }}</span>
-        </li>
-      }
-    </ol>
-  </nav>
+      </ol>
+    </nav>
 
-  @if (collectionLoading()) {
-    <div class="collection-loading" aria-live="polite">
-      <div class="loading-spinner" aria-hidden="true"></div>
-      <p>Cargando información de la colección...</p>
-    </div>
-  } @else if (collectionNotFound()) {
-    <div class="collection-not-found" role="alert">
-      <h2 class="not-found-title">Colección no disponible</h2>
-      <p class="not-found-desc">
-        La colección solicitada no existe o no se encuentra disponible actualmente.
-      </p>
-      <a routerLink="/home" class="editorial-btn">Volver a Inicio</a>
-    </div>
-  } @else {
-    <!-- 2. HERO EDITORIAL -->
+    <!-- 2. HERO PRINCIPAL -->
     @if (isCountryLanding() && activeCountry(); as country) {
-      <!-- Country Hero Section (Split 2-column panoramic) -->
       <header class="country-hero-section">
         <div class="country-hero-grid">
-          <!-- Dominant Hero Photo on Left -->
+          <!-- Hero Media on Left -->
           <div class="country-hero-media">
             @if (heroImageUrl(); as url) {
               <img
@@ -73,7 +60,7 @@
             }
           </div>
 
-          <!-- Editorial Storytelling Context on Right -->
+          <!-- Editorial Context on Right -->
           <div class="country-hero-context">
             <span class="country-hero-eyebrow">
               LATINOAMÉRICA · {{ country.displayName.toUpperCase() }}
@@ -102,14 +89,6 @@
                 </svg>
                 <span>{{ cefrRange() }}</span>
               </span>
-              @if (featuredTopic(); as fTopic) {
-                <span class="hero-chip hero-chip-highlight">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                  </svg>
-                  <span>Tema destacado: {{ fTopic.displayName }}</span>
-                </span>
-              }
             </div>
           </div>
         </div>
@@ -155,370 +134,174 @@
       </header>
     }
 
-    <!-- 3. STRIP DE FILTROS INTEGRADOS -->
-    <section class="detail-filters-section" aria-label="Filtros de lecturas">
-      <app-collection-filters
-        [showCountryFilter]="isLatinAmerica()"
-        [countries]="latamCountries()"
-        [selectedCountry]="selectedCountry()"
-        [showTopicFilter]="isLatinAmerica()"
-        [topics]="activeTopics()"
-        [selectedTopic]="selectedTopic()"
-        [selectedLevel]="selectedLevel()"
-        (countryChange)="onCountryChange($event)"
-        (topicChange)="onTopicChange($event)"
-        (levelChange)="onLevelChange($event)"
-        (clear)="onClearFilters()"
-      />
-    </section>
-
-    <!-- IF IN COUNTRY LANDING: EDITORIAL SECTIONS (Middle Row & Topics) -->
-    @if (isCountryLanding() && activeCountry(); as country) {
-      <!-- 4. MIDDLE ROW: TERRITORY EXPLORER (Left 45%) + FEATURED READINGS (Right 55%) -->
-      <section class="country-editorial-row" aria-label="Exploración editorial y lecturas destacadas">
-        <!-- Bloque Izquierdo: Explora el Territorio (45%) -->
-        <article class="territory-card">
-          <div class="territory-header">
-            <span class="territory-eyebrow">EXPLORA EL TERRITORIO</span>
-            <h2 class="territory-title">{{ country.displayName }} por regiones</h2>
-            <p class="territory-subtitle">
-              Descubre historias a través de la diversidad de paisajes, culturas y tradiciones que hacen única a {{ country.displayName }}.
-            </p>
-          </div>
-
-          <div class="territory-body">
-            <!-- Lista de pilares culturales / regiones -->
-            <ul class="territory-pillars" role="list">
-              @if (country.countryCode === 'CO') {
-                @for (reg of colombiaRegions; track reg.name) {
-                  <li
-                    class="territory-pillar-item"
-                    (click)="scrollToCatalog()"
-                    tabindex="0"
-                    role="button"
-                    [attr.aria-label]="'Ver lecturas de ' + reg.name"
-                    (keydown.enter)="scrollToCatalog()"
-                  >
-                    <span class="pillar-dot" [class]="reg.dotClass" aria-hidden="true"></span>
-                    <div class="pillar-text">
-                      <strong class="pillar-name">{{ reg.name }}</strong>
-                      <span class="pillar-count">{{ reg.desc }}</span>
-                    </div>
-                  </li>
-                }
-              } @else {
-                @for (topic of country.topics; track topic.key; let idx = $index) {
-                  <li
-                    class="territory-pillar-item"
-                    (click)="onTopicChange(topic.key); scrollToCatalog()"
-                    tabindex="0"
-                    role="button"
-                    [attr.aria-label]="'Ver lecturas de ' + topic.displayName"
-                    (keydown.enter)="onTopicChange(topic.key); scrollToCatalog()"
-                  >
-                    <span class="pillar-dot" [class]="'pillar-dot-' + (idx % 5)" aria-hidden="true"></span>
-                    <div class="pillar-text">
-                      <strong class="pillar-name">{{ topic.displayName }}</strong>
-                      <span class="pillar-count">{{ topic.readingCount }} historias disponibles</span>
-                    </div>
-                  </li>
-                }
-              }
-            </ul>
-
-            <!-- Ilustración / Mapa cultural atmosférico -->
-            <div class="territory-visual" aria-hidden="true">
-              @if (country.countryCode === 'CO') {
-                <div class="colombia-map-container" aria-label="Mapa de regiones de Colombia">
-                  <svg viewBox="0 0 400 360" class="colombia-vector-map">
-                    <defs>
-                      <filter id="mapShadow" x="-5%" y="-5%" width="115%" height="115%">
-                        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.12"/>
-                      </filter>
-                    </defs>
-                    <text x="35" y="160" class="map-label-water">OCÉANO</text>
-                    <text x="30" y="174" class="map-label-water">PACÍFICO</text>
-                    <text x="135" y="32" class="map-label-water">MAR CARIBE</text>
-                    <text x="315" y="110" class="map-label-neighbor">VENEZUELA</text>
-                    <text x="330" y="270" class="map-label-neighbor">BRASIL</text>
-                    <text x="215" y="348" class="map-label-neighbor">PERÚ</text>
-                    <text x="80" y="335" class="map-label-neighbor">ECUADOR</text>
-
-                    <!-- Compass Rose -->
-                    <g transform="translate(345, 38)">
-                      <circle cx="0" cy="0" r="16" fill="none" stroke="currentColor" stroke-width="0.75" opacity="0.3"/>
-                      <polygon points="0,-18 3,-4 0,0 -3,-4" fill="#0284c7"/>
-                      <polygon points="0,18 3,4 0,0 -3,4" fill="#64748b" opacity="0.6"/>
-                      <polygon points="18,0 4,3 0,0 4,-3" fill="#64748b" opacity="0.6"/>
-                      <polygon points="-18,0 -4,3 0,0 -4,-3" fill="#64748b" opacity="0.6"/>
-                      <text x="0" y="-21" text-anchor="middle" font-size="7" font-weight="700" fill="#0284c7">N</text>
-                    </g>
-
-                    <g filter="url(#mapShadow)">
-                      <path d="M 145 20 Q 185 8, 220 30 Q 235 60, 205 90 Q 170 100, 140 85 Q 125 55, 145 20 Z" fill="#38bdf8" class="region-shape region-caribe"/>
-                      <path d="M 115 110 Q 140 105, 140 145 Q 135 220, 110 270 Q 85 240, 95 160 Q 105 125, 115 110 Z" fill="#22c55e" class="region-shape region-pacifico"/>
-                      <path d="M 140 85 Q 170 100, 205 90 Q 225 140, 195 210 Q 165 245, 135 220 Q 140 145, 140 85 Z" fill="#eab308" class="region-shape region-andina"/>
-                      <path d="M 205 90 Q 275 105, 305 165 Q 285 220, 230 215 Q 195 210, 225 140 Z" fill="#f97316" class="region-shape region-orinoquia"/>
-                      <path d="M 135 220 Q 195 210, 230 215 Q 285 220, 270 280 Q 235 340, 175 320 Q 110 270, 135 220 Z" fill="#a855f7" class="region-shape region-amazonia"/>
-                    </g>
-
-                    <g transform="translate(185, 55)" class="map-badge-pill">
-                      <rect x="-26" y="-10" width="52" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
-                      <circle cx="-16" cy="0" r="4" fill="#0284c7"/>
-                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Caribe</text>
-                    </g>
-                    <g transform="translate(178, 148)" class="map-badge-pill">
-                      <rect x="-27" y="-10" width="54" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
-                      <circle cx="-17" cy="0" r="4" fill="#eab308"/>
-                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Andina</text>
-                    </g>
-                    <g transform="translate(112, 185)" class="map-badge-pill">
-                      <rect x="-28" y="-10" width="56" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
-                      <circle cx="-18" cy="0" r="4" fill="#16a34a"/>
-                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Pacífico</text>
-                    </g>
-                    <g transform="translate(255, 160)" class="map-badge-pill">
-                      <rect x="-30" y="-10" width="60" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
-                      <circle cx="-20" cy="0" r="4" fill="#ea580c"/>
-                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Orinoquía</text>
-                    </g>
-                    <g transform="translate(225, 260)" class="map-badge-pill">
-                      <rect x="-30" y="-10" width="60" height="20" rx="10" fill="#ffffff" filter="url(#mapShadow)"/>
-                      <circle cx="-20" cy="0" r="4" fill="#7e22ce"/>
-                      <text x="4" y="3.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">Amazonía</text>
-                    </g>
-                  </svg>
-                </div>
-              } @else {
-                <div class="territory-hero-crop-container">
-                  @if (heroImageUrl(); as url) {
-                    <img [src]="url" [alt]="'Paisaje de ' + country.displayName" class="territory-hero-bg-img" />
-                  }
-                  <div class="territory-hero-overlay">
-                    <svg class="compass-rose" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5">
-                      <polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    <div class="territory-badge">
-                      <span class="territory-badge-country">{{ country.displayName }}</span>
-                      <span class="territory-badge-label">Territorio Cultural</span>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          </div>
-        </article>
-
-        <!-- Bloque Derecho: Historias Destacadas del País (55%) -->
-        <article class="featured-stories-card">
-          <div class="featured-stories-header">
-            <h2 class="featured-stories-title">Historias destacadas de {{ country.displayName }}</h2>
-            <button type="button" class="featured-see-all-btn" (click)="scrollToCatalog()">
-              Ver todas <span aria-hidden="true">→</span>
+    <!-- 3. COUNTRY SWITCHER (Solo selector de país, sin TEMA ni NIVEL) -->
+    @if (isLatinAmerica() && latamCountries().length > 0) {
+      <nav class="country-switcher" aria-label="Seleccionar país">
+        <span class="country-switcher-label">País:</span>
+        <div class="country-pills-row" role="tablist">
+          @for (c of latamCountries(); track c.code) {
+            <button
+              type="button"
+              class="country-pill"
+              [class.active]="selectedCountry() === c.code"
+              (click)="onCountryChange(c.code)"
+              role="tab"
+              [attr.aria-selected]="selectedCountry() === c.code"
+            >
+              {{ c.name }}
             </button>
-          </div>
-
-          @if (featuredReadings().length > 0) {
-            <div class="featured-cards-grid">
-              @for (item of featuredReadings(); track item.readingId) {
-                <a
-                  [routerLink]="['/reading', item.readingId]"
-                  class="featured-card"
-                  [attr.aria-label]="'Leer ' + item.title"
-                >
-                  <div class="featured-card-cover">
-                    <img
-                      [src]="resolveCoverUrl(item.coverKey)"
-                      [alt]="'Portada de ' + item.title"
-                      class="featured-cover-img"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div class="featured-card-body">
-                    <div class="featured-card-top-meta">
-                      <span class="featured-cefr-badge">{{ item.editorialLevel }}</span>
-                      <span class="featured-category-label">{{ item.category }}</span>
-                      <svg class="featured-bookmark-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                      </svg>
-                    </div>
-
-                    <h3 class="featured-card-title">{{ item.title }}</h3>
-
-                    @if (item.shortDescription || item.description; as desc) {
-                      <div
-                        class="featured-card-desc-wrap"
-                        tabindex="0"
-                        role="region"
-                        [attr.aria-label]="'Descripción: ' + desc"
-                        (click)="$event.stopPropagation()"
-                        (keydown.escape)="$any($event.target).blur()"
-                      >
-                        <p class="featured-card-desc">{{ desc }}</p>
-                        <div class="featured-card-tooltip" role="tooltip">
-                          {{ desc }}
-                        </div>
-                      </div>
-                    }
-
-                    <div class="featured-card-footer">
-                      <span class="featured-vocab-fit">
-                        <svg class="fit-signal-icon" viewBox="0 0 14 12" width="13" height="11" fill="currentColor" aria-hidden="true">
-                          <rect x="0.5" y="7" width="3" height="5" rx="1" />
-                          <rect x="5.5" y="3.5" width="3" height="8.5" rx="1" />
-                          <rect x="10.5" y="0" width="3" height="12" rx="1" />
-                        </svg>
-                        <span>{{ item.vocabularyFitPercentage ?? 0 }}% vocab fit</span>
-                      </span>
-                      <span class="featured-duration">
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <circle cx="12" cy="12" r="10"/>
-                          <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        <span>{{ getReadingDuration(item) }}</span>
-                      </span>
-                      <span class="featured-action-circle" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
-                          <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              }
-            </div>
-          } @else {
-            <p class="featured-empty-note">Cargando lecturas destacadas...</p>
           }
-        </article>
+        </div>
+      </nav>
+    } @else if (!isLatinAmerica()) {
+      <section class="detail-filters-section" aria-label="Filtros de lecturas">
+        <app-collection-filters
+          [selectedLevel]="selectedLevel()"
+          (levelChange)="onLevelChange($event)"
+          (clear)="onClearFilters()"
+        />
       </section>
+    }
 
-      <!-- 5. EXPLORA [PAÍS] POR TEMA (Fila de tarjetas temáticas compactas) -->
-      @if (topicSections().length > 0) {
-        <section class="country-topics-section" aria-labelledby="explore-by-topic-heading">
-          <div class="topics-section-header">
-            <h2 id="explore-by-topic-heading" class="topics-section-title">
-              Explora {{ country.displayName }} por tema
+    <!-- 4. SI ES COUNTRY LANDING: HISTORIAS DESTACADAS + SECCIONES POR TEMA -->
+    @if (isCountryLanding() && activeCountry(); as country) {
+      <!-- 4A. HISTORIAS DESTACADAS (Máximo 4) -->
+      @if (featuredReadings().length > 0) {
+        <section class="country-featured-section" aria-labelledby="country-featured-heading">
+          <div class="section-heading-row">
+            <h2 id="country-featured-heading" class="section-title">
+              Historias destacadas de {{ country.displayName }}
             </h2>
-            <button type="button" class="topics-see-all-btn" (click)="onTopicChange(null); scrollToCatalog()">
-              Ver todas las colecciones <span aria-hidden="true">→</span>
+            <button type="button" class="section-see-all-btn" (click)="scrollToCatalog()">
+              Ver catálogo completo <span aria-hidden="true">↓</span>
             </button>
           </div>
 
-          <div class="topic-cards-grid">
-            @for (block of topicSections(); track block.topic.key) {
-              <article class="topic-block-card">
-                <div class="topic-block-header">
-                  <div class="topic-block-header-top">
-                    <div class="topic-block-icon" [class]="'topic-icon-' + block.topic.key">
-                      @switch (block.topic.key) {
-                        @case ('MYTHS_AND_LEGENDS') {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
-                          </svg>
-                        }
-                        @case ('REAL_STORIES') {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
-                            <path d="M6 6h10M6 10h10"/>
-                          </svg>
-                        }
-                        @case ('HISTORY_AND_MEMORY') {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M3 21h18M4 18h16M5 14h14M6 10h12M9 6h6M12 2v4"/>
-                          </svg>
-                        }
-                        @case ('CULTURE_AND_TRADITIONS') {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <circle cx="12" cy="12" r="4"/>
-                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                          </svg>
-                        }
-                        @case ('NATURE_AND_PLACES') {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
-                          </svg>
-                        }
-                        @case ('PEOPLE') {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                          </svg>
-                        }
-                        @default {
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
-                          </svg>
-                        }
-                      }
-                    </div>
-                    <button
-                      type="button"
-                      class="topic-block-link"
-                      (click)="onTopicChange(block.topic.key); scrollToCatalog()"
-                    >
-                      Ver colección <span aria-hidden="true">→</span>
-                    </button>
+          <div class="featured-cards-grid">
+            @for (item of featuredReadings(); track item.readingId) {
+              <a
+                [routerLink]="['/reading', item.readingId]"
+                class="featured-card"
+                [attr.aria-label]="'Leer ' + item.title"
+              >
+                <div class="featured-card-cover">
+                  <img
+                    [src]="resolveCoverUrl(item.coverKey)"
+                    [alt]="'Portada de ' + item.title"
+                    class="featured-cover-img"
+                    loading="lazy"
+                  />
+                </div>
+                <div class="featured-card-body">
+                  <div class="featured-card-top-meta">
+                    <span class="featured-cefr-badge">{{ item.editorialLevel }}</span>
+                    <span class="featured-category-label">{{ item.category }}</span>
+                    <svg class="featured-bookmark-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                    </svg>
                   </div>
-                  <div class="topic-block-info">
-                    <h3 class="topic-block-title">{{ block.topic.displayName }}</h3>
-                    <p class="topic-block-desc">{{ block.description }}</p>
+
+                  <h3 class="featured-card-title">{{ item.title }}</h3>
+
+                  @if (item.shortDescription || item.description; as desc) {
+                    <div
+                      class="featured-card-desc-wrap"
+                      tabindex="0"
+                      role="region"
+                      [attr.aria-label]="'Descripción: ' + desc"
+                      (click)="$event.stopPropagation()"
+                      (keydown.escape)="$any($event.target).blur()"
+                    >
+                      <p class="featured-card-desc">{{ desc }}</p>
+                      <div class="featured-card-tooltip" role="tooltip">
+                        {{ desc }}
+                      </div>
+                    </div>
+                  }
+
+                  <div class="featured-card-footer">
+                    <span class="featured-vocab-fit">
+                      <svg class="fit-signal-icon" viewBox="0 0 14 12" width="13" height="11" fill="currentColor" aria-hidden="true">
+                        <rect x="0.5" y="7" width="3" height="5" rx="1" />
+                        <rect x="5.5" y="3.5" width="3" height="8.5" rx="1" />
+                        <rect x="10.5" y="0" width="3" height="12" rx="1" />
+                      </svg>
+                      <span>{{ item.vocabularyFitPercentage ?? 0 }}% vocab fit</span>
+                    </span>
+                    <span class="featured-duration">
+                      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      <span>{{ getReadingDuration(item) }}</span>
+                    </span>
+                    <span class="featured-action-circle" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </span>
                   </div>
                 </div>
-
-                <!-- Mini lecturas de muestra horizontales -->
-                @if (block.readings.length > 0) {
-                  <div class="topic-block-readings">
-                    @for (r of block.readings; track r.readingId) {
-                      <a [routerLink]="['/reading', r.readingId]" class="topic-mini-card" [attr.aria-label]="'Leer ' + r.title">
-                        <div class="topic-mini-cover">
-                          <img
-                            [src]="resolveCoverUrl(r.coverKey)"
-                            [alt]="'Portada de ' + r.title"
-                            class="topic-mini-img"
-                            loading="lazy"
-                          />
-                        </div>
-                        <div class="topic-mini-body">
-                          <span class="topic-mini-badge">{{ r.editorialLevel }}</span>
-                          <h4 class="topic-mini-title">{{ r.title }}</h4>
-                          <div class="topic-mini-footer">
-                            <span class="topic-mini-metric">
-                              {{ r.vocabularyFitPercentage ?? 0 }}% vocab fit
-                            </span>
-                            <span class="topic-mini-duration">
-                              {{ getReadingDuration(r) }}
-                            </span>
-                          </div>
-                        </div>
-                      </a>
-                    }
-                  </div>
-                }
-              </article>
+              </a>
             }
           </div>
         </section>
       }
+
+      <!-- 4B. SECCIONES DINÁMICAS POR DISCOVERY TOPIC (readingCount > 0) -->
+      @for (block of topicSections(); track block.topic.key) {
+        <section class="topic-editorial-section" [attr.aria-labelledby]="'topic-heading-' + block.topic.key">
+          <div class="section-heading-row">
+            <div class="topic-heading-intro">
+              <h2 [id]="'topic-heading-' + block.topic.key" class="section-title">
+                {{ block.displayName }}
+              </h2>
+              <p class="topic-section-desc">{{ block.description }}</p>
+            </div>
+            <button
+              type="button"
+              class="section-see-all-btn"
+              (click)="onTopicChange(block.topic.key); scrollToCatalog()"
+              [attr.aria-label]="'Ver todas las historias de ' + block.displayName"
+            >
+              Ver todas <span aria-hidden="true">→</span>
+            </button>
+          </div>
+
+          @if (block.readings.length > 0) {
+            <div class="topic-readings-rail" role="region" [attr.aria-label]="'Lecturas de ' + block.displayName">
+              @for (r of block.readings; track r.readingId) {
+                <div class="topic-rail-item">
+                  <app-home-reading-card [reading]="r" />
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
     }
 
-    <!-- 6. GRID COMPLETO DE LECTURAS (Catálogo paginado) -->
+    <!-- 5. TODAS LAS HISTORIAS (Catálogo completo al final) -->
     <section id="all-stories" class="collection-readings-section" aria-labelledby="collection-readings-heading">
       <div class="section-heading-row">
-        <h2 id="collection-readings-heading" class="section-title">
-          @if (isCountryLanding() && activeCountry(); as country) {
-            @if (selectedTopic(); as activeTopicKey) {
-              Historias de {{ country.displayName }} · {{ getTopicName(activeTopicKey) }}
+        <div class="catalog-heading-intro">
+          <h2 id="collection-readings-heading" class="section-title">
+            @if (isCountryLanding() && activeCountry(); as country) {
+              @if (selectedTopic(); as activeTopicKey) {
+                Historias de {{ country.displayName }} · {{ getTopicName(activeTopicKey) }}
+              } @else {
+                Todas las historias de {{ country.displayName }}
+              }
             } @else {
-              Todas las historias de {{ country.displayName }}
+              Lecturas disponibles
             }
-          } @else {
-            Lecturas disponibles
+          </h2>
+          @if (selectedTopic()) {
+            <button type="button" class="catalog-reset-topic-btn" (click)="onTopicChange(null)">
+              Mostrar todas las temáticas ×
+            </button>
           }
-        </h2>
+        </div>
         <span class="results-count">{{ countLabel() }}</span>
       </div>
 
@@ -536,7 +319,7 @@
         <div class="catalog-empty" role="status">
           <h3 class="empty-title">No hay lecturas disponibles con los filtros seleccionados.</h3>
           <p class="empty-desc">Prueba limpiando los filtros para ver todas las lecturas disponibles.</p>
-          @if (selectedLevel() !== null || (isLatinAmerica() && (selectedCountry() !== null || selectedTopic() !== null))) {
+          @if (selectedLevel() !== null || selectedTopic() !== null) {
             <button type="button" class="editorial-btn" (click)="onClearFilters()">
               Ver todas las lecturas
             </button>

@@ -238,11 +238,11 @@ describe('CollectionDetail', () => {
     expect(component.selectedTopic()).toBeNull();
 
     const root = fixture.nativeElement as HTMLElement;
-    const topicGroup = root.querySelector('.filter-group-topics');
-    expect(topicGroup).toBeTruthy();
-    const allTopicPill = topicGroup!.querySelector('.filter-pill.active') as HTMLButtonElement;
-    expect(allTopicPill).toBeTruthy();
-    expect(allTopicPill.textContent?.trim()).toBe('Todos');
+    const countrySwitcher = root.querySelector('.country-switcher');
+    expect(countrySwitcher).toBeTruthy();
+    const activeCountryPill = countrySwitcher!.querySelector('.country-pill.active');
+    expect(activeCountryPill?.textContent?.trim()).toBe('Colombia');
+    expect(root.querySelector('.filter-group-topics')).toBeNull();
   });
 
   it('D: Valid country query param ?country=MX selects MX and topic=null (Todos) with exactly 1 browse call', () => {
@@ -468,7 +468,7 @@ describe('CollectionDetail', () => {
     expect(component.currentPage()).toBe(0);
   });
 
-  it('country=MX renders all 5 readings on entry with topic Todos, filters on topic selection, and restores 5 readings when returning to Todos', () => {
+  it('country=MX renders all 5 readings on entry, displays country switcher without top topic/level filters, and filters on topic selection', () => {
     queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
 
     const fiveMexicoReadings: RecommendedPlatformReading[] = [
@@ -489,23 +489,26 @@ describe('CollectionDetail', () => {
 
     createComponent();
 
-    // 1. Initial State: country=MX, topic=Todos (null), level=null
+    // 1. Initial State: country=MX, topic=null, level=null
     expect(component.selectedCountry()).toBe('MX');
     expect(component.selectedTopic()).toBeNull();
     expect(component.readings().length).toBe(5);
     expect(component.countLabel()).toBe('5 historias');
 
-    // Visual: topic pill "Todos" is active
     const root = fixture.nativeElement as HTMLElement;
-    const topicGroup = root.querySelector('.filter-group-topics');
-    expect(topicGroup).toBeTruthy();
-    const allTopicPill = topicGroup!.querySelector('.filter-pill.active') as HTMLButtonElement;
-    expect(allTopicPill).toBeTruthy();
-    expect(allTopicPill.textContent?.trim()).toBe('Todos');
+    // Country switcher is rendered with MX active
+    const countrySwitcher = root.querySelector('.country-switcher');
+    expect(countrySwitcher).toBeTruthy();
+    const activeCountryPill = countrySwitcher!.querySelector('.country-pill.active');
+    expect(activeCountryPill?.textContent?.trim()).toBe('México');
 
-    // All 5 readings rendered in UI
+    // NO upper topic filter or level filter
+    expect(root.querySelector('.filter-group-topics')).toBeNull();
+    expect(root.querySelector('.filter-group-levels')).toBeNull();
+
+    // Readings rendered in UI
     const cards = root.querySelectorAll('app-home-reading-card');
-    expect(cards.length).toBe(5);
+    expect(cards.length).toBeGreaterThan(0);
 
     // 2. Filter by specific topic
     homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
@@ -528,7 +531,7 @@ describe('CollectionDetail', () => {
       size: 12,
     });
 
-    // 3. Return to "Todos" (topic = null)
+    // 3. Return to null topic
     homeServiceMock.parseBrowsePlatformReadings.mockReturnValue(fiveMexicoPage);
     component.onTopicChange(null);
     fixture.detectChanges();
@@ -722,7 +725,7 @@ describe('CollectionDetail', () => {
   });
 
   describe('Phase 19.6 Country Collection Redesign', () => {
-    it('Requirement A & K: ?country=CO renders Colombia as protagonist, split hero, breadcrumb, and editorial layout', () => {
+    it('Requirement A & K: ?country=CO renders Colombia landing with country switcher, featured, topic rail, and NO territory or upper filters', () => {
       queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
       createComponent();
 
@@ -732,14 +735,14 @@ describe('CollectionDetail', () => {
 
       const root = fixture.nativeElement as HTMLElement;
 
-      // Breadcrumb: Inicio / Latinoamérica / Colombia
+      // 1. Breadcrumb: Inicio / Latinoamérica / Colombia
       const breadcrumb = root.querySelector('.detail-breadcrumb');
       expect(breadcrumb).toBeTruthy();
       expect(breadcrumb?.textContent).toContain('Inicio');
       expect(breadcrumb?.textContent).toContain('Latinoamérica');
       expect(breadcrumb?.textContent).toContain('Colombia');
 
-      // Split Country Hero
+      // 2. Split Country Hero
       const heroSection = root.querySelector('.country-hero-section');
       expect(heroSection).toBeTruthy();
       expect(heroSection?.querySelector('.country-hero-title')?.textContent?.trim()).toBe('Colombia');
@@ -747,14 +750,28 @@ describe('CollectionDetail', () => {
       expect(heroSection?.querySelector('.country-hero-tagline')?.textContent).toContain('Tierra de realismo mágico');
       expect(heroSection?.querySelector('.country-hero-chips')?.textContent).toContain('15 historias');
 
-      // Middle Row: Territory explorer + Featured stories
-      expect(root.querySelector('.territory-card')).toBeTruthy();
-      expect(root.querySelector('.featured-stories-card')).toBeTruthy();
+      // 3. Country Switcher: Colombia active, NO topic/level filter
+      const countrySwitcher = root.querySelector('.country-switcher');
+      expect(countrySwitcher).toBeTruthy();
+      expect(countrySwitcher?.querySelector('.country-pill.active')?.textContent?.trim()).toBe('Colombia');
+      expect(root.querySelector('.filter-group-topics')).toBeNull();
+      expect(root.querySelector('.filter-group-levels')).toBeNull();
 
-      // Explora por tema
-      expect(root.querySelector('.country-topics-section')).toBeTruthy();
+      // 4. NO Territory Panel or Maps
+      expect(root.querySelector('.territory-card')).toBeNull();
+      expect(root.querySelector('.colombia-vector-map')).toBeNull();
+      expect(root.querySelector('.territory-pillars')).toBeNull();
 
-      // Full catalog
+      // 5. Featured Readings Section
+      expect(root.querySelector('.country-featured-section')).toBeTruthy();
+      expect(root.querySelector('#country-featured-heading')?.textContent).toContain('Colombia');
+
+      // 6. Topic Section (Mitos y leyendas)
+      const topicSections = root.querySelectorAll('.topic-editorial-section');
+      expect(topicSections.length).toBeGreaterThan(0);
+      expect(topicSections[0].textContent).toContain('Mitos y leyendas');
+
+      // 7. Full catalog
       expect(root.querySelector('#all-stories')).toBeTruthy();
     });
 
@@ -770,9 +787,38 @@ describe('CollectionDetail', () => {
       const heroTitle = root.querySelector('.country-hero-title');
       expect(heroTitle?.textContent?.trim()).toBe('México');
       expect(root.querySelector('.country-hero-eyebrow')?.textContent).toContain('LATINOAMÉRICA · MÉXICO');
-      expect(root.querySelector('.territory-title')?.textContent).toContain('México');
-      expect(root.querySelector('.featured-stories-title')?.textContent).toContain('México');
-      expect(root.querySelector('.topics-section-title')?.textContent).toContain('México');
+
+      // Country switcher active is México
+      expect(root.querySelector('.country-switcher .country-pill.active')?.textContent?.trim()).toBe('México');
+
+      // NO territory block
+      expect(root.querySelector('.territory-card')).toBeNull();
+      expect(root.querySelector('.colombia-vector-map')).toBeNull();
+
+      // Featured and Topic sections for Mexico
+      expect(root.querySelector('#country-featured-heading')?.textContent).toContain('México');
+      const topicSections = root.querySelectorAll('.topic-editorial-section');
+      expect(topicSections.length).toBeGreaterThan(0);
+      expect(topicSections[0].textContent).toContain('Historia y memoria');
+
+      // Full catalog
+      expect(root.querySelector('#all-stories')?.textContent).toContain('México');
+    });
+
+    it('Requirement B2: ?country=PE renders Peru with identical editorial structure', () => {
+      queryParamMapSubject.next(convertToParamMap({ country: 'PE' }));
+      createComponent();
+
+      expect(component.isCountryLanding()).toBe(true);
+      expect(component.title()).toBe('Perú');
+      expect(component.activeCountry()?.countryCode).toBe('PE');
+
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelector('.country-hero-title')?.textContent?.trim()).toBe('Perú');
+      expect(root.querySelector('.country-switcher .country-pill.active')?.textContent?.trim()).toBe('Perú');
+      expect(root.querySelector('.territory-card')).toBeNull();
+      expect(root.querySelector('#country-featured-heading')?.textContent).toContain('Perú');
+      expect(root.querySelector('#all-stories')?.textContent).toContain('Perú');
     });
 
     it('Requirement C: Switching country CO -> MX updates Signals dynamically without reload', () => {
@@ -982,7 +1028,7 @@ describe('CollectionDetail', () => {
       expect(component.cefrRange()).toBe('A1 – C1');
     });
 
-    it('topic mini-card links to reader route', () => {
+    it('topic rail reading card links to reader route', () => {
       const readingsForTopics: RecommendedPlatformReading[] = [
         {
           ...mockReading,
@@ -1003,10 +1049,10 @@ describe('CollectionDetail', () => {
       createComponent();
 
       const root = fixture.nativeElement as HTMLElement;
-      const miniCard = root.querySelector('.topic-mini-card') as HTMLAnchorElement;
-      expect(miniCard).toBeTruthy();
-      expect(miniCard.getAttribute('href')).toBe('/reading/rd-myth-1');
-      expect(miniCard.textContent).toContain('The Silbón Legend');
+      const topicRailCard = root.querySelector('.topic-editorial-section app-home-reading-card a') as HTMLAnchorElement;
+      expect(topicRailCard).toBeTruthy();
+      expect(topicRailCard.getAttribute('href')).toBe('/reading/rd-myth-1');
+      expect(topicRailCard.textContent).toContain('The Silbón Legend');
     });
   });
 });

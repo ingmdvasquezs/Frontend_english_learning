@@ -25,7 +25,6 @@ import {
   CountryFilterOption,
   TopicFilterOption,
 } from '../../components/collection-filters/collection-filters';
-import { coverUrl } from '../../../home/utils/cover-url';
 import { resolveMediaUrl } from '../../../../shared/utils/media-url';
 
 export const NEUTRAL_LATAM_HERO_FALLBACK =
@@ -87,21 +86,13 @@ export class CollectionDetail implements OnInit {
       .filter((t) => t.readingCount > 0)
       .map((t) => ({
         key: t.key,
-        name: t.displayName,
+        name: this.getTopicName(t.key) || t.displayName,
       }));
   });
 
   readonly isCountryLanding = computed<boolean>(() => {
     return this.isLatinAmerica() && this.activeCountry() !== null;
   });
-
-  readonly colombiaRegions = [
-    { name: 'Región Caribe', desc: 'Playas, ciudades coloniales', dotClass: 'pillar-dot-0', topicKey: null },
-    { name: 'Región Andina', desc: 'Montañas, historia, cafetería', dotClass: 'pillar-dot-1', topicKey: null },
-    { name: 'Región Pacífica', desc: 'Selva, cultura afrocolombiana', dotClass: 'pillar-dot-2', topicKey: null },
-    { name: 'Orinoquía', desc: 'Llanos, ríos, vida silvestre', dotClass: 'pillar-dot-3', topicKey: null },
-    { name: 'Amazonía', desc: 'Selva, biodiversidad', dotClass: 'pillar-dot-4', topicKey: null },
-  ];
 
   readonly cefrRange = computed<string>(() => {
     const levels = this.readings()
@@ -133,11 +124,16 @@ export class CollectionDetail implements OnInit {
     return (country.topics ?? [])
       .filter((t) => t.readingCount > 0)
       .map((topic) => {
-        const matchingReadings = allReadings
-          .filter((r) => r.discoveryTopic === topic.key)
-          .slice(0, 2);
+        let matchingReadings = allReadings.filter((r) => r.discoveryTopic === topic.key);
+        if (
+          matchingReadings.length === 0 &&
+          (country.topics?.filter((t) => t.readingCount > 0).length === 1)
+        ) {
+          matchingReadings = allReadings;
+        }
         return {
           topic,
+          displayName: this.getTopicName(topic.key) || topic.displayName,
           readings: matchingReadings,
           description: this.getTopicDescription(topic.key),
         };
@@ -465,18 +461,27 @@ export class CollectionDetail implements OnInit {
   }
 
   getTopicName(key: string): string {
-    const found = this.activeTopics().find((t) => t.key === key);
-    return found?.name || key;
+    const names: Record<string, string> = {
+      MYTHS_AND_LEGENDS: 'Mitos y leyendas',
+      REAL_STORIES: 'Historias reales',
+      HISTORY_AND_MEMORY: 'Historia y memoria',
+      CULTURE_AND_TRADITIONS: 'Cultura y tradiciones',
+      NATURE_AND_PLACES: 'Naturaleza y lugares',
+      PEOPLE: 'Personas',
+    };
+    if (names[key]) return names[key];
+    const found = this.activeCountry()?.topics?.find((t) => t.key === key);
+    return found?.displayName || key;
   }
 
   getTopicDescription(key: string): string {
     const descriptions: Record<string, string> = {
-      MYTHS_AND_LEGENDS: 'Historias que han dado forma a la imaginación y la tradición oral.',
-      REAL_STORIES: 'Acontecimientos auténticos y vivencias que dejaron huella.',
-      HISTORY_AND_MEMORY: 'Ciudades, pueblos y legados que forjaron la identidad nacional.',
-      CULTURE_AND_TRADITIONS: 'Personas, tradiciones y expresiones que hacen única a su gente.',
-      NATURE_AND_PLACES: 'Montañas, selvas, ríos y una biodiversidad única.',
-      PEOPLE: 'Personajes singulares y vidas extraordinarias.',
+      MYTHS_AND_LEGENDS: 'Relatos extraordinarios que forman parte de la tradición oral.',
+      REAL_STORIES: 'Hechos y vivencias que marcaron la historia y la cultura.',
+      HISTORY_AND_MEMORY: 'Hitos, transformaciones y memoria colectiva.',
+      CULTURE_AND_TRADITIONS: 'Expresiones vivas, fiestas y costumbres ancestrales.',
+      NATURE_AND_PLACES: 'Paisajes asombrosos, biodiversidad y geografía.',
+      PEOPLE: 'Vidas fascinantes y personajes memorables.',
     };
     return descriptions[key] || 'Relatos fascinantes de su historia y cultura.';
   }
