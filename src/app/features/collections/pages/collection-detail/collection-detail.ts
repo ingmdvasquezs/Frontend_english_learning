@@ -2,6 +2,8 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  AfterViewInit,
+  HostListener,
   computed,
   inject,
   signal,
@@ -36,7 +38,7 @@ export const NEUTRAL_LATAM_HERO_FALLBACK =
   templateUrl: './collection-detail.html',
   styleUrl: './collection-detail.css',
 })
-export class CollectionDetail implements OnInit {
+export class CollectionDetail implements OnInit, AfterViewInit {
   private readonly route = inject(ActivatedRoute);
   private readonly homeService = inject(HomeService);
   private readonly destroyRef = inject(DestroyRef);
@@ -514,9 +516,93 @@ export class CollectionDetail implements OnInit {
   scrollToCatalog(): void {
     if (typeof document !== 'undefined') {
       const el = document.getElementById('all-stories');
-      if (el) {
+      if (el && typeof el.scrollIntoView === 'function') {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
+  }
+
+  // Topic Rail Carousel & Filter helpers
+  readonly railStates = signal<Record<string, { atStart: boolean; atEnd: boolean }>>({});
+
+  ngAfterViewInit(): void {
+    if (typeof document !== 'undefined') {
+      setTimeout(() => this.checkAllRails(), 150);
+    }
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.checkAllRails();
+  }
+
+  checkAllRails(): void {
+    if (typeof document === 'undefined') return;
+    for (const section of this.topicSections()) {
+      const el = document.getElementById(`topic-rail-${section.topic.key}`);
+      if (el) {
+        this.updateRailState(section.topic.key, el);
+      }
+    }
+  }
+
+  isRailAtStart(topicKey: string): boolean {
+    return this.railStates()[topicKey]?.atStart ?? true;
+  }
+
+  isRailAtEnd(topicKey: string, readingsCount = 0): boolean {
+    const state = this.railStates()[topicKey];
+    if (state !== undefined) return state.atEnd;
+    return readingsCount <= 2;
+  }
+
+  onRailScroll(topicKey: string, event: Event): void {
+    const el = event.target as HTMLElement;
+    if (!el) return;
+    this.updateRailState(topicKey, el);
+  }
+
+  updateRailState(topicKey: string, el: HTMLElement): void {
+    const tolerance = 4;
+    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+    const hasOverflow = maxScroll > tolerance;
+    const atStart = el.scrollLeft <= tolerance;
+    const atEnd = !hasOverflow || el.scrollLeft >= maxScroll - tolerance;
+
+    this.railStates.update((states) => ({
+      ...states,
+      [topicKey]: { atStart, atEnd },
+    }));
+  }
+
+  scrollRail(topicKey: string, direction: 'previous' | 'next'): void {
+    if (typeof document === 'undefined') return;
+    const rail = document.getElementById(`topic-rail-${topicKey}`);
+    if (!rail) return;
+
+    const scrollAmount = Math.max(260, Math.round(rail.clientWidth * 0.75) || 300);
+    const delta = direction === 'next' ? scrollAmount : -scrollAmount;
+
+    if (typeof rail.scrollBy === 'function') {
+      rail.scrollBy({ left: delta, behavior: 'smooth' });
+    } else {
+      rail.scrollLeft += delta;
+    }
+
+    setTimeout(() => {
+      this.updateRailState(topicKey, rail);
+    }, 350);
+  }
+
+  getTopicSeeAllLabel(count: number): string {
+    if (count <= 1) {
+      return 'Ver historia →';
+    }
+    return `Ver las ${count} →`;
+  }
+
+  filterByTopicAndScroll(topicKey: string): void {
+    this.onTopicChange(topicKey);
+    this.scrollToCatalog();
   }
 }

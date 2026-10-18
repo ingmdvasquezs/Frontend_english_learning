@@ -198,20 +198,55 @@
             <button
               type="button"
               class="section-see-all-btn"
-              (click)="onTopicChange(block.topic.key); scrollToCatalog()"
-              [attr.aria-label]="'Ver todas las historias de ' + block.displayName"
+              (click)="filterByTopicAndScroll(block.topic.key)"
+              [attr.aria-label]="getTopicSeeAllLabel(block.topic.readingCount) + ' de ' + block.displayName"
             >
-              Ver todas <span aria-hidden="true">→</span>
+              {{ getTopicSeeAllLabel(block.topic.readingCount) }}
             </button>
           </div>
 
           @if (block.readings.length > 0) {
-            <div class="topic-readings-rail" role="region" [attr.aria-label]="'Lecturas de ' + block.displayName">
-              @for (r of block.readings; track r.readingId) {
-                <div class="topic-rail-item">
-                  <app-home-reading-card [reading]="r" />
-                </div>
-              }
+            <div class="topic-rail-container">
+              <button
+                type="button"
+                class="rail-arrow rail-arrow-left"
+                aria-label="Ver lecturas anteriores"
+                [disabled]="isRailAtStart(block.topic.key)"
+                [class.rail-arrow-hidden]="isRailAtStart(block.topic.key)"
+                (click)="scrollRail(block.topic.key, 'previous')"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+
+              <div
+                [id]="'topic-rail-' + block.topic.key"
+                class="topic-readings-rail"
+                role="region"
+                tabindex="0"
+                [attr.aria-label]="'Lecturas de ' + block.displayName"
+                (scroll)="onRailScroll(block.topic.key, $event)"
+              >
+                @for (r of block.readings; track r.readingId) {
+                  <div class="topic-rail-item">
+                    <app-home-reading-card [reading]="r" />
+                  </div>
+                }
+              </div>
+
+              <button
+                type="button"
+                class="rail-arrow rail-arrow-right"
+                aria-label="Ver más lecturas"
+                [disabled]="isRailAtEnd(block.topic.key, block.readings.length)"
+                [class.rail-arrow-hidden]="isRailAtEnd(block.topic.key, block.readings.length)"
+                (click)="scrollRail(block.topic.key, 'next')"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
             </div>
           }
         </section>
@@ -224,19 +259,32 @@
         <div class="catalog-heading-intro">
           <h2 id="collection-readings-heading" class="section-title">
             @if (isCountryLanding() && activeCountry(); as country) {
-              @if (selectedTopic(); as activeTopicKey) {
-                Historias de {{ country.displayName }} · {{ getTopicName(activeTopicKey) }}
-              } @else {
-                Todas las historias de {{ country.displayName }}
-              }
+              Todas las historias de {{ country.displayName }}
             } @else {
               Lecturas disponibles
             }
           </h2>
-          @if (selectedTopic()) {
-            <button type="button" class="catalog-reset-topic-btn" (click)="onTopicChange(null)">
-              Mostrar todas las temáticas ×
-            </button>
+          @if (selectedTopic(); as activeTopicKey) {
+            <div class="active-topic-filter-row">
+              <span class="active-topic-chip">
+                <span>{{ getTopicName(activeTopicKey) }}</span>
+                <button
+                  type="button"
+                  class="active-topic-chip-remove"
+                  (click)="onTopicChange(null)"
+                  [attr.aria-label]="'Quitar filtro ' + getTopicName(activeTopicKey)"
+                >
+                  ×
+                </button>
+              </span>
+              <button
+                type="button"
+                class="catalog-show-all-btn"
+                (click)="onTopicChange(null)"
+              >
+                Mostrar todas
+              </button>
+            </div>
           }
         </div>
         <span class="results-count">{{ countLabel() }}</span>

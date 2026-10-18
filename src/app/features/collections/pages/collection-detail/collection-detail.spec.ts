@@ -1230,4 +1230,201 @@ describe('CollectionDetail', () => {
       expect(root.querySelector('.load-more-btn')).toBeNull();
     });
   });
+
+  describe('Phase 19.6E Topic Rail Navigation + Filtered Ver Todas', () => {
+    function generateMockReadings(count: number, startIndex = 1): RecommendedPlatformReading[] {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockReading,
+        readingId: `rd-${startIndex + i}`,
+        title: `Story ${startIndex + i}`,
+        shortDescription: `Description for story ${startIndex + i}`,
+        discoveryTopic: i % 2 === 0 ? 'MYTHS_AND_LEGENDS' : 'REAL_STORIES',
+      }));
+    }
+
+    it('A. topic rail renders with rail container and hidden scrollbar styling class', () => {
+      const readings = generateMockReadings(10);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 10,
+        readings,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const rail = root.querySelector('.topic-readings-rail');
+      expect(rail).toBeTruthy();
+      expect(rail?.getAttribute('role')).toBe('region');
+      expect(rail?.classList.contains('topic-readings-rail')).toBe(true);
+    });
+
+    it('B, C, D. rail arrows handle overflow, click next advances rail with smooth scrollBy, and hides at end', () => {
+      const readings = generateMockReadings(10);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 10,
+        readings,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const railContainer = root.querySelector('.topic-rail-container');
+      expect(railContainer).toBeTruthy();
+
+      const leftArrow = railContainer!.querySelector('.rail-arrow-left') as HTMLButtonElement;
+      const rightArrow = railContainer!.querySelector('.rail-arrow-right') as HTMLButtonElement;
+      expect(leftArrow).toBeTruthy();
+      expect(rightArrow).toBeTruthy();
+
+      // B. At start: left arrow is disabled/hidden, right arrow is visible/enabled
+      expect(leftArrow.disabled).toBe(true);
+      expect(leftArrow.classList.contains('rail-arrow-hidden')).toBe(true);
+      expect(rightArrow.disabled).toBe(false);
+
+      const railEl = railContainer!.querySelector('.topic-readings-rail') as HTMLElement;
+      Object.defineProperty(railEl, 'clientWidth', { configurable: true, value: 600 });
+      Object.defineProperty(railEl, 'scrollWidth', { configurable: true, value: 1200 });
+      const scrollBySpy = vi.fn();
+      railEl.scrollBy = scrollBySpy;
+
+      // C. Click next: advances rail using scrollBy with smooth behavior
+      rightArrow.click();
+      expect(scrollBySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          behavior: 'smooth',
+        })
+      );
+      expect(scrollBySpy.mock.calls[0][0].left).toBeGreaterThan(0);
+
+      // Simulate scrolled to middle
+      railEl.scrollLeft = 300;
+      component.updateRailState('MYTHS_AND_LEGENDS', railEl);
+      fixture.detectChanges();
+
+      expect(component.isRailAtStart('MYTHS_AND_LEGENDS')).toBe(false);
+      expect(component.isRailAtEnd('MYTHS_AND_LEGENDS')).toBe(false);
+      expect(leftArrow.disabled).toBe(false);
+      expect(rightArrow.disabled).toBe(false);
+
+      // D. Simulate scrolled to end (maxScroll = 600)
+      railEl.scrollLeft = 600;
+      component.updateRailState('MYTHS_AND_LEGENDS', railEl);
+      fixture.detectChanges();
+
+      expect(component.isRailAtEnd('MYTHS_AND_LEGENDS')).toBe(true);
+      expect(rightArrow.disabled).toBe(true);
+      expect(rightArrow.classList.contains('rail-arrow-hidden')).toBe(true);
+    });
+
+    it('E, F, G, H. "Ver las 10 →" selects topic, filters catalog, shows active topic chip, and "Mostrar todas" resets', () => {
+      const readings = generateMockReadings(15);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+      // In mock data, Colombia has MYTHS_AND_LEGENDS with readingCount = 10
+      const topicSections = root.querySelectorAll('.topic-editorial-section');
+      expect(topicSections.length).toBeGreaterThan(0);
+
+      // E. Dynamic label "Ver las 10 →"
+      const mythsSection = topicSections[0];
+      const seeAllBtn = mythsSection.querySelector('.section-see-all-btn') as HTMLButtonElement;
+      expect(seeAllBtn).toBeTruthy();
+      expect(seeAllBtn.textContent?.trim()).toBe('Ver las 10 →');
+
+      // Click "Ver las 10 →"
+      const mythsFilteredReadings = generateMockReadings(10);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 10,
+        readings: mythsFilteredReadings,
+      });
+
+      seeAllBtn.click();
+      fixture.detectChanges();
+
+      // F. Catalog shows only matching readings
+      expect(component.selectedTopic()).toBe('MYTHS_AND_LEGENDS');
+      expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          countryCode: 'CO',
+          discoveryTopic: 'MYTHS_AND_LEGENDS',
+        })
+      );
+      expect(component.readings().length).toBe(10);
+
+      // G. Active topic chip visible with name and remove button
+      const activeFilterRow = root.querySelector('.active-topic-filter-row');
+      expect(activeFilterRow).toBeTruthy();
+      expect(activeFilterRow?.textContent).toContain('Mitos y leyendas');
+      const showAllBtn = activeFilterRow?.querySelector('.catalog-show-all-btn') as HTMLButtonElement;
+      expect(showAllBtn).toBeTruthy();
+      expect(showAllBtn.textContent?.trim()).toBe('Mostrar todas');
+
+      // H. Click "Mostrar todas" restores complete country catalog
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings,
+      });
+
+      showAllBtn.click();
+      fixture.detectChanges();
+
+      expect(component.selectedTopic()).toBeNull();
+      expect(homeServiceMock.browsePlatformReadings).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          countryCode: 'CO',
+          discoveryTopic: null,
+        })
+      );
+      expect(component.readings().length).toBe(15);
+      expect(root.querySelector('.active-topic-filter-row')).toBeNull();
+    });
+
+    it('I. Mexico topics work identically with dynamic button label and active chip', () => {
+      // In mock data, Mexico has HISTORY_AND_MEMORY with readingCount = 8
+      queryParamMapSubject.next(convertToParamMap({ country: 'MX' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+      const topicSection = root.querySelector('.topic-editorial-section');
+      expect(topicSection).toBeTruthy();
+
+      const seeAllBtn = topicSection?.querySelector('.section-see-all-btn') as HTMLButtonElement;
+      expect(seeAllBtn.textContent?.trim()).toBe('Ver las 8 →');
+
+      seeAllBtn.click();
+      fixture.detectChanges();
+
+      expect(component.selectedTopic()).toBe('HISTORY_AND_MEMORY');
+      const activeChip = root.querySelector('.active-topic-chip');
+      expect(activeChip).toBeTruthy();
+      expect(activeChip?.textContent).toContain('Historia y memoria');
+
+      // Remove via × button on chip
+      const removeBtn = activeChip?.querySelector('.active-topic-chip-remove') as HTMLButtonElement;
+      expect(removeBtn).toBeTruthy();
+      removeBtn.click();
+      fixture.detectChanges();
+
+      expect(component.selectedTopic()).toBeNull();
+      expect(root.querySelector('.active-topic-filter-row')).toBeNull();
+    });
+  });
 });
