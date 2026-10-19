@@ -1482,4 +1482,48 @@ describe('CollectionDetail', () => {
       expect(catalogCards?.length).toBe(15);
     });
   });
+
+  describe('Phase 19.6G Normalized Card Density to Match Home', () => {
+    function generateMockReadings(count: number, startIndex = 1): RecommendedPlatformReading[] {
+      return Array.from({ length: count }, (_, i) => ({
+        ...mockReading,
+        readingId: `rd-196g-${startIndex + i}`,
+        title: `Story ${startIndex + i}`,
+        shortDescription: `Description for story ${startIndex + i}`,
+        discoveryTopic: i % 2 === 0 ? 'MYTHS_AND_LEGENDS' : 'REAL_STORIES',
+      }));
+    }
+
+    it('maintains uniform card components across featured, topic rails, and catalog without altering wrappers', () => {
+      const readings = generateMockReadings(15);
+      homeServiceMock.parseBrowsePlatformReadings.mockReturnValue({
+        page: 0,
+        size: 24,
+        totalElements: 15,
+        readings,
+      });
+
+      queryParamMapSubject.next(convertToParamMap({ country: 'CO' }));
+      createComponent();
+
+      const root = fixture.nativeElement as HTMLElement;
+
+      // 1. Featured cards: Exactly 4 standard reading cards without expanding wrappers
+      const featuredCards = root.querySelectorAll('.featured-cards-grid app-home-reading-card');
+      expect(featuredCards.length).toBe(4);
+
+      // 2. Topic rail: Standard reading cards inside topic-readings-rail
+      const railCards = root.querySelectorAll('.topic-readings-rail app-home-reading-card');
+      expect(railCards.length).toBeGreaterThan(0);
+
+      // 3. Catalog: Exactly 15 standard reading cards in all-stories grid
+      const catalogCards = root.querySelectorAll('.readings-grid app-home-reading-card');
+      expect(catalogCards.length).toBe(15);
+
+      // 4. Initial fallback for isRailAtEnd
+      expect(component.isRailAtEnd('SAMPLE', 1)).toBe(true);
+      expect(component.isRailAtEnd('SAMPLE', 2)).toBe(true);
+      expect(component.isRailAtEnd('SAMPLE', 5)).toBe(false);
+    });
+  });
 });
